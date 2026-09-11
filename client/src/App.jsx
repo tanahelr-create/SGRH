@@ -1,0 +1,177 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { PermissionProvider } from './context/PermissionContext';
+import { TextProvider } from './context/TextContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import AppShell from './components/layout/AppShell';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import MotDePasseOublie from './pages/MotDePasseOublie';
+import ReinitialiserMotDePasse from './pages/ReinitialiserMotDePasse';
+import NotificationsPage from './pages/NotificationsPage';
+import Parametres from './pages/Parametres';
+import FicheDemande from './pages/FicheDemande';
+import ParOuCommencer from './pages/aide/ParOuCommencer';
+import VosDroits from './pages/aide/VosDroits';
+import Procedures from './pages/aide/Procedures';
+import Dashboard from './pages/admin-rh/Dashboard';
+import Personnel from './pages/admin-rh/Personnel';
+import Invitations from './pages/admin-rh/Invitations';
+import ComptesEnAttente from './pages/admin-rh/ComptesEnAttente';
+import EnvoyerNotification from './pages/admin-rh/EnvoyerNotification';
+import GestionFonctions from './pages/admin-rh/GestionFonctions';
+import Carriere from './pages/admin-rh/Carriere';
+import CongesAdmin from './pages/admin-rh/CongesAdmin';
+import Historique from './pages/admin-rh/Historique';
+import ComptesSuperadmin from './pages/superadmin/Comptes';
+import PermissionsSuperadmin from './pages/superadmin/Permissions';
+import CorbeilleSuperadmin from './pages/superadmin/Corbeille';
+import PersonnelDashboard from './pages/personnel/Dashboard';
+import Profil from './pages/personnel/Profil';
+import MaCarriere from './pages/personnel/MaCarriere';
+import Conges from './pages/personnel/Conges';
+
+const ALL_ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
+const PE_PAT = ['PE', 'PAT'];
+
+function App() {
+  return (
+    <ThemeProvider>
+      <TextProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <PermissionProvider>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
+                <Route path="/reset-password" element={<ReinitialiserMotDePasse />} />
+
+                <Route path="/demandes/:id/fiche" element={
+                  <ProtectedRoute allowedRoles={ALL_ROLES}>
+                    <FicheDemande />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/notifications" element={
+                  <ProtectedRoute allowedRoles={ALL_ROLES} permission="view_notifications">
+                    <AppShell title="Notifications" subtitle="Gestion des Ressources Humaines"><NotificationsPage /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/parametres" element={
+                  <ProtectedRoute allowedRoles={ALL_ROLES}>
+                    <AppShell title="Paramètres" subtitle="Gestion des Ressources Humaines"><Parametres /></AppShell>
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/aide/commencer" element={
+                  <ProtectedRoute allowedRoles={PE_PAT}>
+                    <AppShell title="Par où commencer" subtitle="Documentation"><ParOuCommencer /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/aide/droits" element={
+                  <ProtectedRoute allowedRoles={PE_PAT}>
+                    <AppShell title="Vos droits" subtitle="Documentation"><VosDroits /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/aide/procedures" element={
+                  <ProtectedRoute allowedRoles={PE_PAT}>
+                    <AppShell title="Les procédures" subtitle="Documentation"><Procedures /></AppShell>
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/admin/dashboard" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_dashboard_admin">
+                    <AppShell title="Tableau de bord" subtitle="Gestion des Ressources Humaines"><Dashboard /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/personnel" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_personnel">
+                    <AppShell title="Personnel" subtitle="Gestion des Ressources Humaines"><Personnel /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/invitations" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="send_registration_link">
+                    <AppShell title="Inviter un personnel" subtitle="Gestion des Ressources Humaines"><Invitations /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/comptes-attente" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_pending_accounts">
+                    <AppShell title="Comptes en attente" subtitle="Gestion des Ressources Humaines"><ComptesEnAttente /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/notifications" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="send_notification">
+                    <AppShell title="Envoyer une notification" subtitle="Gestion des Ressources Humaines"><EnvoyerNotification /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/fonctions" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_fonctions">
+                    <AppShell title="Gestion des fonctions" subtitle="Gestion des Ressources Humaines"><GestionFonctions /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/carriere" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_fonctions">
+                    <AppShell title="Carrière" subtitle="Gestion des Ressources Humaines"><Carriere /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/conges" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_conges_admin">
+                    <AppShell title="Congés" subtitle="Gestion des Ressources Humaines"><CongesAdmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/historique" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_historique">
+                    <AppShell title="Historique" subtitle="Gestion des Ressources Humaines"><Historique /></AppShell>
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/superadmin/comptes" element={
+                  <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_accounts">
+                    <AppShell title="Gestion des comptes" subtitle="Administration système"><ComptesSuperadmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/superadmin/corbeille" element={
+                  <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_corbeille">
+                    <AppShell title="Corbeille" subtitle="Administration système"><CorbeilleSuperadmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/superadmin/permissions" element={
+                  <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_permissions">
+                    <AppShell title="Gestion des permissions" subtitle="Administration système"><PermissionsSuperadmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/dashboard" element={
+                  <ProtectedRoute allowedRoles={PE_PAT}>
+                    <AppShell title="Espace personnel" subtitle="Gestion des Ressources Humaines"><PersonnelDashboard /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/profil" element={
+                  <ProtectedRoute allowedRoles={PE_PAT} permission="view_profil">
+                    <AppShell title="Mon profil" subtitle="Gestion des Ressources Humaines"><Profil /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/carriere" element={
+                  <ProtectedRoute allowedRoles={PE_PAT} permission="view_profil">
+                    <AppShell title="Ma carrière" subtitle="Gestion des Ressources Humaines"><MaCarriere /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/conges" element={
+                  <ProtectedRoute allowedRoles={PE_PAT} permission="view_mes_conges">
+                    <AppShell title="Congés" subtitle="Gestion des Ressources Humaines"><Conges /></AppShell>
+                  </ProtectedRoute>
+                } />
+
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              </Routes>
+            </PermissionProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TextProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,12 @@
+const express = require('express');
+const accountAdminController = require('../controllers/accountAdminController');
+const { requireAuth, requirePermission } = require('../middlewares/authMiddleware');
+
+const router = express.Router();
+
+router.get('/', requireAuth, requirePermission('manage_accounts'), accountAdminController.list);
+router.post('/:id/deactivate', requireAuth, requirePermission('manage_accounts'), accountAdminController.deactivate);
+router.post('/:id/reactivate', requireAuth, requirePermission('manage_accounts'), accountAdminController.reactivate);
+router.delete('/:id', requireAuth, requirePermission('manage_accounts'), accountAdminController.remove);
+
+module.exports = router;

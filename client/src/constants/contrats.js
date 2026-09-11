@@ -1,0 +1,1 @@
+export const TYPES_CONTRAT = ['CDI', 'CDD', 'Vacataire', 'Stagiaire'];

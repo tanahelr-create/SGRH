@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-navy: #02295D;
+  --color-gold: #F2B705;
+  --color-status-pending: #B8860B;
+  --color-status-approved: #2F6F4E;
+  --color-status-rejected: #B23A3A;
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html { background: #f8fafc; }
+
+  body {
+    min-width: 320px;
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button, input, select, textarea { font: inherit; }
+
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+}
