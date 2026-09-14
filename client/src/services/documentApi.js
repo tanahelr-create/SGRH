@@ -1,0 +1,38 @@
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+
+function authHeaders() {
+  const token = localStorage.getItem('rh_token');
+  return { Authorization: `Bearer ${token}` };
+}
+
+export async function generateDocument(personnelId, typeDocument, donnees = {}) {
+  const res = await fetch(`${API_URL}/documents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ personnelId, typeDocument, donnees }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec de la génération');
+  return data.document;
+}
+
+export async function getDocument(id) {
+  const res = await fetch(`${API_URL}/documents/${id}`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  return data.document;
+}
+
+export async function getHistoriquePersonnel(personnelId) {
+  const res = await fetch(`${API_URL}/documents/personnel/${personnelId}`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  return data.historique;
+}
+
+export async function getMesDocuments() {
+  const res = await fetch(`${API_URL}/documents/me`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  return data.historique;
+}

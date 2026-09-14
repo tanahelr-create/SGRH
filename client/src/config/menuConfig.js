@@ -1,8 +1,12 @@
 import {
   LayoutDashboard, UserPlus, UserCheck, Users, Settings, Send,
   TrendingUp, User, CalendarDays, Bell, History, UserCog,
-  HelpCircle, ShieldCheck, FileText, Briefcase, Trash2,
+  HelpCircle, ShieldCheck, FileText, Briefcase, Trash2, Palette,
+  UsersRound, ClipboardCheck, FileStack,
 } from 'lucide-react';
+
+const estEncadrant = (user) =>
+  user?.fonction === 'Chef de service' || user?.fonction === 'Responsable/Directeur';
 
 export const menuConfig = {
   ADMIN_RH: [
@@ -28,6 +32,7 @@ export const menuConfig = {
         { label: 'Gestion des fonctions', path: '/admin/fonctions', icon: TrendingUp, permission: 'manage_fonctions' },
         { label: 'Carrière', path: '/admin/carriere', icon: Briefcase, permission: 'manage_fonctions' },
         { label: 'Congés', path: '/admin/conges', icon: CalendarDays, permission: 'view_conges_admin' },
+        { label: 'Documents administratifs', path: '/admin/documents', icon: FileStack, permission: 'manage_documents' },
         { label: 'Historique', path: '/admin/historique', icon: History, permission: 'view_historique' },
       ],
     },
@@ -44,6 +49,7 @@ export const menuConfig = {
         { label: 'Comptes', path: '/superadmin/comptes', icon: Users, permission: 'manage_accounts' },
         { label: 'Corbeille', path: '/superadmin/corbeille', icon: Trash2, permission: 'manage_corbeille' },
         { label: 'Permissions', path: '/superadmin/permissions', icon: UserCog, permission: 'manage_permissions' },
+        { label: 'Apparence du site', path: '/superadmin/apparence', icon: Palette, permission: 'manage_site_texts' },
       ],
     },
     {
@@ -61,6 +67,13 @@ export const menuConfig = {
         { label: 'Ma carrière', path: '/carriere', icon: Briefcase, permission: 'view_profil' },
         { label: 'Congés', path: '/conges', icon: CalendarDays, permission: 'view_mes_conges' },
         { label: 'Notifications', path: '/notifications', icon: Bell, permission: 'view_notifications' },
+      ],
+    },
+    {
+      title: 'Encadrement',
+      items: [
+        { label: 'Mon équipe', path: '/mon-equipe', icon: UsersRound, permission: null, showIf: estEncadrant },
+        { label: 'Validation équipe', path: '/validation-equipe', icon: ClipboardCheck, permission: null, showIf: estEncadrant },
       ],
     },
     {
@@ -86,6 +99,13 @@ export const menuConfig = {
         { label: 'Ma carrière', path: '/carriere', icon: Briefcase, permission: 'view_profil' },
         { label: 'Congés', path: '/conges', icon: CalendarDays, permission: 'view_mes_conges' },
         { label: 'Notifications', path: '/notifications', icon: Bell, permission: 'view_notifications' },
+      ],
+    },
+    {
+      title: 'Encadrement',
+      items: [
+        { label: 'Mon équipe', path: '/mon-equipe', icon: UsersRound, permission: null, showIf: estEncadrant },
+        { label: 'Validation équipe', path: '/validation-equipe', icon: ClipboardCheck, permission: null, showIf: estEncadrant },
       ],
     },
     {

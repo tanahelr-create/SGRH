@@ -9,7 +9,7 @@ async function me(req, res) {
 }
 
 async function create(req, res) {
-  const { matricule, nom, prenom, email, role, fonction, corps, grade, service, direction, telephone, typeContrat } = req.body;
+  const { matricule, nom, prenom, email, role, fonction, corps, grade, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent } = req.body;
 
   if (!matricule || !nom || !prenom || !email || !role) {
     return res.status(400).json({ message: 'Matricule, nom, prénom, email et rôle sont requis' });
@@ -20,7 +20,7 @@ async function create(req, res) {
 
   try {
     const personnel = await personnelService.createPersonnel(
-      { matricule, nom, prenom, email, role, fonction, corps, grade, service, direction, telephone, typeContrat },
+      { matricule, nom, prenom, email, role, fonction, corps, grade, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent },
       req.user.id
     );
     return res.status(201).json({ message: 'Fiche personnel créée', personnel });
@@ -94,26 +94,14 @@ async function importExcel(req, res) {
     await workbook.xlsx.load(req.file.buffer);
     const sheet = workbook.worksheets[0];
 
-    const headerRow = sheet.getRow(1).values.slice(1).map((h) => String(h).trim().toLowerCase());
-    const expectedColumns = ['matricule', 'nom', 'prénom', 'email', 'rôle', 'fonction', 'corps', 'grade', 'service', 'direction', 'téléphone', 'type de contrat'];
-
     const rows = [];
     sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return; // en-têtes
+      if (rowNumber === 1) return;
       const values = row.values.slice(1);
       rows.push({
-        matricule: values[0],
-        nom: values[1],
-        prenom: values[2],
-        email: values[3],
-        role: values[4],
-        fonction: values[5],
-        corps: values[6],
-        grade: values[7],
-        service: values[8],
-        direction: values[9],
-        telephone: values[10],
-        type_contrat: values[11],
+        matricule: values[0], nom: values[1], prenom: values[2], email: values[3],
+        role: values[4], fonction: values[5], corps: values[6], grade: values[7],
+        service: values[8], direction: values[9], telephone: values[10], type_contrat: values[11],
       });
     });
 
@@ -129,4 +117,19 @@ async function importExcel(req, res) {
   }
 }
 
-module.exports = { me, create, list, listWithoutAccount, sendRegistrationLink, exportExcel, importExcel };
+async function monEquipe(req, res) {
+  const personnel = await personnelRepository.findByUserId(req.user.id);
+  if (!personnel) return res.status(404).json({ message: 'Aucune fiche personnel associée' });
+
+  if (personnel.fonction === 'Chef de service' && personnel.service) {
+    const equipe = await personnelRepository.findEquipeParService(personnel.service, req.user.id);
+    return res.status(200).json({ equipe, portee: 'service', nom: personnel.service });
+  }
+  if (personnel.fonction === 'Responsable/Directeur' && personnel.direction) {
+    const equipe = await personnelRepository.findEquipeParDirection(personnel.direction, req.user.id);
+    return res.status(200).json({ equipe, portee: 'direction', nom: personnel.direction });
+  }
+  return res.status(403).json({ message: "Vous n'avez pas de fonction d'encadrement" });
+}
+
+module.exports = { me, create, list, listWithoutAccount, sendRegistrationLink, exportExcel, importExcel, monEquipe };

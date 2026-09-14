@@ -12,6 +12,7 @@ import ReinitialiserMotDePasse from './pages/ReinitialiserMotDePasse';
 import NotificationsPage from './pages/NotificationsPage';
 import Parametres from './pages/Parametres';
 import FicheDemande from './pages/FicheDemande';
+import DocumentImprimable from './pages/DocumentImprimable';
 import ParOuCommencer from './pages/aide/ParOuCommencer';
 import VosDroits from './pages/aide/VosDroits';
 import Procedures from './pages/aide/Procedures';
@@ -23,14 +24,18 @@ import EnvoyerNotification from './pages/admin-rh/EnvoyerNotification';
 import GestionFonctions from './pages/admin-rh/GestionFonctions';
 import Carriere from './pages/admin-rh/Carriere';
 import CongesAdmin from './pages/admin-rh/CongesAdmin';
+import DocumentsAdmin from './pages/admin-rh/DocumentsAdmin';
 import Historique from './pages/admin-rh/Historique';
 import ComptesSuperadmin from './pages/superadmin/Comptes';
 import PermissionsSuperadmin from './pages/superadmin/Permissions';
 import CorbeilleSuperadmin from './pages/superadmin/Corbeille';
+import ApparenceSite from './pages/superadmin/ApparenceSite';
 import PersonnelDashboard from './pages/personnel/Dashboard';
 import Profil from './pages/personnel/Profil';
 import MaCarriere from './pages/personnel/MaCarriere';
 import Conges from './pages/personnel/Conges';
+import MonEquipe from './pages/personnel/MonEquipe';
+import ValidationEquipe from './pages/personnel/ValidationEquipe';
 
 const ALL_ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
 const PE_PAT = ['PE', 'PAT'];
@@ -51,6 +56,11 @@ function App() {
                 <Route path="/demandes/:id/fiche" element={
                   <ProtectedRoute allowedRoles={ALL_ROLES}>
                     <FicheDemande />
+                  </ProtectedRoute>
+                } />
+                <Route path="/documents/:id" element={
+                  <ProtectedRoute allowedRoles={ALL_ROLES}>
+                    <DocumentImprimable />
                   </ProtectedRoute>
                 } />
 
@@ -78,6 +88,17 @@ function App() {
                 <Route path="/aide/procedures" element={
                   <ProtectedRoute allowedRoles={PE_PAT}>
                     <AppShell title="Les procédures" subtitle="Documentation"><Procedures /></AppShell>
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/mon-equipe" element={
+                  <ProtectedRoute allowedRoles={PE_PAT}>
+                    <AppShell title="Mon équipe" subtitle="Gestion des Ressources Humaines"><MonEquipe /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/validation-equipe" element={
+                  <ProtectedRoute allowedRoles={PE_PAT}>
+                    <AppShell title="Validation équipe" subtitle="Gestion des Ressources Humaines"><ValidationEquipe /></AppShell>
                   </ProtectedRoute>
                 } />
 
@@ -121,6 +142,11 @@ function App() {
                     <AppShell title="Congés" subtitle="Gestion des Ressources Humaines"><CongesAdmin /></AppShell>
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/documents" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_documents">
+                    <AppShell title="Documents administratifs" subtitle="Gestion des Ressources Humaines"><DocumentsAdmin /></AppShell>
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin/historique" element={
                   <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_historique">
                     <AppShell title="Historique" subtitle="Gestion des Ressources Humaines"><Historique /></AppShell>
@@ -140,6 +166,11 @@ function App() {
                 <Route path="/superadmin/permissions" element={
                   <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_permissions">
                     <AppShell title="Gestion des permissions" subtitle="Administration système"><PermissionsSuperadmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/superadmin/apparence" element={
+                  <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_site_texts">
+                    <AppShell title="Apparence du site" subtitle="Administration système"><ApparenceSite /></AppShell>
                   </ProtectedRoute>
                 } />
 

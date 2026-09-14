@@ -45,7 +45,7 @@ export default function Corbeille() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
         Les éléments supprimés restent ici jusqu'à restauration ou suppression définitive.
       </p>
 
@@ -58,7 +58,7 @@ export default function Corbeille() {
           <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600 mr-2">
+                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 mr-2">
                   {TYPE_LABELS[item.type_element] || item.type_element}
                 </span>
                 <span className="text-sm text-navy dark:text-gray-100 font-medium">
@@ -84,7 +84,7 @@ export default function Corbeille() {
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(null)}
-                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600"
+                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                     >
                       Annuler
                     </button>

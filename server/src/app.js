@@ -18,6 +18,7 @@ const carriereRoutes = require('./routes/carriere.routes');
 const corbeilleRoutes = require('./routes/corbeille.routes');
 const siteSettingsRoutes = require('./routes/siteSettings.routes');
 const siteTextsRoutes = require('./routes/siteTexts.routes');
+const documentRoutes = require('./routes/document.routes');
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/carriere', carriereRoutes);
 app.use('/api/corbeille', corbeilleRoutes);
 app.use('/api/site-settings', siteSettingsRoutes);
 app.use('/api/site-texts', siteTextsRoutes);
+app.use('/api/documents', documentRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Route introuvable' }));
 

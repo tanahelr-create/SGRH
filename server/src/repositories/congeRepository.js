@@ -1,10 +1,10 @@
 const pool = require('../config/db');
 
-async function create({ userId, typeConge, dateDebut, dateFin, motif }) {
+async function create({ userId, typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant }) {
   const result = await pool.query(
-    `INSERT INTO conges (user_id, type_conge, date_debut, date_fin, motif)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [userId, typeConge, dateDebut, dateFin, motif || null]
+    `INSERT INTO conges (user_id, type_conge, date_debut, date_fin, motif, lieu_jouissance, date_reprise_service, remplacant)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [userId, typeConge, dateDebut, dateFin, motif || null, lieuJouissance || null, dateRepriseService || null, remplacant || null]
   );
   return result.rows[0];
 }
@@ -21,7 +21,19 @@ async function findPending() {
   const result = await pool.query(
     `SELECT c.*, ud.email, ud.nom, ud.prenom, ud.role
      FROM conges c JOIN user_details ud ON ud.id = c.user_id
-     WHERE c.status = 'en_attente' ORDER BY c.created_at ASC`
+     WHERE c.status = 'en_attente' AND c.decision_intermediaire != 'en_attente'
+     ORDER BY c.created_at ASC`
+  );
+  return result.rows;
+}
+
+async function findPendingForValidateur(validateurUserId) {
+  const result = await pool.query(
+    `SELECT c.*, ud.email, ud.nom, ud.prenom, ud.role
+     FROM conges c JOIN user_details ud ON ud.id = c.user_id
+     WHERE c.validateur_id = $1 AND c.decision_intermediaire = 'en_attente'
+     ORDER BY c.created_at ASC`,
+    [validateurUserId]
   );
   return result.rows;
 }
@@ -33,9 +45,25 @@ async function findById(id) {
 
 async function updateStatus(id, status, reviewedBy, avisChefService) {
   const result = await pool.query(
-    `UPDATE conges SET status = $2, reviewed_by = $3, reviewed_at = NOW(), avis_chef_service = $4
+    `UPDATE conges SET status = $2, reviewed_by = $3, reviewed_at = NOW(), avis_chef_service = COALESCE($4, avis_chef_service)
      WHERE id = $1 RETURNING *`,
     [id, status, reviewedBy, avisChefService || null]
+  );
+  return result.rows[0];
+}
+
+async function setValidateur(id, validateurId, decisionIntermediaire) {
+  await pool.query(
+    `UPDATE conges SET validateur_id = $2, decision_intermediaire = $3 WHERE id = $1`,
+    [id, validateurId, decisionIntermediaire]
+  );
+}
+
+async function setDecisionIntermediaire(id, decision, avis) {
+  const result = await pool.query(
+    `UPDATE conges SET decision_intermediaire = $2, decision_intermediaire_le = NOW(), avis_chef_service = $3
+     WHERE id = $1 RETURNING *`,
+    [id, decision, avis || null]
   );
   return result.rows[0];
 }
@@ -72,4 +100,18 @@ async function findByIdWithDetails(id) {
   return result.rows[0] || null;
 }
 
-module.exports = { create, findByUser, findPending, findById, updateStatus, findRecent, findForMonth, findByIdWithDetails };
+async function countCongesAnnuelCetteAnnee(userId) {
+  const result = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM conges
+     WHERE user_id = $1 AND type_conge = 'Congé annuel'
+       AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)`,
+    [userId]
+  );
+  return result.rows[0].count;
+}
+
+module.exports = {
+  create, findByUser, findPending, findPendingForValidateur, findById,
+  updateStatus, setValidateur, setDecisionIntermediaire,
+  findRecent, findForMonth, findByIdWithDetails, countCongesAnnuelCetteAnnee,
+};

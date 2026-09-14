@@ -25,3 +25,7 @@ export async function updateText(key, value) {
   if (!res.ok) throw new Error(data.message || 'Échec de la mise à jour');
   return data;
 }
+
+export async function updateTextAdmin(key, value) {
+  return updateText(key, value);
+}

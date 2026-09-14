@@ -16,14 +16,12 @@ export function TextProvider({ children }) {
 
   useEffect(() => { reload(); }, []);
 
-  // Appelé par useText() : si la clé n'existe pas encore en base, on l'enregistre avec sa valeur par défaut.
   const registerKey = useCallback((key, defaultValue, category) => {
     if (registeredKeys.current.has(key)) return;
-    if (texts[key] !== undefined) return; // déjà connue
-    if (!loaded) return; // attend le premier chargement pour ne pas enregistrer en double
+    if (texts[key] !== undefined) return;
     registeredKeys.current.add(key);
     ensureDefaultText(key, defaultValue, category);
-  }, [texts, loaded]);
+  }, [texts]);
 
   return (
     <TextContext.Provider value={{ texts, loaded, registerKey, reload }}>
@@ -38,13 +36,13 @@ export function useTextContext() {
   return ctx;
 }
 
-// Le hook principal à utiliser dans chaque composant :
-// const title = useText('login.titre', 'Bienvenue sur l'espace RH', 'Login');
 export function useText(key, defaultValue, category = 'Général') {
-  const { texts, registerKey } = useTextContext();
+  const { texts, loaded, registerKey } = useTextContext();
+
   useEffect(() => {
+    if (!loaded) return;
     registerKey(key, defaultValue, category);
-  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key, loaded, registerKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return texts[key] !== undefined ? texts[key] : defaultValue;
 }

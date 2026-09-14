@@ -55,7 +55,7 @@ export default function Comptes() {
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <button
           onClick={() => setFilterRole('')}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium ${filterRole === '' ? 'bg-navy text-white' : 'bg-white text-gray-500 border border-gray-200'}`}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium ${filterRole === '' ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
         >
           Tous ({accounts.length})
         </button>
@@ -63,7 +63,7 @@ export default function Comptes() {
           <button
             key={role}
             onClick={() => setFilterRole(role)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium ${filterRole === role ? 'bg-navy text-white' : 'bg-white text-gray-500 border border-gray-200'}`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium ${filterRole === role ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
           >
             {label} ({accounts.filter((a) => a.role === role).length})
           </button>
@@ -81,7 +81,7 @@ export default function Comptes() {
                 <p className="font-medium text-navy dark:text-gray-100">
                   {a.prenom ? `${a.prenom} ${a.nom}` : (a.email || `Compte #${a.id}`)}
                 </p>
-                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{ROLE_LABELS[a.role]}</span>
+                <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{ROLE_LABELS[a.role]}</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                   a.status === 'active' ? 'bg-green-50 text-status-approved' :
                   a.status === 'pending' ? 'bg-amber-50 text-status-pending' : 'bg-red-50 text-status-rejected'
@@ -116,7 +116,7 @@ export default function Comptes() {
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(null)}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600"
+                    className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                   >
                     Annuler
                   </button>

@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 const router = express.Router();
 
 router.get('/me', requireAuth, requirePermission('view_profil'), personnelController.me);
+router.get('/mon-equipe', requireAuth, personnelController.monEquipe);
 router.post('/', requireAuth, requirePermission('create_personnel'), personnelController.create);
 router.get('/export', requireAuth, requirePermission('view_personnel'), personnelController.exportExcel);
 router.post('/import', requireAuth, requirePermission('create_personnel'), upload.single('file'), personnelController.importExcel);

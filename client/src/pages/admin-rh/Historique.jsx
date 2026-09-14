@@ -29,7 +29,7 @@ export default function Historique() {
         <button
           onClick={() => setFilterType('')}
           className={`px-3 py-1.5 rounded-md text-xs font-medium ${
-            filterType === '' ? 'bg-navy text-white' : 'bg-white text-gray-500 border border-gray-200'
+              filterType === '' ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
           }`}
         >
           Tout
@@ -39,7 +39,7 @@ export default function Historique() {
             key={type}
             onClick={() => setFilterType(type)}
             className={`px-3 py-1.5 rounded-md text-xs font-medium ${
-              filterType === type ? 'bg-navy text-white' : 'bg-white text-gray-500 border border-gray-200'
+              filterType === type ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
             }`}
           >
             {label}

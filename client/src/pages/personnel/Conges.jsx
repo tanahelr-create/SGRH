@@ -53,7 +53,7 @@ export default function Conges() {
         lieuJouissance, dateRepriseService, remplacant,
       });
       setStatus('success');
-      setFeedback('Demande envoyée à l’administration RH.');
+      setFeedback('Demande envoyée.');
       setDateDebut(''); setDateFin(''); setMotif('');
       setLieuJouissance(''); setDateRepriseService(''); setRemplacant('');
       load();
@@ -69,11 +69,18 @@ export default function Conges() {
         <h3 className="font-semibold text-navy mb-4">Nouvelle demande</h3>
 
         {personnel && (
-          <div className="grid grid-cols-2 gap-3 mb-5 p-3 bg-gray-50 rounded-md">
+          <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-md">
             <ReadOnlyField label="Matricule" value={personnel.matricule} />
             <ReadOnlyField label="Nom et prénom" value={`${personnel.prenom} ${personnel.nom}`} />
             <ReadOnlyField label="Fonction" value={personnel.fonction} />
             <ReadOnlyField label="Corps / Grade" value={[personnel.corps, personnel.grade].filter(Boolean).join(' / ')} />
+          </div>
+        )}
+
+        {personnel && (
+          <div className="flex items-center justify-between mb-5 p-3 bg-navy/5 rounded-md">
+            <span className="text-sm text-navy font-medium">Solde de congé annuel</span>
+            <span className="text-xl font-bold text-navy">{personnel.solde_conges} jour(s)</span>
           </div>
         )}
 
@@ -87,6 +94,11 @@ export default function Conges() {
             >
               {TYPES_CONGE.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
+            {typeConge === 'Congé annuel' && (
+              <p className="text-xs text-gray-400 mt-1">
+                Minimum 15 jours pour votre première demande de congé annuel de l'année.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -179,9 +191,12 @@ export default function Conges() {
               <p className="text-xs text-gray-400 mt-0.5">
                 Du {new Date(d.date_debut).toLocaleDateString('fr-FR')} au {new Date(d.date_fin).toLocaleDateString('fr-FR')}
               </p>
+              {d.decision_intermediaire === 'en_attente' && (
+                <p className="text-xs text-status-pending mt-1">En attente de l'avis du responsable direct</p>
+              )}
               {d.lieu_jouissance && <p className="text-xs text-gray-500 mt-1">Lieu : {d.lieu_jouissance}</p>}
               {d.avis_chef_service && (
-                <p className="text-xs text-gray-500 mt-1">Avis du chef de service : {d.avis_chef_service}</p>
+                <p className="text-xs text-gray-500 mt-1">Avis : {d.avis_chef_service}</p>
               )}
               <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy underline mt-1 inline-block">
                 Voir / télécharger la fiche

@@ -47,17 +47,17 @@ export default function Parametres() {
           <input
             type="password" required placeholder="Mot de passe actuel"
             value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           />
           <input
             type="password" required minLength={8} placeholder="Nouveau mot de passe"
             value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           />
           <input
             type="password" required minLength={8} placeholder="Confirmer le nouveau mot de passe"
             value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           />
           <button
             type="submit" disabled={status === 'loading'}

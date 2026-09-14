@@ -12,6 +12,7 @@ const TYPES_CONTRAT = ['CDI', 'CDD', 'Vacataire', 'Stagiaire'];
 const empty = {
   matricule: '', nom: '', prenom: '', email: '', role: 'PE', fonction: '',
   corps: '', grade: '', service: '', direction: '', telephone: '', typeContrat: '',
+  dateRecrutement: '', dateEcheanceContrat: '', contratPermanent: false,
 };
 
 export default function AjouterEmployeModal({ onClose, onSuccess }) {
@@ -30,6 +31,11 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
       setMessage('Le matricule doit contenir exactement 6 chiffres.');
       return;
     }
+    if (!form.contratPermanent && !form.dateEcheanceContrat && ['CDD', 'Vacataire', 'Stagiaire'].includes(form.typeContrat)) {
+      setStatus('error');
+      setMessage('Indique une date de fin de contrat, ou coche "Contrat permanent".');
+      return;
+    }
     setStatus('loading');
     setMessage('');
     try {
@@ -45,8 +51,8 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-7 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-navy dark:text-gold">Ajouter un employé</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
@@ -55,7 +61,7 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
 
         <p className="text-sm text-gray-500 mb-4">Les champs marqués * sont obligatoires.</p>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Matricule (6 chiffres) *</label>
             <input
@@ -165,7 +171,39 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
             </select>
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de recrutement</label>
+            <input
+              type="date" value={form.dateRecrutement}
+              onChange={(e) => update('dateRecrutement', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            />
+          </div>
+
+          <div className="flex items-end pb-2">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.contratPermanent}
+                onChange={(e) => update('contratPermanent', e.target.checked)}
+                className="w-4 h-4 accent-navy"
+              />
+              Contrat permanent (pas de date de fin)
+            </label>
+          </div>
+
+          {!form.contratPermanent && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de fin de contrat</label>
+              <input
+                type="date" value={form.dateEcheanceContrat}
+                onChange={(e) => update('dateEcheanceContrat', e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+          )}
+
+          <div className="col-span-2">
             <button
               type="submit"
               disabled={status === 'loading'}

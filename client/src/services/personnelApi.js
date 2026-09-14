@@ -47,6 +47,13 @@ export async function getMyPersonnel() {
   return data.personnel;
 }
 
+export async function getMonEquipe() {
+  const res = await fetch(`${API_URL}/personnel/mon-equipe`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  return data;
+}
+
 export async function exportPersonnelExcel() {
   const token = localStorage.getItem('rh_token');
   const res = await fetch(`${API_URL}/personnel/export`, {

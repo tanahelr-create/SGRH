@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useText } from '../context/TextContext';
 import Footer from '../components/layout/Footer';
 
 export default function Login() {
@@ -13,6 +14,26 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const titreUniversite1 = useText('login.titre_universite_1', 'UNIVERSITÉ', 'Login');
+  const titreUniversite2 = useText('login.titre_universite_2', 'DE MAHAJANGA', 'Login');
+  const slogan = useText('login.slogan', 'Excellence • Intégrité • Innovation', 'Login');
+  const titreBienvenue = useText('login.titre_bienvenue', "Bienvenue sur l'espace RH", 'Login');
+  const descriptionBienvenue = useText(
+    'login.description_bienvenue',
+    "Université de Mahajanga — Plateforme de gestion des ressources humaines. Consultez votre dossier, vos congés et vos notifications en un seul endroit.",
+    'Login'
+  );
+  const labelConnexion = useText('login.label_connexion', 'Connexion', 'Login');
+  const titreFormulaire = useText('login.titre_formulaire', 'Accéder à mon espace', 'Login');
+  const placeholderEmail = useText('login.placeholder_email', 'Adresse email', 'Login');
+  const placeholderMdp = useText('login.placeholder_mdp', 'Mot de passe', 'Login');
+  const labelRemember = useText('login.label_remember', 'Se souvenir de moi', 'Login');
+  const labelMdpOublie = useText('login.label_mdp_oublie', 'Mot de passe oublié ?', 'Login');
+  const boutonConnexion = useText('login.bouton_connexion', 'Se connecter', 'Login');
+  const boutonConnexionChargement = useText('login.bouton_connexion_chargement', 'Connexion...', 'Login');
+  const texteInscription = useText('login.texte_inscription', 'Pas encore de compte ?', 'Login');
+  const lienInscription = useText('login.lien_inscription', 'Créer mon compte', 'Login');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -33,7 +54,6 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 flex flex-col md:flex-row">
-        {/* Panneau gauche — bleu marine/or */}
         <div className="md:w-1/2 bg-navy relative overflow-hidden flex items-center p-10 md:p-16">
           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 600 800">
             <defs>
@@ -66,21 +86,15 @@ export default function Login() {
               className="h-14 mb-6"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
-            <h1 className="text-3xl font-bold mb-4 leading-tight">
-              Bienvenue sur<br />l'espace RH
-            </h1>
-            <p className="text-white/70 text-sm max-w-sm">
-              Université de Mahajanga — Plateforme de gestion des ressources humaines.
-              Consultez votre dossier, vos congés et vos notifications en un seul endroit.
-            </p>
+            <h1 className="text-3xl font-bold mb-4 leading-tight">{titreBienvenue}</h1>
+            <p className="text-white/70 text-sm max-w-sm">{descriptionBienvenue}</p>
           </div>
         </div>
 
-        {/* Panneau droit — formulaire */}
         <div className="md:w-1/2 bg-white flex items-center justify-center p-8">
           <div className="w-full max-w-sm">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Connexion</p>
-            <h2 className="text-xl font-bold text-navy mb-6">Accéder à mon espace</h2>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{labelConnexion}</p>
+            <h2 className="text-xl font-bold text-navy mb-6">{titreFormulaire}</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
@@ -88,7 +102,7 @@ export default function Login() {
                 <input
                   type="email"
                   required
-                  placeholder="Adresse email"
+                  placeholder={placeholderEmail}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full border border-gray-200 bg-gray-50 rounded-full pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:bg-white"
@@ -100,7 +114,7 @@ export default function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="Mot de passe"
+                  placeholder={placeholderMdp}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full border border-gray-200 bg-gray-50 rounded-full pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:bg-white"
@@ -123,10 +137,10 @@ export default function Login() {
                     onChange={(e) => setRemember(e.target.checked)}
                     className="w-4 h-4 accent-navy"
                   />
-                  Se souvenir de moi
+                  {labelRemember}
                 </label>
                 <Link to="/mot-de-passe-oublie" className="text-navy font-medium hover:underline">
-                  Mot de passe oublié ?
+                  {labelMdpOublie}
                 </Link>
               </div>
 
@@ -135,14 +149,14 @@ export default function Login() {
                 disabled={loading}
                 className="w-full bg-navy text-white rounded-full py-3 font-medium hover:opacity-90 disabled:opacity-50 transition"
               >
-                {loading ? 'Connexion...' : 'Se connecter'}
+                {loading ? boutonConnexionChargement : boutonConnexion}
               </button>
 
               {error && <p className="text-sm text-status-rejected text-center">{error}</p>}
             </form>
 
             <p className="text-xs text-gray-400 text-center mt-6">
-              Pas encore de compte ? <Link to="/register" className="text-navy font-medium">Créer mon compte</Link>
+              {texteInscription} <Link to="/register" className="text-navy font-medium">{lienInscription}</Link>
             </p>
           </div>
         </div>

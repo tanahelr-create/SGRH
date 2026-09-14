@@ -1,12 +1,14 @@
 const congeService = require('../services/congeService');
 
 async function create(req, res) {
-  const { typeConge, dateDebut, dateFin, motif } = req.body;
+  const { typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant } = req.body;
   if (!typeConge || !dateDebut || !dateFin) {
     return res.status(400).json({ message: 'typeConge, dateDebut et dateFin sont requis' });
   }
   try {
-    const demande = await congeService.createDemande(req.user.id, { typeConge, dateDebut, dateFin, motif });
+    const demande = await congeService.createDemande(req.user.id, {
+      typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant,
+    });
     return res.status(201).json({ message: 'Demande envoyée', demande });
   } catch (err) {
     return res.status(400).json({ message: err.message });
@@ -21,6 +23,20 @@ async function myDemandes(req, res) {
 async function pending(req, res) {
   const demandes = await congeService.getPendingDemandes();
   return res.status(200).json({ demandes });
+}
+
+async function pendingPourValidateur(req, res) {
+  const demandes = await congeService.getPendingForValidateur(req.user.id);
+  return res.status(200).json({ demandes });
+}
+
+async function reviewIntermediaire(req, res) {
+  try {
+    const demande = await congeService.reviewIntermediaire(req.params.id, req.body.decision, req.user.id, req.body.avis);
+    return res.status(200).json({ message: 'Avis enregistré', demande });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
 }
 
 async function review(req, res) {
@@ -53,4 +69,4 @@ async function getOne(req, res) {
   }
 }
 
-module.exports = { create, myDemandes, pending, review, recent, calendar, getOne };
+module.exports = { create, myDemandes, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne };

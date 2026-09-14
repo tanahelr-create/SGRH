@@ -48,14 +48,14 @@ export default function EnvoyerNotification() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-8 w-full max-w-md">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Destinataires</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destinataires</label>
           <select
             value={ciblage}
             onChange={(e) => setCiblage(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           >
             <option value="role">Tout un groupe (PE ou PAT)</option>
             <option value="fonction">Une fonction précise (ex: chefs de service)</option>
@@ -67,7 +67,7 @@ export default function EnvoyerNotification() {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           >
             <option value="PE">Tous les PE</option>
             <option value="PAT">Tous les PAT</option>
@@ -78,7 +78,7 @@ export default function EnvoyerNotification() {
           <select
             value={fonction}
             onChange={(e) => setFonction(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           >
             {FONCTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
@@ -89,7 +89,7 @@ export default function EnvoyerNotification() {
             required
             value={selectedIndividual}
             onChange={(e) => setSelectedIndividual(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
           >
             <option value="">-- Choisir une personne --</option>
             {individuals.map((u) => (
@@ -101,7 +101,7 @@ export default function EnvoyerNotification() {
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
         >
           <option value="info">Information</option>
           <option value="reunion">Réunion</option>
@@ -114,7 +114,7 @@ export default function EnvoyerNotification() {
           placeholder="Titre"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
         />
 
         <textarea
@@ -123,7 +123,7 @@ export default function EnvoyerNotification() {
           placeholder="Message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
         />
 
         <button

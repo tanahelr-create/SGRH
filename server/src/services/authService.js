@@ -34,7 +34,12 @@ async function login(email, password) {
 
   return {
     token,
-    user: { id: user.id, email: user.email, role: user.role },
+    user: {
+      id: user.id, email: user.email, role: user.role,
+      nom: user.nom, prenom: user.prenom, fonction: user.fonction,
+      matricule: user.matricule, corps: user.corps, grade: user.grade,
+      service: user.service, direction: user.direction, type_contrat: user.type_contrat,
+    },
   };
 }
 
@@ -57,7 +62,7 @@ async function changePassword(userId, currentPassword, newPassword) {
 
 async function requestPasswordReset(email) {
   const user = await userRepository.findByEmail(email);
-  if (!user) return; // ne révèle jamais si l'email existe ou non, par sécurité
+  if (!user) return;
 
   const resetToken = await passwordResetRepository.create(user.id);
   const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken.token}`;

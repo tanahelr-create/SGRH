@@ -61,7 +61,7 @@ export default function Carriere() {
         <select
           value={selectedId}
           onChange={(e) => setSelectedId(e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
         >
           <option value="">-- Sélectionner --</option>
           {personnelList.map((p) => (
@@ -80,14 +80,14 @@ export default function Carriere() {
               <select
                 value={typeEvenement}
                 onChange={(e) => setTypeEvenement(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
               >
                 {TYPES_EVENEMENT.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
               <input
                 type="date" required value={dateEvenement}
                 onChange={(e) => setDateEvenement(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
               />
               <button
                 type="submit"
@@ -99,7 +99,7 @@ export default function Carriere() {
               <input
                 type="text" placeholder="Description (optionnel)" value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="col-span-3 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                className="col-span-3 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </form>
             {feedback && (

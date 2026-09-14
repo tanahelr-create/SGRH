@@ -42,19 +42,19 @@ export default function GestionFonctions() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-sm text-gray-500 mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Modifier la fonction d'un membre du personnel (avancement de grade, changement de poste...).
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Membre du personnel</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Membre du personnel</label>
             <select
               required
               value={selectedUserId}
               onChange={(e) => { setSelectedUserId(e.target.value); setNewFonction(''); }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             >
               <option value="">-- Choisir --</option>
               {users.map((u) => (
@@ -65,12 +65,12 @@ export default function GestionFonctions() {
 
           {selectedUser && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nouvelle fonction</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nouvelle fonction</label>
               <select
                 required
                 value={newFonction}
                 onChange={(e) => setNewFonction(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
               >
                 <option value="">-- Choisir --</option>
                 {FONCTIONS_PAR_ROLE[selectedUser.role].map((f) => (
@@ -97,13 +97,13 @@ export default function GestionFonctions() {
       </div>
 
       {selectedUserId && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h3 className="text-sm font-semibold text-navy mb-3">Historique des changements</h3>
-          {history.length === 0 && <p className="text-sm text-gray-400">Aucun changement enregistré.</p>}
+          {history.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-400">Aucun changement enregistré.</p>}
           <div className="space-y-2">
             {history.map((h) => (
-              <div key={h.id} className="text-sm border-b last:border-0 pb-2">
-                <p className="text-navy">
+              <div key={h.id} className="text-sm border-b border-gray-200 dark:border-gray-700 last:border-0 pb-2">
+                <p className="text-navy dark:text-gray-100">
                   {h.ancienne_fonction || 'Aucune'} → <span className="font-medium">{h.nouvelle_fonction}</span>
                 </p>
                 <p className="text-xs text-gray-400">

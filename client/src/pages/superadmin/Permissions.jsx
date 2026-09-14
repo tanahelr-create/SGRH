@@ -51,7 +51,7 @@ export default function Permissions() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
         Coche ou décoche pour activer/désactiver une fonctionnalité pour un rôle. La modification est immédiate.
       </p>
 
@@ -65,9 +65,9 @@ export default function Permissions() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b dark:border-gray-700">
-                <th className="text-left px-4 py-2 font-medium text-gray-500">Fonctionnalité</th>
+                <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Fonctionnalité</th>
                 {ROLES.map((role) => (
-                  <th key={role} className="px-3 py-2 font-medium text-gray-500 text-center">{ROLE_LABELS[role]}</th>
+                  <th key={role} className="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 text-center">{ROLE_LABELS[role]}</th>
                 ))}
               </tr>
             </thead>
