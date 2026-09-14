@@ -36,3 +36,49 @@ export async function getMesDocuments() {
   if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
   return data.historique;
 }
+
+export async function demanderDocument(typeDocument, motif) {
+  const res = await fetch(`${API_URL}/documents/demandes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ typeDocument, motif }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Échec de l'envoi");
+  return data.demande;
+}
+
+export async function getMesDemandesDocuments() {
+  const res = await fetch(`${API_URL}/documents/demandes/me`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  return data.demandes;
+}
+
+export async function getDemandesEnAttente() {
+  const res = await fetch(`${API_URL}/documents/demandes/en-attente`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  return data.demandes;
+}
+
+export async function traiterDemande(id, donnees = {}) {
+  const res = await fetch(`${API_URL}/documents/demandes/${id}/traiter`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ donnees }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec du traitement');
+  return data.document;
+}
+
+export async function refuserDemande(id) {
+  const res = await fetch(`${API_URL}/documents/demandes/${id}/refuser`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec du refus');
+  return data;
+}

@@ -25,6 +25,7 @@ import GestionFonctions from './pages/admin-rh/GestionFonctions';
 import Carriere from './pages/admin-rh/Carriere';
 import CongesAdmin from './pages/admin-rh/CongesAdmin';
 import DocumentsAdmin from './pages/admin-rh/DocumentsAdmin';
+import DemandesDocuments from './pages/admin-rh/DemandesDocuments';
 import Historique from './pages/admin-rh/Historique';
 import ComptesSuperadmin from './pages/superadmin/Comptes';
 import PermissionsSuperadmin from './pages/superadmin/Permissions';
@@ -36,6 +37,7 @@ import MaCarriere from './pages/personnel/MaCarriere';
 import Conges from './pages/personnel/Conges';
 import MonEquipe from './pages/personnel/MonEquipe';
 import ValidationEquipe from './pages/personnel/ValidationEquipe';
+import MesDocuments from './pages/personnel/MesDocuments';
 
 const ALL_ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
 const PE_PAT = ['PE', 'PAT'];
@@ -101,6 +103,11 @@ function App() {
                     <AppShell title="Validation équipe" subtitle="Gestion des Ressources Humaines"><ValidationEquipe /></AppShell>
                   </ProtectedRoute>
                 } />
+                <Route path="/mes-documents" element={
+                  <ProtectedRoute allowedRoles={PE_PAT} permission="demander_document">
+                    <AppShell title="Mes documents" subtitle="Gestion des Ressources Humaines"><MesDocuments /></AppShell>
+                  </ProtectedRoute>
+                } />
 
                 <Route path="/admin/dashboard" element={
                   <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_dashboard_admin">
@@ -145,6 +152,11 @@ function App() {
                 <Route path="/admin/documents" element={
                   <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_documents">
                     <AppShell title="Documents administratifs" subtitle="Gestion des Ressources Humaines"><DocumentsAdmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/demandes-documents" element={
+                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_documents">
+                    <AppShell title="Demandes de documents" subtitle="Gestion des Ressources Humaines"><DemandesDocuments /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/historique" element={
