@@ -3,6 +3,8 @@ export const TYPES_CONGE = [
   'Congé de paternité', 'Congé de maladie', 'Formation', 'Autres',
 ];
 
+export const JUSTIFICATIF_OBLIGATOIRE = ['Permission', 'Congé de maladie', 'Congé de maternité'];
+
 export const STATUS_LABELS = {
   en_attente: { label: 'En attente', color: 'text-status-pending' },
   approuvee: { label: 'Approuvée', color: 'text-status-approved' },

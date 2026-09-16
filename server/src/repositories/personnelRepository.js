@@ -23,6 +23,14 @@ async function findByUserId(userId) {
   return result.rows[0] || null;
 }
 
+async function updatePhoto(id, photoPath) {
+  const result = await pool.query(
+    `UPDATE personnel SET photo_profil = $2 WHERE id = $1 RETURNING *`,
+    [id, photoPath]
+  );
+  return result.rows[0] || null;
+}
+
 async function findByMatricule(matricule) {
   const result = await pool.query(`SELECT * FROM personnel WHERE matricule = $1`, [matricule]);
   return result.rows[0] || null;
@@ -38,7 +46,6 @@ async function isLinkedToUser(personnelId) {
   return result.rows.length > 0;
 }
 
-// Renvoie l'id du compte user lié à cette fiche personnel, ou null si aucun compte
 async function findLinkedUserId(personnelId) {
   const result = await pool.query(`SELECT id FROM users WHERE personnel_id = $1`, [personnelId]);
   return result.rows[0]?.id || null;
@@ -155,10 +162,25 @@ async function findEquipeParDirection(direction, excludeUserId) {
   return result.rows;
 }
 
+async function updateInfosPersonnelles(personnelId, { telephone, adresse, situationFamiliale, dateNaissance, sexe, lieuNaissance, nationalite, datePriseFonction }) {
+  const result = await pool.query(
+    `UPDATE personnel
+     SET telephone = $2, adresse = $3, situation_familiale = $4,
+         date_naissance = $5, sexe = $6, lieu_naissance = $7, nationalite = $8, date_prise_fonction = $9
+     WHERE id = $1 RETURNING *`,
+    [
+      personnelId, telephone || null, adresse || null, situationFamiliale || null,
+      dateNaissance || null, sexe || null, lieuNaissance || null, nationalite || null, datePriseFonction || null,
+    ]
+  );
+  return result.rows[0];
+}
+
 module.exports = {
-  create, findByUserId, findByMatricule, findByEmailRaw, isLinkedToUser, findLinkedUserId,
+  create, findByUserId, updatePhoto, findByMatricule, findByEmailRaw, isLinkedToUser, findLinkedUserId,
   listAll, findByIdRaw, listWithoutAccount,
   rechargeAnnuelleSiNecessaire, getSolde, debiterSolde, crediterSolde,
   findChefDeServiceUser, findResponsableDirectionUser,
   findEquipeParService, findEquipeParDirection,
+  updateInfosPersonnelles,
 };

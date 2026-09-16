@@ -4,6 +4,7 @@ const userRepository = require('../repositories/userRepository');
 const personnelRepository = require('../repositories/personnelRepository');
 const fonctionHistoryRepository = require('../repositories/fonctionHistoryRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
+const organisationRepository = require('../repositories/organisationRepository');
 
 const FONCTIONS_PAR_ROLE = {
   PE: ['Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur'],
@@ -31,7 +32,13 @@ async function changeFonction(userId, newFonction, changedBy) {
 
   await activityLogRepository.create(changedBy, 'fonction_modifiee', `Fonction de ${user.email} changée : ${user.fonction || 'aucune'} → ${newFonction}`);
 
-  return userRepository.updateFonction(userId, newFonction);
+  const updated = await userRepository.updateFonction(userId, newFonction);
+
+  if (user.personnel_id) {
+    await organisationRepository.syncResponsable(user.personnel_id, newFonction, user.service, user.direction);
+  }
+
+  return updated;
 }
 
 async function getFonctionHistory(userId) {

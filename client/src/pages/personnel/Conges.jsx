@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { createDemande, getMyDemandes } from '../../services/congeApi';
+import { createDemande, getMyDemandes, uploadJustificatif } from '../../services/congeApi';
 import { getMyPersonnel } from '../../services/personnelApi';
-import { TYPES_CONGE, STATUS_LABELS } from '../../constants/conges';
+import { TYPES_CONGE, JUSTIFICATIF_OBLIGATOIRE, STATUS_LABELS } from '../../constants/conges';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -17,6 +17,13 @@ export default function Conges() {
   const [personnel, setPersonnel] = useState(null);
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [step, setStep] = useState('form'); // 'form' | 'justificatif'
+  const [createdDemandeId, setCreatedDemandeId] = useState(null);
+  const [createdType, setCreatedType] = useState('');
+  const [file, setFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [uploadFeedback, setUploadFeedback] = useState('');
 
   const [typeConge, setTypeConge] = useState(TYPES_CONGE[0]);
   const [dateDebut, setDateDebut] = useState('');
@@ -43,25 +50,53 @@ export default function Conges() {
 
   useEffect(() => { load(); }, []);
 
+  function resetForm() {
+    setDateDebut(''); setDateFin(''); setMotif('');
+    setLieuJouissance(''); setDateRepriseService(''); setRemplacant('');
+  }
+
+  function finishFlow(message) {
+    setStep('form');
+    setFile(null);
+    setUploadStatus(null);
+    setUploadFeedback('');
+    resetForm();
+    setStatus('success');
+    setFeedback(message);
+    load();
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setStatus('loading');
     setFeedback('');
     try {
-      await createDemande({
+      const result = await createDemande({
         typeConge, dateDebut, dateFin, motif,
         lieuJouissance, dateRepriseService, remplacant,
       });
-      setStatus('success');
-      setFeedback('Demande envoyée.');
-      setDateDebut(''); setDateFin(''); setMotif('');
-      setLieuJouissance(''); setDateRepriseService(''); setRemplacant('');
-      load();
+      setCreatedDemandeId(result.demande.id);
+      setCreatedType(typeConge);
+      setStep('justificatif');
     } catch (err) {
       setStatus('error');
       setFeedback(err.message);
     }
   }
+
+  async function handleUploadJustificatif() {
+    setUploadStatus('loading');
+    setUploadFeedback('');
+    try {
+      await uploadJustificatif(createdDemandeId, file);
+      finishFlow('Demande envoyée avec justificatif.');
+    } catch (err) {
+      setUploadStatus('error');
+      setUploadFeedback(err.message);
+    }
+  }
+
+  const obligatoire = JUSTIFICATIF_OBLIGATOIRE.includes(createdType);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -84,93 +119,147 @@ export default function Conges() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type de demande</label>
-            <select
-              value={typeConge}
-              onChange={(e) => setTypeConge(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+        {step === 'form' && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type de demande</label>
+              <select
+                value={typeConge}
+                onChange={(e) => setTypeConge(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              >
+                {TYPES_CONGE.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {typeConge === 'Congé annuel' && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Minimum 15 jours pour votre première demande de congé annuel de l'année.
+                </p>
+              )}
+              {typeConge === 'Congé de paternité' && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Le congé de paternité est limité à 15 jours maximum.
+                </p>
+              )}
+              {typeConge === 'Congé de maternité' && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Durée indicative : environ 3 mois.
+                </p>
+              )}
+              {JUSTIFICATIF_OBLIGATOIRE.includes(typeConge) && (
+                <p className="text-xs text-status-pending mt-1">
+                  Un justificatif sera demandé à l'étape suivante pour ce type de congé.
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                <input
+                  type="date" required value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                <input
+                  type="date" required value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de jouissance</label>
+              <input
+                type="text" value={lieuJouissance}
+                onChange={(e) => setLieuJouissance(e.target.value)}
+                placeholder="Ex : Mahajanga"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de reprise de service</label>
+              <input
+                type="date" value={dateRepriseService}
+                onChange={(e) => setDateRepriseService(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Remplaçant(e) (optionnel)</label>
+              <input
+                type="text" value={remplacant}
+                onChange={(e) => setRemplacant(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+              <textarea
+                rows={2} value={motif}
+                onChange={(e) => setMotif(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={status === 'loading'}
+              className="w-full bg-navy text-white rounded-md py-2 font-medium hover:opacity-90 disabled:opacity-50"
             >
-              {TYPES_CONGE.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            {typeConge === 'Congé annuel' && (
-              <p className="text-xs text-gray-400 mt-1">
-                Minimum 15 jours pour votre première demande de congé annuel de l'année.
+              {status === 'loading' ? 'Envoi...' : 'Envoyer la demande'}
+            </button>
+
+            {feedback && (
+              <p className={`text-sm ${status === 'success' ? 'text-status-approved' : 'text-status-rejected'}`}>
+                {feedback}
               </p>
             )}
-          </div>
+          </form>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
-              <input
-                type="date" required value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
-              <input
-                type="date" required value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de jouissance</label>
-            <input
-              type="text" value={lieuJouissance}
-              onChange={(e) => setLieuJouissance(e.target.value)}
-              placeholder="Ex : Mahajanga"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date de reprise de service</label>
-            <input
-              type="date" value={dateRepriseService}
-              onChange={(e) => setDateRepriseService(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remplaçant(e) (optionnel)</label>
-            <input
-              type="text" value={remplacant}
-              onChange={(e) => setRemplacant(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Motif</label>
-            <textarea
-              rows={2} value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="w-full bg-navy text-white rounded-md py-2 font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            {status === 'loading' ? 'Envoi...' : 'Envoyer la demande'}
-          </button>
-
-          {feedback && (
-            <p className={`text-sm ${status === 'success' ? 'text-status-approved' : 'text-status-rejected'}`}>
-              {feedback}
+        {step === 'justificatif' && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Demande envoyée. {obligatoire
+                ? 'Un justificatif est obligatoire pour ce type de congé.'
+                : 'Vous pouvez joindre un justificatif (optionnel).'}
             </p>
-          )}
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Justificatif (PDF, JPG ou PNG)</label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setFile(e.target.files[0] || null)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleUploadJustificatif}
+                disabled={uploadStatus === 'loading' || (obligatoire && !file)}
+                className="flex-1 bg-navy text-white rounded-md py-2 font-medium hover:opacity-90 disabled:opacity-50"
+              >
+                {uploadStatus === 'loading' ? 'Envoi...' : 'Envoyer le justificatif'}
+              </button>
+              {!obligatoire && (
+                <button
+                  onClick={() => finishFlow('Demande envoyée sans justificatif.')}
+                  className="px-4 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Passer
+                </button>
+              )}
+            </div>
+            {uploadFeedback && <p className="text-sm text-status-rejected">{uploadFeedback}</p>}
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
@@ -197,6 +286,13 @@ export default function Conges() {
               {d.lieu_jouissance && <p className="text-xs text-gray-500 mt-1">Lieu : {d.lieu_jouissance}</p>}
               {d.avis_chef_service && (
                 <p className="text-xs text-gray-500 mt-1">Avis : {d.avis_chef_service}</p>
+              )}
+              {d.justificatif_path && (
+                <a href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000'}${d.justificatif_path}`}
+                   target="_blank" rel="noreferrer"
+                   className="text-xs text-navy underline mt-1 inline-block mr-3">
+                  Voir le justificatif
+                </a>
               )}
               <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy underline mt-1 inline-block">
                 Voir / télécharger la fiche

@@ -16,6 +16,19 @@ export async function createDemande(data) {
   return result;
 }
 
+export async function uploadJustificatif(id, file) {
+  const formData = new FormData();
+  formData.append('justificatif', file);
+  const res = await fetch(`${API_URL}/conges/${id}/justificatif`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Échec de l'envoi du justificatif");
+  return data;
+}
+
 export async function getMyDemandes() {
   const res = await fetch(`${API_URL}/conges/me`, { headers: authHeaders() });
   const data = await res.json();

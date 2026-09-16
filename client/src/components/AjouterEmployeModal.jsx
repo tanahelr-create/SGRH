@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createPersonnel } from '../services/personnelApi';
+import { fetchDirections, fetchServices } from '../services/organisationApi';
 
 const FONCTIONS_PAR_ROLE = {
   PE: ['Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur'],
@@ -20,8 +21,35 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
   const [status, setStatus] = useState(null);
   const [message, setMessage] = useState('');
 
+  const [directions, setDirections] = useState([]);
+  const [services, setServices] = useState([]);
+  const [selectedDirectionId, setSelectedDirectionId] = useState('');
+
+  useEffect(() => {
+    fetchDirections().then(setDirections).catch(() => setDirections([]));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedDirectionId) { setServices([]); return; }
+    fetchServices(selectedDirectionId).then(setServices).catch(() => setServices([]));
+  }, [selectedDirectionId]);
+
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleDirectionChange(e) {
+    const id = e.target.value;
+    setSelectedDirectionId(id);
+    const dir = directions.find((d) => String(d.id) === id);
+    update('direction', dir ? dir.nom : '');
+    update('service', '');
+  }
+
+  function handleServiceChange(e) {
+    const id = e.target.value;
+    const svc = services.find((s) => String(s.id) === id);
+    update('service', svc ? svc.nom : '');
   }
 
   async function handleSubmit(e) {
@@ -136,20 +164,27 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service</label>
-            <input
-              type="text" value={form.service}
-              onChange={(e) => update('service', e.target.value)}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Direction</label>
+            <select
+              value={selectedDirectionId}
+              onChange={handleDirectionChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
+            >
+              <option value="">--</option>
+              {directions.map((d) => <option key={d.id} value={d.id}>{d.nom}</option>)}
+            </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Direction</label>
-            <input
-              type="text" value={form.direction}
-              onChange={(e) => update('direction', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service</label>
+            <select
+              value={services.find((s) => s.nom === form.service)?.id || ''}
+              onChange={handleServiceChange}
+              disabled={!selectedDirectionId}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy disabled:bg-gray-100"
+            >
+              <option value="">--</option>
+              {services.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Téléphone</label>

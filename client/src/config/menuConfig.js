@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, UserPlus, UserCheck, Users, Settings, Send,
-  TrendingUp, User, CalendarDays, Bell, History, UserCog,
+  LayoutDashboard, UserPlus, UserCheck, Users, Send,
+  TrendingUp, CalendarDays, Bell, History, UserCog,
   HelpCircle, ShieldCheck, FileText, Briefcase, Trash2, Palette,
   UsersRound, ClipboardCheck, FileStack,
 } from 'lucide-react';
@@ -37,10 +37,6 @@ export const menuConfig = {
         { label: 'Historique', path: '/admin/historique', icon: History, permission: 'view_historique' },
       ],
     },
-    {
-      title: null,
-      items: [{ label: 'Paramètres', path: '/parametres', icon: Settings, permission: null }],
-    },
   ],
 
   SUPERADMIN: [
@@ -53,10 +49,6 @@ export const menuConfig = {
         { label: 'Apparence du site', path: '/superadmin/apparence', icon: Palette, permission: 'manage_site_texts' },
       ],
     },
-    {
-      title: null,
-      items: [{ label: 'Paramètres', path: '/parametres', icon: Settings, permission: null }],
-    },
   ],
 
   PE: [
@@ -64,7 +56,6 @@ export const menuConfig = {
       title: null,
       items: [
         { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, permission: null },
-        { label: 'Mon profil', path: '/profil', icon: User, permission: 'view_profil' },
         { label: 'Ma carrière', path: '/carriere', icon: Briefcase, permission: 'view_profil' },
         { label: 'Congés', path: '/conges', icon: CalendarDays, permission: 'view_mes_conges' },
         { label: 'Mes documents', path: '/mes-documents', icon: FileStack, permission: 'demander_document' },
@@ -85,10 +76,6 @@ export const menuConfig = {
         { label: 'Vos droits', path: '/aide/droits', icon: ShieldCheck, permission: null },
         { label: 'Les procédures', path: '/aide/procedures', icon: FileText, permission: null },
       ],
-    },
-    {
-      title: null,
-      items: [{ label: 'Paramètres', path: '/parametres', icon: Settings, permission: null }],
     },
   ],
 
@@ -97,7 +84,6 @@ export const menuConfig = {
       title: null,
       items: [
         { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, permission: null },
-        { label: 'Mon profil', path: '/profil', icon: User, permission: 'view_profil' },
         { label: 'Ma carrière', path: '/carriere', icon: Briefcase, permission: 'view_profil' },
         { label: 'Congés', path: '/conges', icon: CalendarDays, permission: 'view_mes_conges' },
         { label: 'Mes documents', path: '/mes-documents', icon: FileStack, permission: 'demander_document' },
@@ -118,10 +104,6 @@ export const menuConfig = {
         { label: 'Vos droits', path: '/aide/droits', icon: ShieldCheck, permission: null },
         { label: 'Les procédures', path: '/aide/procedures', icon: FileText, permission: null },
       ],
-    },
-    {
-      title: null,
-      items: [{ label: 'Paramètres', path: '/parametres', icon: Settings, permission: null }],
     },
   ],
 };

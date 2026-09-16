@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const invitationRoutes = require('./routes/invitation.routes');
 const authRoutes = require('./routes/auth.routes');
@@ -19,11 +20,13 @@ const corbeilleRoutes = require('./routes/corbeille.routes');
 const siteSettingsRoutes = require('./routes/siteSettings.routes');
 const siteTextsRoutes = require('./routes/siteTexts.routes');
 const documentRoutes = require('./routes/document.routes');
+const organisationRoutes = require('./routes/organisation.routes');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/auth', authRoutes);
@@ -43,6 +46,7 @@ app.use('/api/corbeille', corbeilleRoutes);
 app.use('/api/site-settings', siteSettingsRoutes);
 app.use('/api/site-texts', siteTextsRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/organisation', organisationRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Route introuvable' }));
 

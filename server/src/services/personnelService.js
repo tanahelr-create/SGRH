@@ -1,6 +1,8 @@
 const personnelRepository = require('../repositories/personnelRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
+const organisationRepository = require('../repositories/organisationRepository');
 const { sendRegistrationLinkEmail } = require('../config/mailer');
+const corbeilleRepository = require('../repositories/corbeilleRepository');
 
 const ROLES_VALIDES = ['PE', 'PAT'];
 
@@ -9,6 +11,7 @@ async function createPersonnel(data, createdBy) {
   if (existing) throw new Error('Ce matricule existe déjà');
 
   const personnel = await personnelRepository.create(data);
+  await organisationRepository.syncResponsable(personnel.id, data.fonction, data.service, data.direction);
   await activityLogRepository.create(createdBy, 'personnel_cree', `Fiche personnel créée : ${data.matricule} — ${data.nom} ${data.prenom}`);
   return personnel;
 }
@@ -74,20 +77,25 @@ async function importFromRows(rows, importedBy) {
         continue;
       }
 
-      await personnelRepository.create({
+      const fonction = row.fonction ? String(row.fonction).trim() : null;
+      const service = row.service ? String(row.service).trim() : null;
+      const direction = row.direction ? String(row.direction).trim() : null;
+
+      const personnel = await personnelRepository.create({
         matricule,
         nom: String(row.nom).trim(),
         prenom: String(row.prenom).trim(),
         email,
         role: String(row.role).trim().toUpperCase(),
-        fonction: row.fonction ? String(row.fonction).trim() : null,
+        fonction,
         corps: row.corps ? String(row.corps).trim() : null,
         grade: row.grade ? String(row.grade).trim() : null,
-        service: row.service ? String(row.service).trim() : null,
-        direction: row.direction ? String(row.direction).trim() : null,
+        service,
+        direction,
         telephone: row.telephone ? String(row.telephone).trim() : null,
         typeContrat: row.type_contrat ? String(row.type_contrat).trim() : null,
       });
+      await organisationRepository.syncResponsable(personnel.id, fonction, service, direction);
       results.inserted++;
     } catch (err) {
       results.errors.push({ line: lineNumber, reason: err.message });
@@ -102,4 +110,22 @@ async function importFromRows(rows, importedBy) {
   return results;
 }
 
-module.exports = { createPersonnel, listPersonnel, listWithoutAccount, sendRegistrationLink, importFromRows };
+async function updateMesInfos(userId, nouvellesInfos) {
+  const userRepository = require('./../repositories/userRepository');
+  const user = await userRepository.findById(userId);
+  if (!user || !user.personnel_id) throw new Error('Aucune fiche personnel associée à ce compte');
+
+  const ancienneFiche = await personnelRepository.findByIdRaw(user.personnel_id);
+  if (!ancienneFiche) throw new Error('Fiche personnel introuvable');
+
+  // Archive l'ancienne version complète dans la corbeille avant toute modification
+  await corbeilleRepository.add('personnel_modifie', ancienneFiche, userId);
+
+  const misAJour = await personnelRepository.updateInfosPersonnelles(user.personnel_id, nouvellesInfos);
+
+  await activityLogRepository.create(userId, 'personnel_infos_modifiees', `Informations personnelles mises à jour (téléphone/adresse/situation familiale)`);
+
+  return misAJour;
+}
+
+module.exports = { createPersonnel, listPersonnel, listWithoutAccount, sendRegistrationLink, importFromRows, updateMesInfos };

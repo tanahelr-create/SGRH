@@ -1,4 +1,7 @@
 const ExcelJS = require('exceljs');
+const fs = require('fs/promises');
+const path = require('path');
+const crypto = require('crypto');
 const pool = require('../config/db');
 const personnelRepository = require('../repositories/personnelRepository');
 const personnelService = require('../services/personnelService');
@@ -6,6 +9,47 @@ const personnelService = require('../services/personnelService');
 async function me(req, res) {
   const fiche = await personnelRepository.findByUserId(req.user.id);
   return res.status(200).json({ personnel: fiche });
+}
+
+function imageExtension(buffer) {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+  if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'webp';
+  return null;
+}
+
+async function updatePhoto(req, res) {
+  if (!req.file) return res.status(400).json({ message: 'Une image est requise' });
+
+  const extension = imageExtension(req.file.buffer);
+  if (!extension) {
+    return res.status(400).json({ message: 'Format invalide. Utilisez une image JPG, PNG ou WebP.' });
+  }
+
+  const fiche = await personnelRepository.findByUserId(req.user.id);
+  if (!fiche) return res.status(404).json({ message: 'Aucune fiche personnel associée' });
+
+  const filename = `${crypto.randomUUID()}.${extension}`;
+  const folder = path.join(__dirname, '../../uploads/profile-photos');
+  const filepath = path.join(folder, filename);
+  const photoPath = `/uploads/profile-photos/${filename}`;
+
+  try {
+    await fs.mkdir(folder, { recursive: true });
+    await fs.writeFile(filepath, req.file.buffer, { flag: 'wx' });
+    const personnel = await personnelRepository.updatePhoto(fiche.id, photoPath);
+
+    if (fiche.photo_profil) {
+      const oldFile = path.join(__dirname, '../..', fiche.photo_profil);
+      await fs.unlink(oldFile).catch(() => {});
+    }
+
+    return res.status(200).json({ message: 'Photo de profil mise à jour', personnel });
+  } catch (err) {
+    await fs.unlink(filepath).catch(() => {});
+    console.error('Erreur de mise à jour de la photo de profil:', err);
+    return res.status(500).json({ message: "Impossible d'enregistrer la photo de profil" });
+  }
 }
 
 async function create(req, res) {
@@ -132,4 +176,21 @@ async function monEquipe(req, res) {
   return res.status(403).json({ message: "Vous n'avez pas de fonction d'encadrement" });
 }
 
-module.exports = { me, create, list, listWithoutAccount, sendRegistrationLink, exportExcel, importExcel, monEquipe };
+async function updateMesInfos(req, res) {
+  const { telephone, adresse, situationFamiliale, dateNaissance, sexe, lieuNaissance, nationalite, datePriseFonction } = req.body;
+
+  if (sexe && !['Masculin', 'Féminin'].includes(sexe)) {
+    return res.status(400).json({ message: 'Sexe invalide' });
+  }
+
+  try {
+    const personnel = await personnelService.updateMesInfos(req.user.id, {
+      telephone, adresse, situationFamiliale, dateNaissance, sexe, lieuNaissance, nationalite, datePriseFonction,
+    });
+    return res.status(200).json({ message: 'Informations mises à jour', personnel });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+module.exports = { me, updatePhoto, create, list, listWithoutAccount, sendRegistrationLink, exportExcel, importExcel, monEquipe, updateMesInfos };

@@ -4,6 +4,8 @@ const userRepository = require('../repositories/userRepository');
 const personnelRepository = require('../repositories/personnelRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
 
+const JUSTIFICATIF_REQUIS_VALIDATION = ['Congé de maladie', 'Congé de maternité'];
+
 function nombreDeJours(dateDebut, dateFin) {
   const debut = new Date(dateDebut);
   const fin = new Date(dateFin);
@@ -49,6 +51,10 @@ async function createDemande(userId, { typeConge, dateDebut, dateFin, motif, lie
     }
   }
 
+  if (typeConge === 'Congé de paternité' && jours > 15) {
+    throw new Error('Le congé de paternité ne peut pas dépasser 15 jours');
+  }
+
   const { validateurId, decisionIntermediaire } = await determineValidateur(userId, user);
 
   const demande = await congeRepository.create({
@@ -85,6 +91,16 @@ async function createDemande(userId, { typeConge, dateDebut, dateFin, motif, lie
   await activityLogRepository.create(userId, 'conge_demande', `Demande de "${typeConge}" soumise (${jours} jour(s))`);
 
   return demande;
+}
+
+async function uploadJustificatif(demandeId, userId, { filename, path }) {
+  const demande = await congeRepository.findById(demandeId);
+  if (!demande) throw new Error('Demande introuvable');
+  if (demande.user_id !== userId) throw new Error('Vous ne pouvez pas modifier cette demande');
+
+  const updated = await congeRepository.setJustificatif(demandeId, filename, path);
+  await activityLogRepository.create(userId, 'conge_justificatif_ajoute', `Justificatif ajouté à la demande #${demandeId}`);
+  return updated;
 }
 
 async function getMyDemandes(userId) {
@@ -161,6 +177,9 @@ async function reviewDemande(id, decision, reviewedBy, avisChefService) {
   if (demande.decision_intermediaire === 'en_attente') {
     throw new Error("Cette demande attend encore l'avis du responsable direct");
   }
+  if (decision === 'approuvee' && JUSTIFICATIF_REQUIS_VALIDATION.includes(demande.type_conge) && !demande.justificatif_path) {
+    throw new Error('Un justificatif est requis avant de valider ce type de congé');
+  }
 
   const updated = await congeRepository.updateStatus(id, decision, reviewedBy, avisChefService);
 
@@ -208,5 +227,5 @@ async function getDemandeDetails(id, requestingUser) {
 module.exports = {
   createDemande, getMyDemandes, getPendingDemandes, reviewDemande,
   getRecentDemandes, getCalendarDemandes, getDemandeDetails,
-  getPendingForValidateur, reviewIntermediaire,
+  getPendingForValidateur, reviewIntermediaire, uploadJustificatif,
 };

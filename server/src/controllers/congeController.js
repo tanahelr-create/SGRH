@@ -1,3 +1,6 @@
+const fs = require('fs/promises');
+const path = require('path');
+const crypto = require('crypto');
 const congeService = require('../services/congeService');
 
 async function create(req, res) {
@@ -11,6 +14,34 @@ async function create(req, res) {
     });
     return res.status(201).json({ message: 'Demande envoyée', demande });
   } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+async function uploadJustificatif(req, res) {
+  if (!req.file) return res.status(400).json({ message: 'Un fichier est requis' });
+
+  const allowedExt = ['.pdf', '.jpg', '.jpeg', '.png'];
+  const ext = path.extname(req.file.originalname).toLowerCase();
+  if (!allowedExt.includes(ext)) {
+    return res.status(400).json({ message: 'Formats acceptés : PDF, JPG, PNG' });
+  }
+
+  const filename = `${crypto.randomUUID()}${ext}`;
+  const folder = path.join(__dirname, '../../uploads/justificatifs-conges');
+  const filepath = path.join(folder, filename);
+  const justificatifPath = `/uploads/justificatifs-conges/${filename}`;
+
+  try {
+    await fs.mkdir(folder, { recursive: true });
+    await fs.writeFile(filepath, req.file.buffer, { flag: 'wx' });
+    const demande = await congeService.uploadJustificatif(req.params.id, req.user.id, {
+      filename: req.file.originalname,
+      path: justificatifPath,
+    });
+    return res.status(200).json({ message: 'Justificatif envoyé', demande });
+  } catch (err) {
+    await fs.unlink(filepath).catch(() => {});
     return res.status(400).json({ message: err.message });
   }
 }
@@ -69,4 +100,4 @@ async function getOne(req, res) {
   }
 }
 
-module.exports = { create, myDemandes, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne };
+module.exports = { create, myDemandes, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne, uploadJustificatif };

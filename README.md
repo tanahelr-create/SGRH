@@ -63,7 +63,9 @@ Le client fournit aussi `npm run build`, `npm run preview` et `npm run lint`. Le
 
 ## Frontend
 
-Le client est une SPA React 19 créée avec Vite et Tailwind CSS 4. `client/src/App.jsx` centralise les routes. Les pages authentifiées sont contenues dans `AppShell` : sidebar, topbar, contenu et footer.
+Le client est une SPA React 19 créée avec Vite et Tailwind CSS 4. `client/src/App.jsx` centralise les routes. Les pages authentifiées sont contenues dans `AppShell` : sidebar, topbar, contenu et footer. Sur écran large, le shell occupe la hauteur de la fenêtre : la sidebar et la topbar restent visibles, tandis que seule la zone principale défile. Ce comportement conserve la navigation existante et évite le défilement global doublé.
+
+La navigation latérale affiche uniquement les entrées fonctionnelles autorisées par rôle et permission. L'accès au compte est regroupé dans l'avatar de la TopBar : le menu affiche le nom (ou l'e-mail en repli), le rôle, les paramètres et la déconnexion. Pour les rôles `PE` et `PAT` disposant de `view_profil`, il inclut également le lien existant vers `/profil`. Le menu se ferme au clic extérieur, avec la touche `Escape` ou après le choix d'une action. La déconnexion réutilise `AuthContext.logout()`, qui supprime `rh_token` du `localStorage` et vide l'utilisateur courant ; aucune route ou API supplémentaire n'est impliquée.
 
 | Zone | Pages principales |
 | --- | --- |
@@ -75,6 +77,12 @@ Le client est une SPA React 19 créée avec Vite et Tailwind CSS 4. `client/src/
 `AuthContext` enregistre le JWT sous `rh_token` dans `localStorage`, restaure la session via `GET /api/auth/me` et déconnecte l'utilisateur. `ThemeContext` mémorise le thème sous `rh_theme`. `TextContext` charge les textes personnalisables et enregistre leur valeur initiale si absente. `ProtectedRoute` bloque les visiteurs non authentifiés, les rôles non autorisés et les permissions manquantes.
 
 La page Personnel permet la recherche nom/prénom/matricule, les filtres par rôle, fonction, corps, service, direction, contrat et statut, ainsi que le tri, l'import et l'export Excel.
+
+### Dossier personnel
+
+La route existante `/profil` présente le dossier de la personne connectée : identité, informations administratives, informations professionnelles et parcours professionnel. Les données proviennent de `GET /api/personnel/me` et `GET /api/carriere/me` ; toute donnée absente est affichée comme « Non renseigné ». Le dossier n'affiche aucune donnée liée aux établissements.
+
+La personne peut remplacer sa photo depuis ce dossier. L'image est prévisualisée avant confirmation, puis envoyée à `PATCH /api/personnel/me/photo`. Le serveur n'accepte que les signatures binaires JPEG, PNG ou WebP, dans une limite de 3 Mo ; il génère un nom non prédictible et ne persiste en base que le chemin relatif du fichier. Les fichiers sont stockés localement dans `server/uploads/profile-photos/` (ignoré par Git) et servis sous `/uploads`.
 
 ## Backend et sécurité
 
@@ -147,6 +155,7 @@ Les réponses sont JSON, sauf l'export Excel. Toutes les routes listées comme p
 | --- | --- | --- | --- |
 | GET / POST | `/api/personnel` | `view_personnel` / `create_personnel` | Liste ou crée une fiche. |
 | GET | `/api/personnel/me` | `view_profil` | Fiche de l'utilisateur courant. |
+| PATCH | `/api/personnel/me/photo` | `view_profil` | Enregistre la photo personnelle multipart `photo` (JPG/PNG/WebP, 3 Mo maximum). |
 | GET | `/api/personnel/sans-compte` | `send_registration_link` | Personnel sans compte. |
 | POST | `/api/personnel/:id/envoyer-lien` | `send_registration_link` | Lien d'inscription par e-mail. |
 | GET / POST | `/api/personnel/export`, `/api/personnel/import` | `view_personnel` / `create_personnel` | Export Excel / import multipart `file` (5 Mo maximum). |
@@ -196,7 +205,7 @@ erDiagram
 
 | Table / vue | Colonnes observées et rôle |
 | --- | --- |
-| `personnel` | `id`, matricule, identité, e-mail, rôle, fonction, corps, grade, service, direction, téléphone, contrat, échéance. Fiche RH ; matricule validé à six chiffres par l'application. |
+| `personnel` | `id`, matricule, identité, e-mail, rôle, fonction, corps, grade, service, direction, téléphone, contrat, échéance, `photo_profil`. Fiche RH ; matricule validé à six chiffres par l'application. `photo_profil` contient le chemin relatif de la photo, pas l'image elle-même. |
 | `users` | `id`, rôle, e-mail, `password_hash`, `personnel_id`, statut, création. Statuts observés : `pending`, `active`, `inactive`. |
 | `user_details` | Lecture jointe compte/personnel : identité, matricule, rôle, fonction, statut, e-mail et contrat. |
 | `conges` | Identifiant utilisateur, type, dates, motif, statut, relecteur, date/avis de revue. Statuts : `en_attente`, `approuvee`, `refusee`. |
@@ -213,6 +222,14 @@ erDiagram
 Relations utilisées : `users.personnel_id → personnel.id`, `conges.user_id → users.id`, `notifications.sender_id/recipient_id → users.id`, `fonction_history.user_id/changed_by → users.id`, `carriere_evenements.personnel_id → personnel.id`, `role_permissions.permission_id → permissions.id` et les jetons de mot de passe vers `users.id`.
 
 Les clés primaires déclarées, types SQL exacts, `NOT NULL`, clés étrangères, index et contraintes `UNIQUE` ne sont pas vérifiables sans le schéma absent. Ils devront être formalisés dans des migrations pour permettre une installation de base de données reproductible.
+
+Pour activer l'upload de photo sur une base existante, exécutez une fois la migration fournie :
+
+```bash
+psql -d "$DB_NAME" -f server/migrations/001_add_personnel_photo.sql
+```
+
+Elle ajoute uniquement la colonne nullable `personnel.photo_profil`; elle ne modifie ni les relations, ni les rôles, ni les données métier existantes.
 
 ## Qualité et CI
 

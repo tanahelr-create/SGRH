@@ -110,8 +110,17 @@ async function countCongesAnnuelCetteAnnee(userId) {
   return result.rows[0].count;
 }
 
+async function setJustificatif(id, filename, filePath) {
+  const result = await pool.query(
+    `UPDATE conges SET justificatif_filename = $2, justificatif_path = $3 WHERE id = $1 RETURNING *`,
+    [id, filename, filePath]
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   create, findByUser, findPending, findPendingForValidateur, findById,
   updateStatus, setValidateur, setDecisionIntermediaire,
   findRecent, findForMonth, findByIdWithDetails, countCongesAnnuelCetteAnnee,
+  setJustificatif,
 };

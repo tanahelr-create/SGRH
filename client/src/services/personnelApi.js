@@ -47,6 +47,20 @@ export async function getMyPersonnel() {
   return data.personnel;
 }
 
+export async function updateMyProfilePhoto(file) {
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  const res = await fetch(`${API_URL}/personnel/me/photo`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Échec de l'enregistrement de la photo");
+  return data.personnel;
+}
+
 export async function getMonEquipe() {
   const res = await fetch(`${API_URL}/personnel/mon-equipe`, { headers: authHeaders() });
   const data = await res.json();
@@ -112,4 +126,16 @@ export async function rejectPendingAccount(id) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Échec du refus');
   return data;
+}
+
+export async function updateMesInfos({ telephone, adresse, situationFamiliale, dateNaissance, sexe, lieuNaissance, nationalite, datePriseFonction }) {
+  const token = localStorage.getItem('rh_token');
+  const res = await fetch(`${API_URL}/personnel/me`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ telephone, adresse, situationFamiliale, dateNaissance, sexe, lieuNaissance, nationalite, datePriseFonction }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec de la mise à jour');
+  return data.personnel;
 }
