@@ -16,6 +16,17 @@ export async function createPersonnel(data) {
   return result;
 }
 
+export async function updatePersonnel(id, data) {
+  const res = await fetch(`${API_URL}/personnel/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || 'Échec de la modification');
+  return result;
+}
+
 export async function listPersonnel() {
   const res = await fetch(`${API_URL}/personnel`, { headers: authHeaders() });
   const data = await res.json();

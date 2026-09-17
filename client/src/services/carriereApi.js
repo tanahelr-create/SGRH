@@ -19,15 +19,66 @@ export async function getMaCarriere() {
   return data;
 }
 
-export async function addEvenement(personnelId, data) {
+function toFormData(fields, file, fileFieldName) {
+  const formData = new FormData();
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) formData.append(key, value);
+  });
+  if (file) formData.append(fileFieldName, file);
+  return formData;
+}
+
+export async function addEvenement(personnelId, data, file) {
   const res = await fetch(`${API_URL}/carriere/${personnelId}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(data),
+    headers: authHeaders(),
+    body: toFormData(data, file, 'justificatif'),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(result.message || "Échec de l'ajout");
   return result;
+}
+
+export async function updateEvenement(id, data, file) {
+  const res = await fetch(`${API_URL}/carriere/evenements/${id}`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: toFormData(data, file, 'justificatif'),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || 'Échec de la modification');
+  return result;
+}
+
+export async function deleteEvenement(id) {
+  const res = await fetch(`${API_URL}/carriere/evenements/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec de la suppression');
+  return data;
+}
+
+export async function addDiplome(personnelId, data, file) {
+  const res = await fetch(`${API_URL}/carriere/${personnelId}/diplomes`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: toFormData(data, file, 'document'),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || "Échec de l'ajout du diplôme");
+  return result;
+}
+
+export async function deleteDiplome(id) {
+  const res = await fetch(`${API_URL}/carriere/diplomes/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec de la suppression du diplôme');
+  return data;
 }
 
 export async function getEcheancesProches() {

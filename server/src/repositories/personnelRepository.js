@@ -1,12 +1,12 @@
 const pool = require('../config/db');
 
-async function create({ matricule, nom, prenom, email, role, fonction, corps, grade, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent, indice, chapitreIb }) {
+async function create({ matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent, indice, chapitreIb }) {
   const result = await pool.query(
-    `INSERT INTO personnel (matricule, nom, prenom, email, role, fonction, corps, grade, service, direction, telephone, type_contrat, date_recrutement, date_echeance_contrat, contrat_permanent, indice, chapitre_ib)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+    `INSERT INTO personnel (matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, type_contrat, date_recrutement, date_echeance_contrat, contrat_permanent, indice, chapitre_ib)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
      RETURNING *`,
     [
-      matricule, nom, prenom, email, role, fonction || null, corps || null, grade || null,
+      matricule, nom, prenom, email, role, fonction || null, corps || null, grade || null, poste || null,
       service || null, direction || null, telephone || null, typeContrat || null,
       dateRecrutement || null, contratPermanent ? null : (dateEcheanceContrat || null), !!contratPermanent,
       indice || null, chapitreIb || null,
@@ -17,7 +17,12 @@ async function create({ matricule, nom, prenom, email, role, fonction, corps, gr
 
 async function findByUserId(userId) {
   const result = await pool.query(
-    `SELECT p.* FROM personnel p JOIN users u ON u.personnel_id = p.id WHERE u.id = $1`,
+    `SELECT p.*,
+       COALESCE(
+         (SELECT resp.nom || ' ' || resp.prenom FROM services s JOIN personnel resp ON resp.id = s.responsable_personnel_id WHERE s.nom = p.service AND resp.id != p.id),
+         (SELECT resp.nom || ' ' || resp.prenom FROM directions d JOIN personnel resp ON resp.id = d.responsable_personnel_id WHERE d.nom = p.direction AND resp.id != p.id)
+       ) AS responsable_hierarchique
+     FROM personnel p JOIN users u ON u.personnel_id = p.id WHERE u.id = $1`,
     [userId]
   );
   return result.rows[0] || null;
@@ -176,11 +181,31 @@ async function updateInfosPersonnelles(personnelId, { telephone, adresse, situat
   return result.rows[0];
 }
 
+async function updateFiche(id, {
+  nom, prenom, email, corps, grade, poste, service, direction, telephone, typeContrat,
+  dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb,
+}) {
+  const result = await pool.query(
+    `UPDATE personnel SET
+       nom = $2, prenom = $3, email = $4, corps = $5, grade = $6, poste = $7, service = $8, direction = $9,
+       telephone = $10, type_contrat = $11, date_recrutement = $12,
+       date_echeance_contrat = $13, contrat_permanent = $14, classe = $15, echelon = $16, indice = $17, chapitre_ib = $18
+     WHERE id = $1 RETURNING *`,
+    [
+      id, nom || null, prenom || null, email, corps || null, grade || null, poste || null,
+      service || null, direction || null, telephone || null, typeContrat || null,
+      dateRecrutement || null, contratPermanent ? null : (dateEcheanceContrat || null), !!contratPermanent,
+      classe || null, echelon || null, indice || null, chapitreIb || null,
+    ]
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   create, findByUserId, updatePhoto, findByMatricule, findByEmailRaw, isLinkedToUser, findLinkedUserId,
   listAll, findByIdRaw, listWithoutAccount,
   rechargeAnnuelleSiNecessaire, getSolde, debiterSolde, crediterSolde,
   findChefDeServiceUser, findResponsableDirectionUser,
   findEquipeParService, findEquipeParDirection,
-  updateInfosPersonnelles,
+  updateInfosPersonnelles, updateFiche,
 };

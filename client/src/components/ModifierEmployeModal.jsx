@@ -1,23 +1,22 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { createPersonnel } from '../services/personnelApi';
+import { updatePersonnel } from '../services/personnelApi';
 import { fetchDirections, fetchServices } from '../services/organisationApi';
 
-const FONCTIONS_PAR_ROLE = {
-  PE: ['Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur'],
-  PAT: ['Agent', 'Chef de service', 'Responsable/Directeur'],
-};
 const CORPS_OPTIONS = ['EFA', 'ELD', 'Fonctionnaire'];
 const TYPES_CONTRAT = ['CDI', 'CDD', 'Vacataire', 'Stagiaire'];
 
-const empty = {
-  matricule: '', nom: '', prenom: '', email: '', role: 'PE', fonction: '',
-  corps: '', grade: '', poste: '', service: '', direction: '', telephone: '', typeContrat: '',
-  dateRecrutement: '', dateEcheanceContrat: '', contratPermanent: false,
-};
-
-export default function AjouterEmployeModal({ onClose, onSuccess }) {
-  const [form, setForm] = useState(empty);
+export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) {
+  const [form, setForm] = useState({
+    nom: personnel.nom || '', prenom: personnel.prenom || '', email: personnel.email || '',
+    corps: personnel.corps || '', grade: personnel.grade || '', poste: personnel.poste || '',
+    service: personnel.service || '', direction: personnel.direction || '',
+    telephone: personnel.telephone || '', typeContrat: personnel.type_contrat || '',
+    dateRecrutement: personnel.date_recrutement ? String(personnel.date_recrutement).slice(0, 10) : '',
+    dateEcheanceContrat: personnel.date_echeance_contrat ? String(personnel.date_echeance_contrat).slice(0, 10) : '',
+    contratPermanent: !!personnel.contrat_permanent,
+    classe: personnel.classe || '', echelon: personnel.echelon || '', indice: personnel.indice || '',
+  });
   const [status, setStatus] = useState(null);
   const [message, setMessage] = useState('');
 
@@ -26,7 +25,11 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
   const [selectedDirectionId, setSelectedDirectionId] = useState('');
 
   useEffect(() => {
-    fetchDirections().then(setDirections).catch(() => setDirections([]));
+    fetchDirections().then((list) => {
+      setDirections(list);
+      const current = list.find((d) => d.nom === personnel.direction);
+      if (current) setSelectedDirectionId(String(current.id));
+    }).catch(() => setDirections([]));
   }, []);
 
   useEffect(() => {
@@ -54,22 +57,12 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!/^[0-9]{6}$/.test(form.matricule)) {
-      setStatus('error');
-      setMessage('Le matricule doit contenir exactement 6 chiffres.');
-      return;
-    }
-    if (!form.contratPermanent && !form.dateEcheanceContrat && ['CDD', 'Vacataire', 'Stagiaire'].includes(form.typeContrat)) {
-      setStatus('error');
-      setMessage('Indique une date de fin de contrat, ou coche "Contrat permanent".');
-      return;
-    }
     setStatus('loading');
     setMessage('');
     try {
-      await createPersonnel(form);
+      await updatePersonnel(personnel.id, form);
       setStatus('success');
-      setMessage('Fiche personnel créée.');
+      setMessage('Fiche mise à jour.');
       setTimeout(() => onSuccess?.(), 800);
     } catch (err) {
       setStatus('error');
@@ -81,68 +74,42 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-navy dark:text-gold">Ajouter un employé</h3>
+          <h3 className="font-semibold text-navy dark:text-gold">
+            Modifier {personnel.prenom} {personnel.nom}
+          </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
         </div>
 
-        <p className="text-sm text-gray-500 mb-4">Les champs marqués * sont obligatoires.</p>
+        <p className="text-xs text-gray-400 mb-4">
+          Matricule {personnel.matricule} — la fonction se modifie depuis la page "Fonctions".
+        </p>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Matricule (6 chiffres) *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom</label>
             <input
-              type="text" required maxLength={6} value={form.matricule}
-              onChange={(e) => update('matricule', e.target.value.replace(/\D/g, ''))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
-            <input
-              type="email" required value={form.email}
-              onChange={(e) => update('email', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom *</label>
-            <input
-              type="text" required value={form.nom}
+              type="text" value={form.nom}
               onChange={(e) => update('nom', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom</label>
             <input
-              type="text" required value={form.prenom}
+              type="text" value={form.prenom}
               onChange={(e) => update('prenom', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rôle *</label>
-            <select
-              required value={form.role}
-              onChange={(e) => { update('role', e.target.value); update('fonction', ''); }}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <input
+              type="email" value={form.email}
+              onChange={(e) => update('email', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            >
-              <option value="PE">PE</option>
-              <option value="PAT">PAT</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fonction</label>
-            <select
-              value={form.fonction}
-              onChange={(e) => update('fonction', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            >
-              <option value="">--</option>
-              {FONCTIONS_PAR_ROLE[form.role].map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Corps</label>
@@ -168,6 +135,30 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
             <input
               type="text" value={form.poste}
               onChange={(e) => update('poste', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classe</label>
+            <input
+              type="text" value={form.classe}
+              onChange={(e) => update('classe', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Échelon</label>
+            <input
+              type="text" value={form.echelon}
+              onChange={(e) => update('echelon', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Indice</label>
+            <input
+              type="text" value={form.indice}
+              onChange={(e) => update('indice', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
           </div>
@@ -213,7 +204,6 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
               {TYPES_CONTRAT.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de recrutement</label>
             <input
@@ -222,7 +212,6 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
           </div>
-
           <div className="flex items-end pb-2">
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
               <input
@@ -231,10 +220,9 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
                 onChange={(e) => update('contratPermanent', e.target.checked)}
                 className="w-4 h-4 accent-navy"
               />
-              Contrat permanent (pas de date de fin)
+              Contrat permanent
             </label>
           </div>
-
           {!form.contratPermanent && (
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de fin de contrat</label>
@@ -252,7 +240,7 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
               disabled={status === 'loading'}
               className="w-full bg-navy text-white rounded-md py-2 font-medium hover:opacity-90 disabled:opacity-50"
             >
-              {status === 'loading' ? 'Enregistrement...' : "Enregistrer l'employé"}
+              {status === 'loading' ? 'Enregistrement...' : 'Enregistrer les modifications'}
             </button>
             {message && (
               <p className={`text-sm mt-2 ${status === 'success' ? 'text-status-approved' : 'text-status-rejected'}`}>

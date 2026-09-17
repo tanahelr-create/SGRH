@@ -1,13 +1,22 @@
 const pool = require('../config/db');
 
+// SUPERADMIN hérite automatiquement de tout ce qui est activé pour ADMIN_RH,
+// en plus de ses propres permissions. Ça garantit la règle "SUPERADMIN = ADMIN_RH + plus"
+// de façon permanente, sans avoir à dupliquer les lignes dans role_permissions
+// ni à les resynchroniser à chaque changement fait sur ADMIN_RH.
+function rolesToCheck(role) {
+  return role === 'SUPERADMIN' ? ['SUPERADMIN', 'ADMIN_RH'] : [role];
+}
+
 async function isRoleAllowed(role, permissionKey) {
   const result = await pool.query(
-    `SELECT rp.enabled FROM role_permissions rp
+    `SELECT 1 FROM role_permissions rp
      JOIN permissions p ON p.id = rp.permission_id
-     WHERE rp.role = $1 AND p.key = $2`,
-    [role, permissionKey]
+     WHERE rp.role = ANY($1) AND p.key = $2 AND rp.enabled = true
+     LIMIT 1`,
+    [rolesToCheck(role), permissionKey]
   );
-  return result.rows.length > 0 && result.rows[0].enabled === true;
+  return result.rows.length > 0;
 }
 
 async function listAll() {
@@ -34,10 +43,10 @@ async function setPermission(role, permissionId, enabled) {
 
 async function listForRole(role) {
   const result = await pool.query(
-    `SELECT p.key FROM role_permissions rp
+    `SELECT DISTINCT p.key FROM role_permissions rp
      JOIN permissions p ON p.id = rp.permission_id
-     WHERE rp.role = $1 AND rp.enabled = true`,
-    [role]
+     WHERE rp.role = ANY($1) AND rp.enabled = true`,
+    [rolesToCheck(role)]
   );
   return result.rows.map((r) => r.key);
 }

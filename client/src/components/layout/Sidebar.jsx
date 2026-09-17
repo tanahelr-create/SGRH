@@ -6,7 +6,12 @@ import { usePermissions } from '../../context/PermissionContext';
 export default function Sidebar() {
   const { user } = useAuth();
   const { can, loading } = usePermissions();
-  const groups = menuConfig[user?.role] || [];
+
+  // SUPERADMIN voit le menu ADMIN_RH complet, en plus de son propre menu
+  // "Administration" — cohérent avec la règle SUPERADMIN = ADMIN_RH + plus.
+  const groups = user?.role === 'SUPERADMIN'
+    ? [...(menuConfig.ADMIN_RH || []), ...(menuConfig.SUPERADMIN || [])]
+    : menuConfig[user?.role] || [];
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col overflow-hidden bg-navy text-white">

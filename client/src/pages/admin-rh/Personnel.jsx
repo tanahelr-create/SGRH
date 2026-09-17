@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Search, UserPlus, Download, Upload } from 'luci
 import { listPersonnel, exportPersonnelExcel, importPersonnelExcel } from '../../services/personnelApi';
 import { getFonctionHistory } from '../../services/userApi';
 import AjouterEmployeModal from '../../components/AjouterEmployeModal';
+import ModifierEmployeModal from '../../components/ModifierEmployeModal';
 
 const COLUMNS = [
   { key: 'nom', label: 'Nom' },
@@ -21,6 +22,7 @@ export default function Personnel() {
   const [expandedId, setExpandedId] = useState(null);
   const [history, setHistory] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingPerson, setEditingPerson] = useState(null);
   const [importResult, setImportResult] = useState(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef(null);
@@ -266,19 +268,27 @@ export default function Personnel() {
                   {expandedId === p.id && (
                     <tr className="bg-gray-50 dark:bg-gray-700">
                       <td colSpan={COLUMNS.length} className="px-4 py-4">
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-xs text-gray-400">Matricule</p>
-                            <p className="text-sm text-navy dark:text-gray-100">{p.matricule || '—'}</p>
+                        <div className="flex items-start justify-between">
+                          <div className="grid grid-cols-3 gap-4 flex-1">
+                            <div>
+                              <p className="text-xs text-gray-400">Matricule</p>
+                              <p className="text-sm text-navy dark:text-gray-100">{p.matricule || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Email</p>
+                              <p className="text-sm text-navy dark:text-gray-100">{p.email}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Grade</p>
+                              <p className="text-sm text-navy dark:text-gray-100">{p.grade || '—'}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-400">Email</p>
-                            <p className="text-sm text-navy dark:text-gray-100">{p.email}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-400">Grade</p>
-                            <p className="text-sm text-navy dark:text-gray-100">{p.grade || '—'}</p>
-                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingPerson(p); }}
+                            className="text-xs text-navy underline shrink-0 ml-4"
+                          >
+                            Modifier la fiche
+                          </button>
                         </div>
 
                         {history.length > 0 && (
@@ -312,6 +322,14 @@ export default function Personnel() {
         <AjouterEmployeModal
           onClose={() => setShowAddModal(false)}
           onSuccess={() => { setShowAddModal(false); load(); }}
+        />
+      )}
+
+      {editingPerson && (
+        <ModifierEmployeModal
+          personnel={editingPerson}
+          onClose={() => setEditingPerson(null)}
+          onSuccess={() => { setEditingPerson(null); load(); }}
         />
       )}
     </div>

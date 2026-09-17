@@ -41,6 +41,9 @@ import MesDocuments from './pages/personnel/MesDocuments';
 
 const ALL_ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
 const PE_PAT = ['PE', 'PAT'];
+// SUPERADMIN doit toujours pouvoir accéder à tout ce qu'ADMIN_RH peut : c'est la règle
+// "SUPERADMIN = ADMIN_RH + fonctionnalités propres". Les pages /admin/* utilisent ce tableau.
+const ADMIN_OR_SUPERADMIN = ['ADMIN_RH', 'SUPERADMIN'];
 
 function App() {
   return (
@@ -110,57 +113,57 @@ function App() {
                 } />
 
                 <Route path="/admin/dashboard" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_dashboard_admin">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_dashboard_admin">
                     <AppShell title="Tableau de bord" subtitle="Gestion des Ressources Humaines"><Dashboard /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/personnel" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_personnel">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_personnel">
                     <AppShell title="Personnel" subtitle="Gestion des Ressources Humaines"><Personnel /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/invitations" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="send_registration_link">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="send_registration_link">
                     <AppShell title="Inviter un personnel" subtitle="Gestion des Ressources Humaines"><Invitations /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/comptes-attente" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_pending_accounts">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_pending_accounts">
                     <AppShell title="Comptes en attente" subtitle="Gestion des Ressources Humaines"><ComptesEnAttente /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/notifications" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="send_notification">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="send_notification">
                     <AppShell title="Envoyer une notification" subtitle="Gestion des Ressources Humaines"><EnvoyerNotification /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/fonctions" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_fonctions">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_fonctions">
                     <AppShell title="Gestion des fonctions" subtitle="Gestion des Ressources Humaines"><GestionFonctions /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/carriere" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_fonctions">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_fonctions">
                     <AppShell title="Carrière" subtitle="Gestion des Ressources Humaines"><Carriere /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/conges" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_conges_admin">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_conges_admin">
                     <AppShell title="Congés" subtitle="Gestion des Ressources Humaines"><CongesAdmin /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/documents" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_documents">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_documents">
                     <AppShell title="Documents administratifs" subtitle="Gestion des Ressources Humaines"><DocumentsAdmin /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/demandes-documents" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="manage_documents">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_documents">
                     <AppShell title="Demandes de documents" subtitle="Gestion des Ressources Humaines"><DemandesDocuments /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/historique" element={
-                  <ProtectedRoute allowedRoles={['ADMIN_RH']} permission="view_historique">
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_historique">
                     <AppShell title="Historique" subtitle="Gestion des Ressources Humaines"><Historique /></AppShell>
                   </ProtectedRoute>
                 } />

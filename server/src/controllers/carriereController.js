@@ -1,5 +1,22 @@
+const fs = require('fs/promises');
+const path = require('path');
+const crypto = require('crypto');
 const carriereService = require('../services/carriereService');
 const personnelRepository = require('../repositories/personnelRepository');
+
+const ALLOWED_EXT = ['.pdf', '.jpg', '.jpeg', '.png'];
+
+async function saveUploadedFile(file, subfolder) {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!ALLOWED_EXT.includes(ext)) {
+    throw new Error('Formats acceptés : PDF, JPG, PNG');
+  }
+  const filename = `${crypto.randomUUID()}${ext}`;
+  const folder = path.join(__dirname, `../../uploads/${subfolder}`);
+  await fs.mkdir(folder, { recursive: true });
+  await fs.writeFile(path.join(folder, filename), file.buffer, { flag: 'wx' });
+  return { filename: file.originalname, path: `/uploads/${subfolder}/${filename}` };
+}
 
 async function getForPersonnel(req, res) {
   try {
@@ -19,15 +36,71 @@ async function getMine(req, res) {
 }
 
 async function addEvenement(req, res) {
-  const { typeEvenement, description, dateEvenement } = req.body;
+  const {
+    typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
+    indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations,
+  } = req.body;
+
   if (!typeEvenement || !dateEvenement) {
     return res.status(400).json({ message: 'typeEvenement et dateEvenement sont requis' });
   }
+
   try {
-    const evenement = await carriereService.addEvenement(
-      req.params.personnelId, { typeEvenement, description, dateEvenement }, req.user.id
-    );
+    const justificatif = req.file ? await saveUploadedFile(req.file, 'justificatifs-carriere') : null;
+    const evenement = await carriereService.addEvenement(req.params.personnelId, {
+      typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
+      indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations, justificatif,
+    }, req.user.id);
     return res.status(201).json({ message: 'Événement ajouté', evenement });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+async function updateEvenement(req, res) {
+  const {
+    typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
+    indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations,
+  } = req.body;
+
+  try {
+    const justificatif = req.file ? await saveUploadedFile(req.file, 'justificatifs-carriere') : null;
+    const evenement = await carriereService.updateEvenement(req.params.id, {
+      typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
+      indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations, justificatif,
+    }, req.user.id);
+    return res.status(200).json({ message: 'Événement modifié', evenement });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+async function deleteEvenement(req, res) {
+  try {
+    await carriereService.deleteEvenement(req.params.id, req.user.id);
+    return res.status(200).json({ message: 'Événement supprimé' });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+async function addDiplome(req, res) {
+  const { intitule, etablissement, anneeObtention } = req.body;
+  if (!intitule) return res.status(400).json({ message: 'Intitulé requis' });
+
+  try {
+    const document = req.file ? await saveUploadedFile(req.file, 'diplomes') : null;
+    const diplome = await carriereService.addDiplome(req.params.personnelId, { intitule, etablissement, anneeObtention, document }, req.user.id);
+    return res.status(201).json({ message: 'Diplôme ajouté', diplome });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+async function deleteDiplome(req, res) {
+  try {
+    await carriereService.deleteDiplome(req.params.id, req.user.id);
+    return res.status(200).json({ message: 'Diplôme supprimé' });
   } catch (err) {
     return res.status(400).json({ message: err.message });
   }
@@ -38,4 +111,4 @@ async function echeances(req, res) {
   return res.status(200).json({ echeances: list });
 }
 
-module.exports = { getForPersonnel, getMine, addEvenement, echeances };
+module.exports = { getForPersonnel, getMine, addEvenement, updateEvenement, deleteEvenement, addDiplome, deleteDiplome, echeances };

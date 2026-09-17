@@ -16,6 +16,45 @@ async function createPersonnel(data, createdBy) {
   return personnel;
 }
 
+async function updatePersonnel(id, data, updatedBy) {
+  const existing = await personnelRepository.findByIdRaw(id);
+  if (!existing) throw new Error('Fiche personnel introuvable');
+
+  if (data.email && data.email !== existing.email) {
+    const emailTaken = await personnelRepository.findByEmailRaw(data.email);
+    if (emailTaken && emailTaken.id !== existing.id) {
+      throw new Error('Cet email est déjà utilisé par une autre fiche');
+    }
+  }
+
+  await corbeilleRepository.add('personnel_modifie', existing, updatedBy);
+
+  const updated = await personnelRepository.updateFiche(id, {
+    nom: data.nom ?? existing.nom,
+    prenom: data.prenom ?? existing.prenom,
+    email: data.email ?? existing.email,
+    corps: data.corps ?? existing.corps,
+    grade: data.grade ?? existing.grade,
+    poste: data.poste ?? existing.poste,
+    service: data.service ?? existing.service,
+    direction: data.direction ?? existing.direction,
+    telephone: data.telephone ?? existing.telephone,
+    typeContrat: data.typeContrat ?? existing.type_contrat,
+    dateRecrutement: data.dateRecrutement ?? existing.date_recrutement,
+    dateEcheanceContrat: data.dateEcheanceContrat ?? existing.date_echeance_contrat,
+    contratPermanent: data.contratPermanent ?? existing.contrat_permanent,
+    classe: data.classe ?? existing.classe,
+    echelon: data.echelon ?? existing.echelon,
+    indice: data.indice ?? existing.indice,
+    chapitreIb: data.chapitreIb ?? existing.chapitre_ib,
+  });
+
+  await organisationRepository.syncResponsable(id, existing.fonction, updated.service, updated.direction);
+  await activityLogRepository.create(updatedBy, 'personnel_modifie_par_rh', `Fiche personnel #${id} modifiée par le RH`);
+
+  return updated;
+}
+
 async function listPersonnel() {
   return personnelRepository.listAll();
 }
@@ -54,7 +93,7 @@ async function importFromRows(rows, importedBy) {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const lineNumber = i + 2; // +2 : ligne 1 = en-têtes, tableau 0-indexé
+    const lineNumber = i + 2;
 
     const validationError = validateRow(row);
     if (validationError) {
@@ -118,7 +157,6 @@ async function updateMesInfos(userId, nouvellesInfos) {
   const ancienneFiche = await personnelRepository.findByIdRaw(user.personnel_id);
   if (!ancienneFiche) throw new Error('Fiche personnel introuvable');
 
-  // Archive l'ancienne version complète dans la corbeille avant toute modification
   await corbeilleRepository.add('personnel_modifie', ancienneFiche, userId);
 
   const misAJour = await personnelRepository.updateInfosPersonnelles(user.personnel_id, nouvellesInfos);
@@ -128,4 +166,4 @@ async function updateMesInfos(userId, nouvellesInfos) {
   return misAJour;
 }
 
-module.exports = { createPersonnel, listPersonnel, listWithoutAccount, sendRegistrationLink, importFromRows, updateMesInfos };
+module.exports = { createPersonnel, updatePersonnel, listPersonnel, listWithoutAccount, sendRegistrationLink, importFromRows, updateMesInfos };

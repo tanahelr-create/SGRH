@@ -28,5 +28,6 @@ router.get('/', requireAuth, requirePermission('view_personnel'), personnelContr
 router.get('/sans-compte', requireAuth, requirePermission('send_registration_link'), personnelController.listWithoutAccount);
 router.post('/:id/envoyer-lien', requireAuth, requirePermission('send_registration_link'), personnelController.sendRegistrationLink);
 router.patch('/me', requireAuth, requirePermission('modifier_mes_infos'), personnelController.updateMesInfos);
+router.patch('/:id', requireAuth, requirePermission('create_personnel'), personnelController.update);
 
 module.exports = router;
