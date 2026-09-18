@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getMaCarriere } from '../../services/carriereApi';
+import { getMesSituations } from '../../services/situationAdministrativeApi';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -9,10 +10,12 @@ function fileUrl(path) {
 
 export default function MaCarriere() {
   const [data, setData] = useState(null);
+  const [situations, setSituations] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     getMaCarriere().then(setData).catch((err) => setError(err.message));
+    getMesSituations().then(setSituations).catch(() => {});
   }, []);
 
   if (error) return <p className="text-status-rejected text-sm">{error}</p>;
@@ -20,6 +23,14 @@ export default function MaCarriere() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {situations?.actuelle && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="font-semibold text-navy dark:text-gold mb-2">Situation administrative</h3>
+          <p className="text-sm text-navy dark:text-gray-100 font-medium">{situations.actuelle.libelle}</p>
+          <p className="text-xs text-gray-400">Depuis le {new Date(situations.actuelle.date_debut).toLocaleDateString('fr-FR')}</p>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 className="font-semibold text-navy dark:text-gold mb-4">Ma carrière</h3>
         {data.timeline.length === 0 && <p className="text-sm text-gray-400">Aucun événement enregistré pour l'instant.</p>}

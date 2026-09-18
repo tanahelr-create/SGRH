@@ -53,7 +53,7 @@ async function updatePhoto(req, res) {
 }
 
 async function create(req, res) {
-  const { matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent } = req.body;
+  const { matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent, categorieId } = req.body;
 
   if (!matricule || !nom || !prenom || !email || !role) {
     return res.status(400).json({ message: 'Matricule, nom, prénom, email et rôle sont requis' });
@@ -64,7 +64,7 @@ async function create(req, res) {
 
   try {
     const personnel = await personnelService.createPersonnel(
-      { matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent },
+      { matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent, categorieId },
       req.user.id
     );
     return res.status(201).json({ message: 'Fiche personnel créée', personnel });
@@ -76,13 +76,13 @@ async function create(req, res) {
 async function update(req, res) {
   const {
     nom, prenom, email, corps, grade, poste, service, direction, telephone, typeContrat,
-    dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb,
+    dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb, categorieId,
   } = req.body;
 
   try {
     const personnel = await personnelService.updatePersonnel(req.params.id, {
       nom, prenom, email, corps, grade, poste, service, direction, telephone, typeContrat,
-      dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb,
+      dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb, categorieId,
     }, req.user.id);
     return res.status(200).json({ message: 'Fiche mise à jour', personnel });
   } catch (err) {

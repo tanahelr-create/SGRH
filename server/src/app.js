@@ -21,6 +21,10 @@ const siteSettingsRoutes = require('./routes/siteSettings.routes');
 const siteTextsRoutes = require('./routes/siteTexts.routes');
 const documentRoutes = require('./routes/document.routes');
 const organisationRoutes = require('./routes/organisation.routes');
+const categorieRoutes = require('./routes/categorie.routes');
+const situationAdministrativeRoutes = require('./routes/situationAdministrative.routes');
+const parametreCarriereRoutes = require('./routes/parametreCarriere.routes');
+
 
 const app = express();
 
@@ -47,6 +51,9 @@ app.use('/api/site-settings', siteSettingsRoutes);
 app.use('/api/site-texts', siteTextsRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/organisation', organisationRoutes);
+app.use('/api/categories', categorieRoutes);
+app.use('/api/situations-administratives', situationAdministrativeRoutes);
+app.use('/api/parametres-carriere', parametreCarriereRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Route introuvable' }));
 

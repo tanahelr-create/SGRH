@@ -3,15 +3,24 @@ import { createContext, useContext, useEffect, useState } from 'react';
 const ThemeContext = createContext(null);
 const THEME_KEY = 'rh_theme';
 
+function resolveIsDark(theme) {
+  if (theme === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return theme === 'dark';
+}
+
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || 'light');
+  const [theme, setThemeState] = useState(() => localStorage.getItem(THEME_KEY) || 'light');
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    const apply = () => document.documentElement.classList.toggle('dark', resolveIsDark(theme));
+    apply();
     localStorage.setItem(THEME_KEY, theme);
+    if (theme !== 'system') return;
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    mql.addEventListener('change', apply);
+    return () => mql.removeEventListener('change', apply);
   }, [theme]);
 
-  // Applique les couleurs personnalisées dès le chargement de l'app, pour tous les rôles
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
     fetch(`${API_URL}/site-settings`)
@@ -23,15 +32,15 @@ export function ThemeProvider({ children }) {
           document.documentElement.style.setProperty(cssVarName, value);
         });
       })
-      .catch(() => {}); // échec silencieux : les couleurs par défaut du CSS restent actives
+      .catch(() => {});
   }, []);
 
   function toggleTheme() {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) => (resolveIsDark(prev) ? 'light' : 'dark'));
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, toggleTheme, isDark: resolveIsDark(theme) }}>
       {children}
     </ThemeContext.Provider>
   );

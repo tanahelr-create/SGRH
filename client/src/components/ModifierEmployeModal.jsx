@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { updatePersonnel } from '../services/personnelApi';
 import { fetchDirections, fetchServices } from '../services/organisationApi';
+import { fetchCategories } from '../services/categorieApi';
 
 const CORPS_OPTIONS = ['EFA', 'ELD', 'Fonctionnaire'];
 const TYPES_CONTRAT = ['CDI', 'CDD', 'Vacataire', 'Stagiaire'];
@@ -10,6 +11,7 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
   const [form, setForm] = useState({
     nom: personnel.nom || '', prenom: personnel.prenom || '', email: personnel.email || '',
     corps: personnel.corps || '', grade: personnel.grade || '', poste: personnel.poste || '',
+    categorieId: personnel.categorie_id || '',
     service: personnel.service || '', direction: personnel.direction || '',
     telephone: personnel.telephone || '', typeContrat: personnel.type_contrat || '',
     dateRecrutement: personnel.date_recrutement ? String(personnel.date_recrutement).slice(0, 10) : '',
@@ -23,6 +25,7 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
   const [directions, setDirections] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedDirectionId, setSelectedDirectionId] = useState('');
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     fetchDirections().then((list) => {
@@ -30,6 +33,7 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
       const current = list.find((d) => d.nom === personnel.direction);
       if (current) setSelectedDirectionId(String(current.id));
     }).catch(() => setDirections([]));
+    fetchCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
@@ -60,7 +64,7 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
     setStatus('loading');
     setMessage('');
     try {
-      await updatePersonnel(personnel.id, form);
+      await updatePersonnel(personnel.id, { ...form, categorieId: form.categorieId || null });
       setStatus('success');
       setMessage('Fiche mise à jour.');
       setTimeout(() => onSuccess?.(), 800);
@@ -137,6 +141,17 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
               onChange={(e) => update('poste', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Catégorie professionnelle</label>
+            <select
+              value={form.categorieId}
+              onChange={(e) => update('categorieId', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            >
+              <option value="">--</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.appellation}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classe</label>

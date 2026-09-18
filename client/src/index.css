@@ -24,3 +24,21 @@
 
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 }
+
+:root[data-text-size="small"] { font-size: 14px; }
+:root[data-text-size="large"] { font-size: 18px; }
+
+:root[data-density="compact"] table td, :root[data-density="compact"] table th { padding-top: .375rem; padding-bottom: .375rem; }
+:root[data-density="comfortable"] table td, :root[data-density="comfortable"] table th { padding-top: 1rem; padding-bottom: 1rem; }
+
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation-duration: .001ms !important;
+  transition-duration: .001ms !important;
+}
+
+.high-contrast { filter: contrast(1.15); }
+.keyboard-highlight :is(button, a, [role="button"], input, select, textarea):focus-visible,
+.high-contrast :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-gold) !important;
+  outline-offset: 2px;
+}

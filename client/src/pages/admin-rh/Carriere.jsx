@@ -4,6 +4,7 @@ import { listPersonnel } from '../../services/personnelApi';
 import {
   getCarriere, addEvenement, updateEvenement, deleteEvenement, addDiplome, deleteDiplome,
 } from '../../services/carriereApi';
+import { fetchTypesSituation, getSituationsForPersonnel, addSituation } from '../../services/situationAdministrativeApi';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -44,8 +45,15 @@ export default function Carriere() {
   const [diplomeFile, setDiplomeFile] = useState(null);
   const [diplomeStatus, setDiplomeStatus] = useState(null);
 
+  const [typesSituation, setTypesSituation] = useState([]);
+  const [situations, setSituations] = useState(null);
+  const [situationForm, setSituationForm] = useState({ typeSituationId: '', dateDebut: '', referenceDecision: '', observations: '' });
+  const [situationFile, setSituationFile] = useState(null);
+  const [situationStatus, setSituationStatus] = useState(null);
+
   useEffect(() => {
     listPersonnel().then(setPersonnelList).catch(() => {});
+    fetchTypesSituation().then(setTypesSituation).catch(() => setTypesSituation([]));
   }, []);
 
   async function loadCarriere(id) {
@@ -60,7 +68,16 @@ export default function Carriere() {
     }
   }
 
-  useEffect(() => { loadCarriere(selectedId); }, [selectedId]);
+  async function loadSituations(id) {
+    if (!id) { setSituations(null); return; }
+    try {
+      setSituations(await getSituationsForPersonnel(id));
+    } catch (err) {
+      setFeedback(err.message);
+    }
+  }
+
+  useEffect(() => { loadCarriere(selectedId); loadSituations(selectedId); }, [selectedId]);
 
   function updateForm(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -141,6 +158,21 @@ export default function Carriere() {
     }
   }
 
+  async function handleAddSituation(e) {
+    e.preventDefault();
+    setSituationStatus('loading');
+    try {
+      await addSituation(selectedId, situationForm, situationFile);
+      setSituationStatus('success');
+      setSituationForm({ typeSituationId: '', dateDebut: '', referenceDecision: '', observations: '' });
+      setSituationFile(null);
+      loadSituations(selectedId);
+    } catch (err) {
+      setSituationStatus('error');
+      setFeedback(err.message);
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -161,6 +193,77 @@ export default function Carriere() {
 
       {data && (
         <>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 className="font-semibold text-navy dark:text-gold mb-3">Situation administrative</h3>
+
+            {situations?.actuelle && (
+              <div className="mb-4 p-3 bg-navy/5 rounded-md">
+                <p className="text-sm text-navy dark:text-gray-100 font-medium">
+                  Situation actuelle : {situations.actuelle.libelle}
+                </p>
+                <p className="text-xs text-gray-400">
+                  Depuis le {new Date(situations.actuelle.date_debut).toLocaleDateString('fr-FR')}
+                </p>
+              </div>
+            )}
+            {!situations?.actuelle && situations && (
+              <p className="text-sm text-gray-400 mb-4">Aucune situation administrative enregistrée pour l'instant.</p>
+            )}
+
+            <form onSubmit={handleAddSituation} className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4">
+              <select
+                required value={situationForm.typeSituationId}
+                onChange={(e) => setSituationForm((p) => ({ ...p, typeSituationId: e.target.value }))}
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm sm:col-span-2"
+              >
+                <option value="">-- Nouvelle situation --</option>
+                {typesSituation.map((t) => (
+                  <option key={t.id} value={t.id}>{t.libelle}{t.categories_concernees ? ` (${t.categories_concernees})` : ''}</option>
+                ))}
+              </select>
+              <input
+                type="date" required value={situationForm.dateDebut}
+                onChange={(e) => setSituationForm((p) => ({ ...p, dateDebut: e.target.value }))}
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
+              />
+              <input
+                type="text" placeholder="Référence décision" value={situationForm.referenceDecision}
+                onChange={(e) => setSituationForm((p) => ({ ...p, referenceDecision: e.target.value }))}
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
+              />
+              <input
+                type="text" placeholder="Observations" value={situationForm.observations}
+                onChange={(e) => setSituationForm((p) => ({ ...p, observations: e.target.value }))}
+                className="sm:col-span-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
+              />
+              <input
+                type="file" accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setSituationFile(e.target.files[0] || null)}
+                className="sm:col-span-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={situationStatus === 'loading'}
+                className="bg-navy text-white rounded-md px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              >
+                Enregistrer
+              </button>
+            </form>
+
+            {situations?.historique?.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-400 font-medium">Historique des situations</p>
+                {situations.historique.map((s) => (
+                  <div key={s.id} className="text-xs text-gray-500 border-b border-gray-100 dark:border-gray-700 pb-1">
+                    {s.libelle} — du {new Date(s.date_debut).toLocaleDateString('fr-FR')}
+                    {s.date_fin ? ` au ${new Date(s.date_fin).toLocaleDateString('fr-FR')}` : ' (en cours)'}
+                    {s.reference_decision && ` — réf. ${s.reference_decision}`}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="font-semibold text-navy dark:text-gold mb-3">
               {editingId ? "Modifier l'événement" : 'Ajouter un événement'}

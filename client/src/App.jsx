@@ -23,6 +23,7 @@ import ComptesEnAttente from './pages/admin-rh/ComptesEnAttente';
 import EnvoyerNotification from './pages/admin-rh/EnvoyerNotification';
 import GestionFonctions from './pages/admin-rh/GestionFonctions';
 import Carriere from './pages/admin-rh/Carriere';
+import ParametresCarriere from './pages/admin-rh/ParametresCarriere';
 import CongesAdmin from './pages/admin-rh/CongesAdmin';
 import DocumentsAdmin from './pages/admin-rh/DocumentsAdmin';
 import DemandesDocuments from './pages/admin-rh/DemandesDocuments';
@@ -41,8 +42,6 @@ import MesDocuments from './pages/personnel/MesDocuments';
 
 const ALL_ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
 const PE_PAT = ['PE', 'PAT'];
-// SUPERADMIN doit toujours pouvoir accéder à tout ce qu'ADMIN_RH peut : c'est la règle
-// "SUPERADMIN = ADMIN_RH + fonctionnalités propres". Les pages /admin/* utilisent ce tableau.
 const ADMIN_OR_SUPERADMIN = ['ADMIN_RH', 'SUPERADMIN'];
 
 function App() {
@@ -145,6 +144,11 @@ function App() {
                 <Route path="/admin/carriere" element={
                   <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_fonctions">
                     <AppShell title="Carrière" subtitle="Gestion des Ressources Humaines"><Carriere /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/parametres-carriere" element={
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_parametres_carriere">
+                    <AppShell title="Paramètres de carrière" subtitle="Gestion des Ressources Humaines"><ParametresCarriere /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/conges" element={

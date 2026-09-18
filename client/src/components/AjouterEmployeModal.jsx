@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createPersonnel } from '../services/personnelApi';
 import { fetchDirections, fetchServices } from '../services/organisationApi';
+import { fetchCategories } from '../services/categorieApi';
 
 const FONCTIONS_PAR_ROLE = {
   PE: ['Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur'],
@@ -12,7 +13,7 @@ const TYPES_CONTRAT = ['CDI', 'CDD', 'Vacataire', 'Stagiaire'];
 
 const empty = {
   matricule: '', nom: '', prenom: '', email: '', role: 'PE', fonction: '',
-  corps: '', grade: '', poste: '', service: '', direction: '', telephone: '', typeContrat: '',
+  corps: '', grade: '', poste: '', categorieId: '', service: '', direction: '', telephone: '', typeContrat: '',
   dateRecrutement: '', dateEcheanceContrat: '', contratPermanent: false,
 };
 
@@ -24,9 +25,11 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
   const [directions, setDirections] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedDirectionId, setSelectedDirectionId] = useState('');
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     fetchDirections().then(setDirections).catch(() => setDirections([]));
+    fetchCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
     setStatus('loading');
     setMessage('');
     try {
-      await createPersonnel(form);
+      await createPersonnel({ ...form, categorieId: form.categorieId || null });
       setStatus('success');
       setMessage('Fiche personnel créée.');
       setTimeout(() => onSuccess?.(), 800);
@@ -170,6 +173,17 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
               onChange={(e) => update('poste', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Catégorie professionnelle</label>
+            <select
+              value={form.categorieId}
+              onChange={(e) => update('categorieId', e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            >
+              <option value="">--</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.appellation}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Direction</label>

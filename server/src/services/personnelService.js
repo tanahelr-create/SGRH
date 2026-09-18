@@ -47,6 +47,7 @@ async function updatePersonnel(id, data, updatedBy) {
     echelon: data.echelon ?? existing.echelon,
     indice: data.indice ?? existing.indice,
     chapitreIb: data.chapitreIb ?? existing.chapitre_ib,
+    categorieId: data.categorieId ?? existing.categorie_id,
   });
 
   await organisationRepository.syncResponsable(id, existing.fonction, updated.service, updated.direction);

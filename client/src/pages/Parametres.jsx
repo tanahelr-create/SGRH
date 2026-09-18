@@ -1,76 +1,92 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { changePassword } from '../services/authApi';
+import { usePermissions } from '../context/PermissionContext';
+import { SETTINGS_CATEGORIES } from '../config/settingsConfig';
+import SettingsRedirect from '../components/settings/SettingsRedirect';
+import { ProfilCompte, Securite, Sessions } from './parametres/CompteTabs';
+import { Apparence, Notifications, LangueRegion, Accessibilite } from './parametres/PreferencesTabs';
+import { PreferencesTableaux, Documents } from './parametres/DonneesTabs';
+import { Fonctionnalites, Maintenance } from './parametres/SystemeTabs';
 
-const roleLabels = { ADMIN_RH: 'Admin RH', SUPERADMIN: 'Superadmin', PE: 'Personnel PE', PAT: 'Personnel PAT' };
+const CONTENT = {
+  profil: ProfilCompte, securite: Securite, sessions: Sessions,
+  apparence: Apparence, notifications: Notifications, langue: LangueRegion, accessibilite: Accessibilite,
+  tableaux: PreferencesTableaux, documents: Documents,
+  fonctionnalites: Fonctionnalites, maintenance: Maintenance,
+};
 
 export default function Parametres() {
   const { user } = useAuth();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [status, setStatus] = useState(null);
-  const [feedback, setFeedback] = useState('');
+  const { can, loading } = usePermissions();
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setStatus('error');
-      setFeedback('Les nouveaux mots de passe ne correspondent pas.');
-      return;
-    }
-    setStatus('loading');
-    try {
-      await changePassword(currentPassword, newPassword);
-      setStatus('success');
-      setFeedback('Mot de passe mis à jour.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err) {
-      setStatus('error');
-      setFeedback(err.message);
-    }
+  const visibleCategories = useMemo(() => (
+    SETTINGS_CATEGORIES
+      .map((cat) => ({
+        ...cat,
+        items: cat.items.filter((item) => {
+          const roleOk = item.roles.includes(user?.role);
+          const permOk = !item.permission || loading || can(item.permission);
+          return roleOk && permOk;
+        }),
+      }))
+      .filter((cat) => cat.items.length > 0)
+  ), [user, can, loading]);
+
+  const allItems = visibleCategories.flatMap((c) => c.items);
+  const [activeKey, setActiveKey] = useState(null);
+  const activeItem = allItems.find((i) => i.key === activeKey) || allItems[0];
+
+  if (!activeItem) {
+    return <p className="text-sm text-gray-500 dark:text-gray-400">Aucun paramètre disponible pour votre rôle.</p>;
   }
 
+  const ContentComponent = CONTENT[activeItem.key];
+
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="font-semibold text-navy dark:text-gold mb-3">Mon compte</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabels[user?.role]}</p>
+    <div>
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-navy dark:text-gold">Paramètres</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Gérez votre compte, vos préférences et les paramètres de votre espace SGRH.
+        </p>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="font-semibold text-navy dark:text-gold mb-4">Changer le mot de passe</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password" required placeholder="Mot de passe actuel"
-            value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          />
-          <input
-            type="password" required minLength={8} placeholder="Nouveau mot de passe"
-            value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          />
-          <input
-            type="password" required minLength={8} placeholder="Confirmer le nouveau mot de passe"
-            value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          />
-          <button
-            type="submit" disabled={status === 'loading'}
-            className="w-full bg-navy text-white rounded-md py-2 font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            {status === 'loading' ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
-          </button>
-          {feedback && (
-            <p className={`text-sm ${status === 'success' ? 'text-status-approved' : 'text-status-rejected'}`}>
-              {feedback}
-            </p>
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <nav className="lg:w-64 shrink-0 overflow-x-auto lg:overflow-visible">
+          <div className="flex gap-4 pb-1 lg:block lg:space-y-5 lg:pb-0">
+            {visibleCategories.map((cat) => (
+              <div key={cat.key} className="shrink-0 lg:shrink lg:w-full">
+                <p className="hidden lg:block px-3 mb-1 text-[11px] font-semibold uppercase text-slate-400 tracking-wide">
+                  {cat.label}
+                </p>
+                <div className="flex gap-1 lg:flex-col">
+                  {cat.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.key === activeItem.key;
+                    return (
+                      <button key={item.key} type="button" onClick={() => setActiveKey(item.key)}
+                        className={`flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ${
+                          isActive ? 'bg-navy text-white dark:bg-gold dark:text-navy' : 'text-slate-600 hover:bg-slate-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <Icon size={16} />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </nav>
+
+        <div className="min-w-0 flex-1">
+          {activeItem.path ? (
+            <SettingsRedirect icon={activeItem.icon} title={activeItem.label} description={activeItem.description} path={activeItem.path} />
+          ) : (
+            ContentComponent && <ContentComponent />
           )}
-        </form>
+        </div>
       </div>
     </div>
   );
