@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { listPersonnel } from '../../services/personnelApi';
 import { generateDocument, getHistoriquePersonnel } from '../../services/documentApi';
 import PageHeader from '../../components/PageHeader';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 const TYPES_DOCUMENT = [
   { value: 'certificat_administratif', label: 'Certificat administratif' },
@@ -16,9 +17,10 @@ export default function DocumentsAdmin() {
   const [historique, setHistorique] = useState([]);
   const [status, setStatus] = useState(null);
   const [message, setMessage] = useState('');
+  const [listLoading, setListLoading] = useState(true);
 
   useEffect(() => {
-    listPersonnel().then(setPersonnelList).catch(() => {});
+    listPersonnel().then(setPersonnelList).catch(() => {}).finally(() => setListLoading(false));
   }, []);
 
   async function loadHistorique(id) {
@@ -49,12 +51,15 @@ export default function DocumentsAdmin() {
   }
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Documents' }, { label: 'Documents administratifs' }]} title="Documents administratifs" subtitle="Générer des certificats et lettres pour le personnel" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${!selectedId ? 'lg:col-span-2' : ''}`}>
         <h3 className="font-semibold text-navy dark:text-gold mb-4">Générer un document</h3>
-        <form onSubmit={handleGenerate} className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleGenerate} className="grid grid-cols-2 gap-3 max-w-lg">
+          {listLoading ? (
+            <Skeleton className="col-span-2 h-9 rounded-md" />
+          ) : (
           <select
             required value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
@@ -65,6 +70,7 @@ export default function DocumentsAdmin() {
               <option key={p.id} value={p.id}>{p.matricule} — {p.prenom} {p.nom}</option>
             ))}
           </select>
+          )}
 
           <select
             value={typeDocument}

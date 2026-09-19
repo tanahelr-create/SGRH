@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import { getPendingEquipe, reviewIntermediaire } from '../../services/congeApi';
+import { SkeletonCard, EmptyState } from '../../components/ui';
 
 export default function ValidationEquipe() {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avisMap, setAvisMap] = useState({});
+  const [reviewingId, setReviewingId] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -23,12 +25,16 @@ export default function ValidationEquipe() {
   useEffect(() => { load(); }, []);
 
   async function handleReview(id, decision) {
+    if (reviewingId) return;
     setError('');
+    setReviewingId(id);
     try {
       await reviewIntermediaire(id, decision, avisMap[id] || '');
       setDemandes((prev) => prev.filter((d) => d.id !== id));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setReviewingId(null);
     }
   }
 
@@ -41,8 +47,13 @@ export default function ValidationEquipe() {
       />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
-      {loading && <p className="text-gray-500">Chargement...</p>}
-      {!loading && demandes.length === 0 && <p className="text-gray-500">Aucune demande en attente.</p>}
+      {loading && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
+      )}
+      {!loading && demandes.length === 0 && <EmptyState title="Aucune demande en attente." />}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {demandes.map((d) => (
@@ -73,15 +84,17 @@ export default function ValidationEquipe() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => handleReview(d.id, 'refusee')}
-                className="px-4 py-2 rounded-md border border-status-rejected text-status-rejected text-sm font-medium hover:bg-red-50"
+                disabled={reviewingId !== null}
+                className="px-4 py-2 rounded-md border border-status-rejected text-status-rejected text-sm font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Refuser
+                {reviewingId === d.id ? 'Refus...' : 'Refuser'}
               </button>
               <button
                 onClick={() => handleReview(d.id, 'approuvee')}
-                className="px-4 py-2 rounded-md bg-navy text-white text-sm font-medium hover:opacity-90"
+                disabled={reviewingId !== null}
+                className="px-4 py-2 rounded-md bg-navy text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Approuver
+                {reviewingId === d.id ? 'Approbation...' : 'Approuver'}
               </button>
             </div>
           </div>

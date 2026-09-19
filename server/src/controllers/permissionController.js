@@ -1,4 +1,5 @@
 const permissionRepository = require('../repositories/permissionRepository');
+const activityLogRepository = require('../repositories/activityLogRepository');
 
 async function me(req, res) {
   const keys = await permissionRepository.listForRole(req.user.role);
@@ -22,6 +23,12 @@ async function update(req, res) {
   }
 
   const result = await permissionRepository.setPermission(role, permissionId, enabled);
+
+  await activityLogRepository.create(
+    req.user.id, 'permission_modifiee',
+    `Permission "${key}" ${enabled ? 'activée' : 'désactivée'} pour le rôle ${role}`
+  );
+
   return res.status(200).json({ message: 'Permission mise à jour', result });
 }
 

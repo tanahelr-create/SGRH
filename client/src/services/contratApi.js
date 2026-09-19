@@ -1,3 +1,4 @@
+import { makeApiError } from '../utils/apiError';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 function authHeaders() {
@@ -17,14 +18,14 @@ function toFormData(fields, file, fileFieldName) {
 export async function getHistoriquePersonnel(personnelId) {
   const res = await fetch(`${API_URL}/contrats/personnel/${personnelId}`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
 export async function getMesContrats() {
   const res = await fetch(`${API_URL}/contrats/me`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
@@ -35,7 +36,7 @@ export async function importerContrat(personnelId, data, fichier) {
     body: toFormData(data, fichier, 'fichier'),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || "Échec de l'import du contrat");
+  if (!res.ok) throw makeApiError(res, result, "Échec de l'import du contrat");
   return result.contrat;
 }
 
@@ -46,7 +47,7 @@ export async function finaliserRenouvellement(personnelId, contratId, data, fich
     body: toFormData(data, fichier, 'fichier'),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || 'Échec du renouvellement');
+  if (!res.ok) throw makeApiError(res, result, 'Échec du renouvellement');
   return result.contrat;
 }
 
@@ -57,7 +58,7 @@ export async function ajouterDocument(contratId, fichier, typeDocument) {
     body: toFormData({ typeDocument }, fichier, 'fichier'),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || "Échec de l'ajout du document");
+  if (!res.ok) throw makeApiError(res, result, "Échec de l'ajout du document");
   return result.document;
 }
 
@@ -68,7 +69,7 @@ export async function marquerDecision(contratId, decision, { motif, referenceDec
     body: JSON.stringify({ decision, motif, referenceDecision }),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || "Échec de l'enregistrement de la décision");
+  if (!res.ok) throw makeApiError(res, result, "Échec de l'enregistrement de la décision");
   return result.contrat;
 }
 
@@ -76,7 +77,7 @@ export async function telechargerDocumentContrat(documentId, filename) {
   const res = await fetch(`${API_URL}/contrats/documents/${documentId}/fichier`, { headers: authHeaders() });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.message || 'Échec du téléchargement');
+    throw makeApiError(res, data, 'Échec du téléchargement');
   }
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);

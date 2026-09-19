@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { updatePersonnel } from '../services/personnelApi';
 import { fetchDirections, fetchServices } from '../services/organisationApi';
 import { fetchCategories } from '../services/categorieApi';
+import GrilleIndiciaireSelector from './GrilleIndiciaireSelector';
+import Modal from './ui/Modal';
 
 const CORPS_OPTIONS = ['EFA', 'ELD', 'Fonctionnaire'];
 const TYPES_CONTRAT = ['CDI', 'CDD', 'Vacataire', 'Stagiaire'];
@@ -18,7 +19,9 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
     dateEcheanceContrat: personnel.date_echeance_contrat ? String(personnel.date_echeance_contrat).slice(0, 10) : '',
     contratPermanent: !!personnel.contrat_permanent,
     classe: personnel.classe || '', echelon: personnel.echelon || '', indice: personnel.indice || '',
+    categorie: '', cadre: '', echelle: '',
   });
+  const [grilleResolved, setGrilleResolved] = useState(false);
   const [status, setStatus] = useState(null);
   const [message, setMessage] = useState('');
 
@@ -64,7 +67,15 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
     setStatus('loading');
     setMessage('');
     try {
-      await updatePersonnel(personnel.id, { ...form, categorieId: form.categorieId || null });
+      const payload = { ...form, categorieId: form.categorieId || null };
+      if (form.corps === 'Fonctionnaire' && grilleResolved && payload.classe && payload.echelon) {
+        payload.resolveFromGrille = {
+          regime: 'FONCTIONNAIRE', classe: payload.classe, echelon: Number(payload.echelon),
+          categorie: payload.categorie || undefined, cadre: payload.cadre || undefined, echelle: payload.echelle || undefined,
+        };
+      }
+      delete payload.categorie; delete payload.cadre; delete payload.echelle;
+      await updatePersonnel(personnel.id, payload);
       setStatus('success');
       setMessage('Fiche mise à jour.');
       setTimeout(() => onSuccess?.(), 800);
@@ -75,17 +86,7 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-navy dark:text-gold">
-            Modifier {personnel.prenom} {personnel.nom}
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
-        </div>
-
+    <Modal onClose={onClose} title={`Modifier ${personnel.prenom} ${personnel.nom}`} maxWidth="max-w-2xl">
         <p className="text-xs text-gray-400 mb-4">
           Matricule {personnel.matricule} — la fonction se modifie depuis la page "Fonctions".
         </p>
@@ -153,30 +154,46 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
               {categories.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.appellation}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classe</label>
-            <input
-              type="text" value={form.classe}
-              onChange={(e) => update('classe', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Échelon</label>
-            <input
-              type="text" value={form.echelon}
-              onChange={(e) => update('echelon', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Indice</label>
-            <input
-              type="text" value={form.indice}
-              onChange={(e) => update('indice', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            />
-          </div>
+          {form.corps === 'Fonctionnaire' ? (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Situation réglementaire (grille indiciaire)</label>
+              <GrilleIndiciaireSelector
+                regime="FONCTIONNAIRE"
+                value={{ classe: form.classe, echelon: form.echelon, categorie: form.categorie, cadre: form.cadre, echelle: form.echelle, indice: form.indice }}
+                onChange={(next, resolution) => {
+                  setForm((prev) => ({ ...prev, ...next }));
+                  setGrilleResolved(!!resolution);
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Classe</label>
+                <input
+                  type="text" value={form.classe}
+                  onChange={(e) => update('classe', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Échelon</label>
+                <input
+                  type="text" value={form.echelon}
+                  onChange={(e) => update('echelon', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Indice</label>
+                <input
+                  type="text" value={form.indice}
+                  onChange={(e) => update('indice', e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                />
+              </div>
+            </>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Direction</label>
             <select
@@ -264,7 +281,6 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
             )}
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

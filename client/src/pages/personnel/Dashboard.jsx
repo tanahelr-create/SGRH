@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { getMyDemandes } from '../../services/congeApi';
 import { getMyNotifications } from '../../services/notificationApi';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 const STATUS_LABELS = {
   en_attente: { label: 'En attente', color: 'text-status-pending' },
@@ -119,13 +120,26 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {loading && <p className="text-sm text-gray-400">Chargement...</p>}
         {!loading && demandes.length === 0 && (
           <p className="text-sm text-gray-400">Aucune demande pour l'instant.</p>
         )}
 
+        {loading && (
+          <div className="space-y-3" role="status" aria-label="Chargement des demandes">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between border-b last:border-0 dark:border-gray-700 pb-2">
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-3 w-1/3 rounded" />
+                  <Skeleton className="h-2.5 w-1/2 rounded" />
+                </div>
+                <Skeleton className="h-3 w-16 rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-3">
-          {demandes.slice(0, 3).map((d) => (
+          {!loading && demandes.slice(0, 3).map((d) => (
             <div key={d.id} className="flex items-center justify-between border-b last:border-0 dark:border-gray-700 pb-2">
               <div>
                 <p className="text-sm font-medium text-navy dark:text-gray-100">{d.type_conge}</p>

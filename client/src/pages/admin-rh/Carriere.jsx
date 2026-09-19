@@ -4,13 +4,17 @@ import { usePermissions } from '../../context/PermissionContext';
 import { listPersonnel } from '../../services/personnelApi';
 import {
   getCarriere, addEvenement, updateEvenement, deleteEvenement, addDiplome, deleteDiplome,
+  telechargerJustificatifEvenement, telechargerDocumentDiplome,
 } from '../../services/carriereApi';
 import {
   fetchTypesSituation, getSituationsForPersonnel, addSituation,
   updateSituation, deleteSituation,
 } from '../../services/situationAdministrativeApi';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import {
+  fetchAlertesAvancement, traiterAlerteAvancement, ignorerAlerteAvancement, formatIndiceDisplay,
+} from '../../services/grilleIndiciaireApi';
+import GrilleIndiciaireSelector from '../../components/GrilleIndiciaireSelector';
+import { SkeletonPage } from '../../components/ui';
 
 const TYPES_EVENEMENT = [
   'Recrutement', 'Stage', 'Titularisation', 'Prolongation de stage', "Avancement d'échelon",
@@ -23,13 +27,10 @@ const TYPES_EVENEMENT = [
 
 const emptyForm = {
   typeEvenement: TYPES_EVENEMENT[0], dateEvenement: '', dateEffet: '', description: '',
-  corps: '', grade: '', classe: '', echelon: '', indice: '', fonction: '', affectation: '',
+  corps: '', grade: '', classe: '', echelon: '', indice: '', categorie: '', cadre: '', echelle: '',
+  fonction: '', affectation: '',
   motif: '', referenceDecision: '', autoriteDecision: '', observations: '',
 };
-
-function fileUrl(path) {
-  return path ? `${API_URL.replace(/\/api\/?$/, '')}${path}` : null;
-}
 
 export default function Carriere() {
   const { can } = usePermissions();
@@ -39,6 +40,7 @@ export default function Carriere() {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState(emptyForm);
+  const [grilleResolved, setGrilleResolved] = useState(false);
   const [file, setFile] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState(null);
@@ -56,7 +58,13 @@ export default function Carriere() {
   const [situationStatus, setSituationStatus] = useState(null);
   const [editingSituationId, setEditingSituationId] = useState(null);
   const [situationEditForm, setSituationEditForm] = useState({ referenceDecision: '', observations: '', motif: '' });
+  const [situationEditSaving, setSituationEditSaving] = useState(false);
   const [confirmDeleteSituationId, setConfirmDeleteSituationId] = useState(null);
+
+  const [alertes, setAlertes] = useState([]);
+  const [traiterAlerteId, setTraiterAlerteId] = useState(null);
+  const [traiterForm, setTraiterForm] = useState({ categorie: '', dateEffet: '', referenceDecision: '', autoriteDecision: '' });
+  const [traiterStatus, setTraiterStatus] = useState(null);
 
   useEffect(() => {
     listPersonnel().then(setPersonnelList).catch(() => {});
@@ -84,10 +92,50 @@ export default function Carriere() {
     }
   }
 
+  async function loadAlertes(id) {
+    if (!id) { setAlertes([]); return; }
+    try {
+      setAlertes(await fetchAlertesAvancement(id));
+    } catch {
+      setAlertes([]);
+    }
+  }
+
   useEffect(() => {
     loadCarriere(selectedId);
     loadSituations(selectedId);
+    loadAlertes(selectedId);
   }, [selectedId]);
+
+  function ouvrirTraitementAlerte(alerte) {
+    setTraiterAlerteId(alerte.id);
+    setTraiterForm({ categorie: '', dateEffet: new Date().toISOString().slice(0, 10), referenceDecision: '', autoriteDecision: '' });
+    setTraiterStatus(null);
+  }
+
+  async function handleTraiterAlerte(e) {
+    e.preventDefault();
+    setTraiterStatus('loading');
+    try {
+      await traiterAlerteAvancement(traiterAlerteId, traiterForm);
+      setTraiterStatus('success');
+      setTraiterAlerteId(null);
+      loadAlertes(selectedId);
+      loadCarriere(selectedId);
+    } catch (err) {
+      setTraiterStatus('error');
+      setFeedback(err.message);
+    }
+  }
+
+  async function handleIgnorerAlerte(id) {
+    try {
+      await ignorerAlerteAvancement(id);
+      loadAlertes(selectedId);
+    } catch (err) {
+      setFeedback(err.message);
+    }
+  }
 
   function updateForm(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -95,6 +143,7 @@ export default function Carriere() {
 
   function resetForm() {
     setForm(emptyForm);
+    setGrilleResolved(false);
     setFile(null);
     setEditingId(null);
   }
@@ -106,23 +155,38 @@ export default function Carriere() {
       typeEvenement: item.type, dateEvenement: item.date?.slice(0, 10) || '',
       dateEffet: item.dateEffet?.slice(0, 10) || '', description: item.description || '',
       corps: item.corps || '', grade: item.grade || '', classe: item.classe || '', echelon: item.echelon || '',
-      indice: item.indice || '', fonction: item.fonction || '', affectation: item.affectation || '',
+      indice: item.indice || '', categorie: '', cadre: '', echelle: '',
+      fonction: item.fonction || '', affectation: item.affectation || '',
       motif: item.motif || '', referenceDecision: item.referenceDecision || '', autoriteDecision: item.autoriteDecision || '',
       observations: item.observations || '',
     });
+    // On repart d'une saisie libre en édition : l'événement existant garde sa
+    // traçabilité de grille (ligne_grille_id) tant qu'on ne rechoisit pas classe/échelon.
+    setGrilleResolved(false);
     setFile(null);
   }
+
+  const regimeFonctionnaire = data?.personnel?.corps === 'Fonctionnaire';
 
   async function handleSubmit(e) {
     e.preventDefault();
     setStatus('loading');
     setFeedback('');
     try {
+      const payload = { ...form };
+      if (regimeFonctionnaire && grilleResolved && payload.classe && payload.echelon) {
+        payload.resolveFromGrille = JSON.stringify({
+          regime: 'FONCTIONNAIRE', classe: payload.classe, echelon: Number(payload.echelon),
+          categorie: payload.categorie || undefined, cadre: payload.cadre || undefined, echelle: payload.echelle || undefined,
+        });
+      }
+      delete payload.categorie; delete payload.cadre; delete payload.echelle;
+
       if (editingId) {
-        await updateEvenement(editingId, form, file);
+        await updateEvenement(editingId, payload, file);
         setFeedback('Événement modifié.');
       } else {
-        await addEvenement(selectedId, form, file);
+        await addEvenement(selectedId, payload, file);
         setFeedback('Événement ajouté.');
       }
       setStatus('success');
@@ -192,12 +256,16 @@ export default function Carriere() {
 
   async function handleUpdateSituation(e) {
     e.preventDefault();
+    if (situationEditSaving) return;
+    setSituationEditSaving(true);
     try {
       await updateSituation(editingSituationId, situationEditForm);
       setEditingSituationId(null);
       loadSituations(selectedId);
     } catch (err) {
       setFeedback(err.message);
+    } finally {
+      setSituationEditSaving(false);
     }
   }
 
@@ -212,7 +280,7 @@ export default function Carriere() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Carrière' }]} title="Carrière" subtitle="Situation administrative, événements de carrière et diplômes" />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Choisir un employé</label>
@@ -228,7 +296,7 @@ export default function Carriere() {
         </select>
       </div>
 
-      {loading && <p className="text-gray-500 text-sm">Chargement...</p>}
+      {loading && <SkeletonPage cards={3} />}
 
       {data && (
         <>
@@ -317,8 +385,10 @@ export default function Carriere() {
                           className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
                         />
                         <div className="sm:col-span-3 flex gap-2">
-                          <button type="submit" className="text-xs px-3 py-1 rounded-md bg-navy text-white font-medium">Enregistrer</button>
-                          <button type="button" onClick={() => setEditingSituationId(null)} className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">Annuler</button>
+                          <button type="submit" disabled={situationEditSaving} className="text-xs px-3 py-1 rounded-md bg-navy text-white font-medium disabled:opacity-50">
+                            {situationEditSaving ? 'Enregistrement...' : 'Enregistrer'}
+                          </button>
+                          <button type="button" onClick={() => setEditingSituationId(null)} disabled={situationEditSaving} className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-50">Annuler</button>
                         </div>
                       </form>
                     ) : (
@@ -351,6 +421,61 @@ export default function Carriere() {
               </div>
             )}
           </div>
+
+          {alertes.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-amber-400">
+              <h3 className="font-semibold text-navy dark:text-gold mb-3">Alertes avancement</h3>
+              <div className="space-y-3">
+                {alertes.map((a) => (
+                  <div key={a.id} className="border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                    <p className="text-sm text-navy dark:text-gray-100">
+                      Échéance théorique d'avancement d'échelon atteinte le {new Date(a.date_echeance_theorique).toLocaleDateString('fr-FR')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Situation actuelle : {a.details?.classeActuelle} — échelon {a.details?.echelonActuel}
+                      {a.details?.sourceDate?.includes('à confirmer') && ' (date d\'entrée en échelon estimée — à confirmer)'}
+                    </p>
+                    {traiterAlerteId === a.id ? (
+                      <form onSubmit={handleTraiterAlerte} className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                        <select
+                          required value={traiterForm.categorie}
+                          onChange={(e) => setTraiterForm((p) => ({ ...p, categorie: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        >
+                          <option value="">-- Catégorie --</option>
+                          {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'].map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <input
+                          type="date" required value={traiterForm.dateEffet}
+                          onChange={(e) => setTraiterForm((p) => ({ ...p, dateEffet: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        />
+                        <input
+                          type="text" placeholder="Réf. décision" value={traiterForm.referenceDecision}
+                          onChange={(e) => setTraiterForm((p) => ({ ...p, referenceDecision: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        />
+                        <input
+                          type="text" placeholder="Autorité" value={traiterForm.autoriteDecision}
+                          onChange={(e) => setTraiterForm((p) => ({ ...p, autoriteDecision: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        />
+                        <div className="col-span-2 sm:col-span-4 flex gap-2">
+                          <button type="submit" disabled={traiterStatus === 'loading'} className="text-xs px-3 py-1 rounded-md bg-navy text-white font-medium disabled:opacity-50">Valider l'avancement</button>
+                          <button type="button" onClick={() => setTraiterAlerteId(null)} className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">Annuler</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex gap-3 mt-2">
+                        <button onClick={() => ouvrirTraitementAlerte(a)} className="text-xs text-navy dark:text-gold underline">Traiter</button>
+                        <button onClick={() => handleIgnorerAlerte(a.id)} className="text-xs text-gray-400 hover:text-status-rejected">Ignorer</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="font-semibold text-navy dark:text-gold mb-3">
@@ -406,30 +531,47 @@ export default function Carriere() {
                   className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Classe</label>
-                <input
-                  type="text" value={form.classe}
-                  onChange={(e) => updateForm('classe', e.target.value)}
-                  className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Échelon</label>
-                <input
-                  type="text" value={form.echelon}
-                  onChange={(e) => updateForm('echelon', e.target.value)}
-                  className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Indice</label>
-                <input
-                  type="text" value={form.indice}
-                  onChange={(e) => updateForm('indice', e.target.value)}
-                  className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
+              {regimeFonctionnaire ? (
+                <div className="sm:col-span-3">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Situation réglementaire (grille indiciaire)</label>
+                  <GrilleIndiciaireSelector
+                    regime="FONCTIONNAIRE"
+                    dateEffet={form.dateEffet || form.dateEvenement || undefined}
+                    value={{ classe: form.classe, echelon: form.echelon, categorie: form.categorie, cadre: form.cadre, echelle: form.echelle, indice: form.indice }}
+                    onChange={(next, resolution) => {
+                      setForm((prev) => ({ ...prev, ...next }));
+                      setGrilleResolved(!!resolution);
+                    }}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Classe</label>
+                    <input
+                      type="text" value={form.classe}
+                      onChange={(e) => updateForm('classe', e.target.value)}
+                      className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Échelon</label>
+                    <input
+                      type="text" value={form.echelon}
+                      onChange={(e) => updateForm('echelon', e.target.value)}
+                      className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Indice</label>
+                    <input
+                      type="text" value={form.indice}
+                      onChange={(e) => updateForm('indice', e.target.value)}
+                      className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                    />
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fonction</label>
                 <input
@@ -531,15 +673,29 @@ export default function Carriere() {
                       {item.description && <p className="text-xs text-gray-500">{item.description}</p>}
                       {(item.corps || item.grade || item.classe || item.echelon || item.indice) && (
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {[item.corps, item.grade, item.classe && `classe ${item.classe}`, item.echelon && `échelon ${item.echelon}`, item.indice && `indice ${item.indice}`].filter(Boolean).join(' · ')}
+                          {[item.corps, item.grade, item.classe && `classe ${item.classe}`, item.echelon && `échelon ${item.echelon}`,
+                            item.indice && `indice ${formatIndiceDisplay(item.indiceNum ?? item.indice, item.codeGrille)}`].filter(Boolean).join(' · ')}
+                          {item.indiceSource === 'REGLEMENTAIRE' && (
+                            <span className="ml-1 inline-block px-1.5 py-0.5 rounded bg-status-approved/10 text-status-approved text-[10px] font-medium align-middle">réglementaire</span>
+                          )}
+                          {item.indiceSource === 'A_CONFIRMER' && item.indice && (
+                            <span className="ml-1 inline-block px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-medium align-middle">à confirmer</span>
+                          )}
                         </p>
+                      )}
+                      {item.indiceSourceTexte && (
+                        <p className="text-[11px] text-gray-400" title={item.indiceSourceArticle || ''}>Source : {item.indiceSourceTexte}</p>
                       )}
                       {item.referenceDecision && <p className="text-xs text-gray-400">Réf. décision : {item.referenceDecision}</p>}
                       {item.autoriteDecision && <p className="text-xs text-gray-400">Autorité : {item.autoriteDecision}</p>}
                       {item.justificatifPath && (
-                        <a href={fileUrl(item.justificatifPath)} target="_blank" rel="noreferrer" className="text-xs text-navy underline">
+                        <button
+                          type="button"
+                          onClick={() => telechargerJustificatifEvenement(item.id, item.justificatifFilename)}
+                          className="text-xs text-navy underline"
+                        >
                           Voir le justificatif
-                        </a>
+                        </button>
                       )}
                     </div>
                     {item.source === 'evenement' && (
@@ -605,9 +761,13 @@ export default function Carriere() {
                         {[d.etablissement, d.annee_obtention].filter(Boolean).join(' — ')}
                       </p>
                       {d.document_path && (
-                        <a href={fileUrl(d.document_path)} target="_blank" rel="noreferrer" className="text-xs text-navy underline">
+                        <button
+                          type="button"
+                          onClick={() => telechargerDocumentDiplome(d.id, d.document_filename)}
+                          className="text-xs text-navy underline"
+                        >
                           Voir le document
-                        </a>
+                        </button>
                       )}
                     </div>
                     <button onClick={() => handleDeleteDiplome(d.id)} className="text-xs text-gray-400 hover:text-status-rejected">Supprimer</button>

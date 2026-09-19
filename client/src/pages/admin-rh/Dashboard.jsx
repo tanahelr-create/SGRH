@@ -6,6 +6,7 @@ import { getRecentDemandes, getCalendarDemandes } from '../../services/congeApi'
 import { getEcheancesProches } from '../../services/carriereApi';
 import MiniCalendar from '../../components/Calendar';
 import PageHeader from '../../components/PageHeader';
+import { Skeleton, SkeletonText } from '../../components/ui/Skeleton';
 
 const STATUS_LABELS = {
   en_attente: { label: 'En attente', color: 'text-status-pending' },
@@ -52,7 +53,32 @@ export default function Dashboard() {
   }, []);
 
   if (error) return <p className="text-status-rejected">{error}</p>;
-  if (!stats) return <p className="text-gray-500">Chargement...</p>;
+
+  if (!stats) {
+    return (
+      <div className="space-y-6" role="status" aria-label="Chargement du tableau de bord">
+        <PageHeader crumbs={[{ label: 'Admin RH' }]} title="Tableau de bord" subtitle="Vue d'ensemble des ressources humaines" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow p-5 flex items-center gap-4">
+              <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-2/3 rounded" />
+                <Skeleton className="h-5 w-1/3 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="rounded-lg h-64" />
+          <div className="bg-white rounded-lg shadow p-5">
+            <Skeleton className="h-4 w-1/3 rounded mb-4" />
+            <SkeletonText lines={4} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

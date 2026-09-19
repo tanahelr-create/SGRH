@@ -3,12 +3,25 @@ const path = require('path');
 const crypto = require('crypto');
 const carriereService = require('../services/carriereService');
 const personnelRepository = require('../repositories/personnelRepository');
+const { sendUploadedFile } = require('../utils/secureFileServing');
+const { isAllowedFile } = require('../utils/fileSignature');
 
 const ALLOWED_EXT = ['.pdf', '.jpg', '.jpeg', '.png'];
 
+// Le formulaire d'événement carrière part en multipart/form-data (justificatif inclus),
+// donc resolveFromGrille arrive en JSON stringifié dans un champ texte, pas en objet.
+function parseResolveFromGrille(raw) {
+  if (!raw || typeof raw === 'object') return raw || undefined;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+}
+
 async function saveUploadedFile(file, subfolder) {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (!ALLOWED_EXT.includes(ext)) {
+  if (!ALLOWED_EXT.includes(ext) || !isAllowedFile(file.buffer, file.originalname, ['pdf', 'jpg', 'png'])) {
     throw new Error('Formats acceptés : PDF, JPG, PNG');
   }
   const filename = `${crypto.randomUUID()}${ext}`;
@@ -38,7 +51,7 @@ async function getMine(req, res) {
 async function addEvenement(req, res) {
   const {
     typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
-    indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations,
+    indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations, resolveFromGrille,
   } = req.body;
 
   if (!typeEvenement || !dateEvenement) {
@@ -50,6 +63,7 @@ async function addEvenement(req, res) {
     const evenement = await carriereService.addEvenement(req.params.personnelId, {
       typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
       indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations, justificatif,
+      resolveFromGrille: parseResolveFromGrille(resolveFromGrille),
     }, req.user.id);
     return res.status(201).json({ message: 'Événement ajouté', evenement });
   } catch (err) {
@@ -60,7 +74,7 @@ async function addEvenement(req, res) {
 async function updateEvenement(req, res) {
   const {
     typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
-    indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations,
+    indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations, resolveFromGrille,
   } = req.body;
 
   try {
@@ -68,6 +82,7 @@ async function updateEvenement(req, res) {
     const evenement = await carriereService.updateEvenement(req.params.id, {
       typeEvenement, description, dateEvenement, dateEffet, corps, grade, classe, echelon,
       indice, fonction, affectation, motif, referenceDecision, autoriteDecision, observations, justificatif,
+      resolveFromGrille: parseResolveFromGrille(resolveFromGrille),
     }, req.user.id);
     return res.status(200).json({ message: 'Événement modifié', evenement });
   } catch (err) {
@@ -111,4 +126,27 @@ async function echeances(req, res) {
   return res.status(200).json({ echeances: list });
 }
 
-module.exports = { getForPersonnel, getMine, addEvenement, updateEvenement, deleteEvenement, addDiplome, deleteDiplome, echeances };
+async function telechargerJustificatifEvenement(req, res) {
+  try {
+    const evenement = await carriereService.getJustificatifEvenement(req.params.id, req.user);
+    return sendUploadedFile(res, evenement.justificatif_path, evenement.justificatif_filename);
+  } catch (err) {
+    const status = err.message === 'Accès refusé à ce document' ? 403 : 404;
+    return res.status(status).json({ message: err.message });
+  }
+}
+
+async function telechargerDocumentDiplome(req, res) {
+  try {
+    const diplome = await carriereService.getDocumentDiplome(req.params.id, req.user);
+    return sendUploadedFile(res, diplome.document_path, diplome.document_filename);
+  } catch (err) {
+    const status = err.message === 'Accès refusé à ce document' ? 403 : 404;
+    return res.status(status).json({ message: err.message });
+  }
+}
+
+module.exports = {
+  getForPersonnel, getMine, addEvenement, updateEvenement, deleteEvenement, addDiplome, deleteDiplome, echeances,
+  telechargerJustificatifEvenement, telechargerDocumentDiplome,
+};

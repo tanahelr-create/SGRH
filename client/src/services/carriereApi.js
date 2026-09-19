@@ -1,3 +1,6 @@
+import { makeApiError } from '../utils/apiError';
+import { downloadAuthenticatedFile } from './fileDownload';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 function authHeaders() {
@@ -5,17 +8,25 @@ function authHeaders() {
   return { Authorization: `Bearer ${token}` };
 }
 
+export async function telechargerJustificatifEvenement(id, filename) {
+  return downloadAuthenticatedFile(`${API_URL}/carriere/evenements/${id}/justificatif`, filename);
+}
+
+export async function telechargerDocumentDiplome(id, filename) {
+  return downloadAuthenticatedFile(`${API_URL}/carriere/diplomes/${id}/document`, filename);
+}
+
 export async function getCarriere(personnelId) {
   const res = await fetch(`${API_URL}/carriere/${personnelId}`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
 export async function getMaCarriere() {
   const res = await fetch(`${API_URL}/carriere/me`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
@@ -35,7 +46,7 @@ export async function addEvenement(personnelId, data, file) {
     body: toFormData(data, file, 'justificatif'),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || "Échec de l'ajout");
+  if (!res.ok) throw makeApiError(res, result, "Échec de l'ajout");
   return result;
 }
 
@@ -46,7 +57,7 @@ export async function updateEvenement(id, data, file) {
     body: toFormData(data, file, 'justificatif'),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || 'Échec de la modification');
+  if (!res.ok) throw makeApiError(res, result, 'Échec de la modification');
   return result;
 }
 
@@ -56,7 +67,7 @@ export async function deleteEvenement(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec de la suppression');
+  if (!res.ok) throw makeApiError(res, data, 'Échec de la suppression');
   return data;
 }
 
@@ -67,7 +78,7 @@ export async function addDiplome(personnelId, data, file) {
     body: toFormData(data, file, 'document'),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || "Échec de l'ajout du diplôme");
+  if (!res.ok) throw makeApiError(res, result, "Échec de l'ajout du diplôme");
   return result;
 }
 
@@ -77,13 +88,13 @@ export async function deleteDiplome(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec de la suppression du diplôme');
+  if (!res.ok) throw makeApiError(res, data, 'Échec de la suppression du diplôme');
   return data;
 }
 
 export async function getEcheancesProches() {
   const res = await fetch(`${API_URL}/carriere/echeances`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.echeances;
 }

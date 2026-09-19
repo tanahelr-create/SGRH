@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Search, Send, UserRoundCheck } from 'lucide-react';
 import { listPersonnelWithoutAccount, sendRegistrationLink } from '../../services/personnelApi';
 import PageHeader from '../../components/PageHeader';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 export default function Invitations() {
   const [personnel, setPersonnel] = useState([]);
@@ -79,7 +80,16 @@ export default function Invitations() {
         />
       </div>
 
-      {loading && <p className="text-sm text-gray-400">Chargement...</p>}
+      {loading && (
+        <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 dark:border-gray-700 dark:divide-gray-700 mb-5" role="status" aria-label="Chargement de la liste">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="px-4 py-3 space-y-2">
+              <Skeleton className="h-3 w-1/3 rounded" />
+              <Skeleton className="h-2.5 w-1/2 rounded" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && (
         <div className="border border-gray-200 rounded-xl max-h-72 overflow-y-auto mb-5 divide-y divide-gray-100 dark:border-gray-700 dark:divide-gray-700">

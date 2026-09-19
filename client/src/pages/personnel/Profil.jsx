@@ -8,6 +8,7 @@ import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { getMaCarriere } from '../../services/carriereApi';
 import { getMyPersonnel, updateMyProfilePhoto, updateMesInfos } from '../../services/personnelApi';
+import { Skeleton, SkeletonAvatar, SkeletonText } from '../../components/ui';
 
 const roleLabels = { PE: 'Personnel Enseignant', PAT: 'Personnel Administratif et Technique' };
 const SITUATIONS_FAMILIALES = ['Célibataire', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
@@ -201,7 +202,30 @@ export default function Profil() {
     }
   }
 
-  if (!personnel && !error) return <p className="py-8 text-sm text-slate-500">Chargement du dossier personnel…</p>;
+  if (!personnel && !error) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-6 pb-2" role="status" aria-label="Chargement du dossier personnel">
+        <Skeleton className="h-8 w-64 rounded" />
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-navy to-navy/80 p-7">
+          <div className="flex items-center gap-5">
+            <SkeletonAvatar size={96} className="bg-white/20" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-5 w-48 rounded bg-white/20" />
+              <Skeleton className="h-3 w-32 rounded bg-white/20" />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <Skeleton className="h-4 w-1/3 rounded mb-4" />
+              <SkeletonText lines={4} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (!personnel) return <p className="py-8 text-sm text-status-rejected">{error}</p>;
 
   const fullName = [personnel.prenom, personnel.nom].filter(Boolean).join(' ') || user?.email;
@@ -210,7 +234,7 @@ export default function Profil() {
   const estActif = (user?.status || 'active') === 'active';
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-2">
+    <div className="mx-auto max-w-6xl space-y-6 pb-2">
       <PageHeader
         crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Mon dossier' }]}
         title="Mon dossier"

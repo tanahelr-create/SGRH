@@ -100,4 +100,16 @@ async function deleteSituation(id, userId) {
   );
 }
 
-module.exports = { listTypes, addSituation, getForPersonnel, updateSituation, deleteSituation };
+async function getDocumentPourTelechargement(situationId, requestingUser) {
+  const situation = await situationAdministrativeRepository.findById(situationId);
+  if (!situation) throw new Error('Situation introuvable');
+  if (!situation.document_path) throw new Error('Aucun document pour cette situation');
+
+  const isAdmin = requestingUser.role === 'ADMIN_RH' || requestingUser.role === 'SUPERADMIN';
+  const isOwner = requestingUser.personnel_id === situation.personnel_id;
+  if (!isAdmin && !isOwner) throw new Error('Accès refusé à ce document');
+
+  return situation;
+}
+
+module.exports = { listTypes, addSituation, getForPersonnel, updateSituation, deleteSituation, getDocumentPourTelechargement };

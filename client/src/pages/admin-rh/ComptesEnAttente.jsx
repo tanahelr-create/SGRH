@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getPendingAccounts, approvePendingAccount, rejectPendingAccount } from '../../services/personnelApi';
 import PageHeader from '../../components/PageHeader';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 
 export default function ComptesEnAttente() {
   const [accounts, setAccounts] = useState([]);
@@ -49,9 +50,14 @@ export default function ComptesEnAttente() {
       />
 
       {actionError && <p className="text-sm text-status-rejected mb-4">{actionError}</p>}
-      {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && accounts.length === 0 && <p className="text-gray-500">Aucun compte en attente.</p>}
 
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {accounts.map((a) => (
         <div key={a.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center justify-between">
@@ -77,6 +83,7 @@ export default function ComptesEnAttente() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

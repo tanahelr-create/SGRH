@@ -1,15 +1,24 @@
 const pool = require('../config/db');
 
-async function create({ matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat, dateRecrutement, dateEcheanceContrat, contratPermanent, indice, chapitreIb, categorieId }) {
+async function create({
+  matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, typeContrat,
+  dateRecrutement, dateEcheanceContrat, contratPermanent, indice, chapitreIb, categorieId,
+  classe, echelon, indiceNum, indiceSource,
+}) {
   const result = await pool.query(
-    `INSERT INTO personnel (matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, type_contrat, date_recrutement, date_echeance_contrat, contrat_permanent, indice, chapitre_ib, categorie_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+    `INSERT INTO personnel (
+       matricule, nom, prenom, email, role, fonction, corps, grade, poste, service, direction, telephone, type_contrat,
+       date_recrutement, date_echeance_contrat, contrat_permanent, indice, chapitre_ib, categorie_id,
+       classe, echelon, indice_num, indice_source
+     )
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
      RETURNING *`,
     [
       matricule, nom, prenom, email, role, fonction || null, corps || null, grade || null, poste || null,
       service || null, direction || null, telephone || null, typeContrat || null,
       dateRecrutement || null, contratPermanent ? null : (dateEcheanceContrat || null), !!contratPermanent,
       indice || null, chapitreIb || null, categorieId || null,
+      classe || null, echelon || null, indiceNum ?? null, indiceSource || 'A_CONFIRMER',
     ]
   );
   return result.rows[0];
@@ -188,22 +197,41 @@ async function updateInfosPersonnelles(personnelId, { telephone, adresse, situat
 async function updateFiche(id, {
   nom, prenom, email, corps, grade, poste, service, direction, telephone, typeContrat,
   dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb, categorieId,
+  indiceNum, indiceSource, ligneGrilleActuelleId,
 }) {
   const result = await pool.query(
     `UPDATE personnel SET
        nom = $2, prenom = $3, email = $4, corps = $5, grade = $6, poste = $7, service = $8, direction = $9,
        telephone = $10, type_contrat = $11, date_recrutement = $12,
        date_echeance_contrat = $13, contrat_permanent = $14, classe = $15, echelon = $16, indice = $17, chapitre_ib = $18,
-       categorie_id = $19
+       categorie_id = $19, indice_num = $20, indice_source = $21, ligne_grille_actuelle_id = $22
      WHERE id = $1 RETURNING *`,
     [
       id, nom || null, prenom || null, email, corps || null, grade || null, poste || null,
       service || null, direction || null, telephone || null, typeContrat || null,
       dateRecrutement || null, contratPermanent ? null : (dateEcheanceContrat || null), !!contratPermanent,
       classe || null, echelon || null, indice || null, chapitreIb || null, categorieId || null,
+      indiceNum ?? null, indiceSource || 'A_CONFIRMER', ligneGrilleActuelleId || null,
     ]
   );
   return result.rows[0];
+}
+
+// Met à jour uniquement le "snapshot" de situation courante (classe/échelon/indice/
+// grille) — jamais les autres champs de la fiche. Appelée après chaque événement de
+// carrière pour que `personnel` reste un dérivé synchronisé de l'historique
+// (carriere_evenements reste la source de vérité), et non une valeur qui pourrait
+// diverger silencieusement (prompt §14).
+async function syncSituationCourante(id, { cadre, echelle, classe, echelon, indice, indiceNum, indiceSource, ligneGrilleActuelleId }) {
+  const result = await pool.query(
+    `UPDATE personnel SET
+       cadre = $2, echelle = $3, classe = $4, echelon = $5, indice = $6,
+       indice_num = $7, indice_source = $8, ligne_grille_actuelle_id = $9
+     WHERE id = $1 RETURNING *`,
+    [id, cadre || null, echelle || null, classe || null, echelon || null, indice || null,
+     indiceNum ?? null, indiceSource || 'A_CONFIRMER', ligneGrilleActuelleId || null]
+  );
+  return result.rows[0] || null;
 }
 
 module.exports = {
@@ -212,5 +240,5 @@ module.exports = {
   rechargeAnnuelleSiNecessaire, getSolde, debiterSolde, crediterSolde,
   findChefDeServiceUser, findResponsableDirectionUser,
   findEquipeParService, findEquipeParDirection,
-  updateInfosPersonnelles, updateFiche,
+  updateInfosPersonnelles, updateFiche, syncSituationCourante,
 };

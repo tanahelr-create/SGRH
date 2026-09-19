@@ -1,3 +1,6 @@
+import { makeApiError } from '../utils/apiError';
+import { downloadAuthenticatedFile } from './fileDownload';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 function authHeaders() {
@@ -5,24 +8,28 @@ function authHeaders() {
   return { Authorization: `Bearer ${token}` };
 }
 
+export async function telechargerDocumentSituation(id, filename) {
+  return downloadAuthenticatedFile(`${API_URL}/situations-administratives/document/${id}`, filename);
+}
+
 export async function fetchTypesSituation() {
   const res = await fetch(`${API_URL}/situations-administratives/types`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.types;
 }
 
 export async function getSituationsForPersonnel(personnelId) {
   const res = await fetch(`${API_URL}/situations-administratives/${personnelId}`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
 export async function getMesSituations() {
   const res = await fetch(`${API_URL}/situations-administratives/me`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
@@ -37,7 +44,7 @@ export async function addSituation(personnelId, data, file) {
     body: formData,
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || "Échec de l'ajout");
+  if (!res.ok) throw makeApiError(res, result, "Échec de l'ajout");
   return result;
 }
 
@@ -48,7 +55,7 @@ export async function updateSituation(id, data) {
     body: JSON.stringify(data),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || 'Échec de la modification');
+  if (!res.ok) throw makeApiError(res, result, 'Échec de la modification');
   return result.situation;
 }
 
@@ -58,6 +65,6 @@ export async function deleteSituation(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec de la suppression');
+  if (!res.ok) throw makeApiError(res, data, 'Échec de la suppression');
   return data;
 }

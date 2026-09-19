@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listAllPermissions, updatePermission } from '../../services/permissionApi';
 import PageHeader from '../../components/PageHeader';
+import { SkeletonTable } from '../../components/ui/Skeleton';
 
 const ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
 const ROLE_LABELS = { ADMIN_RH: 'Admin RH', SUPERADMIN: 'Superadmin', PE: 'PE', PAT: 'PAT' };
@@ -48,10 +49,23 @@ export default function Permissions() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Chargement...</p>;
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <PageHeader
+          crumbs={[{ label: 'Administration' }, { label: 'Rôles & permissions' }]}
+          title="Rôles & permissions"
+          subtitle="Coche ou décoche pour activer/désactiver une fonctionnalité pour un rôle — la modification est immédiate"
+        />
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+          <SkeletonTable rows={8} columns={5} />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <PageHeader
         crumbs={[{ label: 'Administration' }, { label: 'Rôles & permissions' }]}
         title="Rôles & permissions"

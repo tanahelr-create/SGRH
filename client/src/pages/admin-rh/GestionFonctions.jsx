@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { listUsers, changeFonction, getFonctionHistory } from '../../services/userApi';
 import { FONCTIONS_PAR_ROLE } from '../../constants/fonctions';
 import PageHeader from '../../components/PageHeader';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 export default function GestionFonctions() {
   const [users, setUsers] = useState([]);
@@ -10,9 +11,10 @@ export default function GestionFonctions() {
   const [history, setHistory] = useState([]);
   const [status, setStatus] = useState(null);
   const [feedback, setFeedback] = useState('');
+  const [listLoading, setListLoading] = useState(true);
 
   useEffect(() => {
-    listUsers().then(setUsers).catch(() => {});
+    listUsers().then(setUsers).catch(() => {}).finally(() => setListLoading(false));
   }, []);
 
   const selectedUser = users.find((u) => u.id === Number(selectedUserId));
@@ -42,18 +44,21 @@ export default function GestionFonctions() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <PageHeader
         crumbs={[{ label: 'Admin RH' }, { label: 'Carrière' }, { label: 'Fonctions' }]}
         title="Fonctions"
         subtitle="Modifier la fonction d'un membre du personnel (avancement de grade, changement de poste...)"
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-fit">
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-fit ${!selectedUserId ? 'lg:col-span-2' : ''}`}>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Membre du personnel</label>
+            {listLoading ? (
+              <Skeleton className="h-9 w-full rounded-md" />
+            ) : (
             <select
               required
               value={selectedUserId}
@@ -65,6 +70,7 @@ export default function GestionFonctions() {
                 <option key={u.id} value={u.id}>{u.email} — {u.fonction || 'aucune fonction'}</option>
               ))}
             </select>
+            )}
           </div>
 
           {selectedUser && (

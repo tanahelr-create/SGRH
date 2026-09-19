@@ -31,5 +31,6 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-# Runtime profile images
+# Runtime uploaded files (contient des documents personnels réels, jamais versionnés)
 server/uploads/
+server/private-uploads/

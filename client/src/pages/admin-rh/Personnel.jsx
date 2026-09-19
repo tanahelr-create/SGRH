@@ -5,6 +5,8 @@ import { getFonctionHistory } from '../../services/userApi';
 import AjouterEmployeModal from '../../components/AjouterEmployeModal';
 import ModifierEmployeModal from '../../components/ModifierEmployeModal';
 import PageHeader from '../../components/PageHeader';
+import { toast } from '../../utils/toast';
+import { SkeletonTable } from '../../components/ui';
 
 const COLUMNS = [
   { key: 'nom', label: 'Nom' },
@@ -26,6 +28,7 @@ export default function Personnel() {
   const [editingPerson, setEditingPerson] = useState(null);
   const [importResult, setImportResult] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef(null);
 
   const [search, setSearch] = useState('');
@@ -57,10 +60,13 @@ export default function Personnel() {
   }
 
   async function handleExport() {
+    setExporting(true);
     try {
       await exportPersonnelExcel();
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -136,10 +142,11 @@ export default function Personnel() {
       <div className="flex justify-end gap-2 mb-2">
         <button
           onClick={handleExport}
-          className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-navy dark:text-gray-100 rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+          disabled={exporting}
+          className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-navy dark:text-gray-100 rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
         >
           <Download size={16} />
-          Exporter en Excel
+          {exporting ? 'Export en cours...' : 'Exporter en Excel'}
         </button>
 
         <button
@@ -221,7 +228,11 @@ export default function Personnel() {
         <p className="text-xs text-gray-400">{filtered.length} résultat(s) sur {personnel.length}</p>
       </div>
 
-      {loading && <p className="text-gray-500">Chargement...</p>}
+      {loading && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <SkeletonTable rows={8} columns={COLUMNS.length} />
+        </div>
+      )}
 
       {!loading && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">

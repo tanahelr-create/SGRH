@@ -3,6 +3,8 @@ const activityLogRepository = require('../repositories/activityLogRepository');
 const organisationRepository = require('../repositories/organisationRepository');
 const { sendRegistrationLinkEmail } = require('../config/mailer');
 const corbeilleRepository = require('../repositories/corbeilleRepository');
+const grilleIndiciaireService = require('./grilleIndiciaireService');
+const { normaliserClasse, normaliserEchelon } = require('../utils/normalisationCarriere');
 
 const ROLES_VALIDES = ['PE', 'PAT'];
 
@@ -29,6 +31,34 @@ async function updatePersonnel(id, data, updatedBy) {
 
   await corbeilleRepository.add('personnel_modifie', existing, updatedBy);
 
+  // Si la fiche est éditée via la grille (resolveFromGrille), l'indice vient de la
+  // grille réglementaire et devient la référence ; sinon comportement inchangé
+  // (texte libre, indice_source réévalué seulement si l'indice a changé).
+  let classe = data.classe ?? existing.classe;
+  let echelon = data.echelon ?? existing.echelon;
+  let indice = data.indice ?? existing.indice;
+  let indiceNum = existing.indice_num;
+  let indiceSource = existing.indice_source;
+  let ligneGrilleActuelleId = existing.ligne_grille_actuelle_id;
+
+  if (data.resolveFromGrille) {
+    const { cadre, echelle, categorie, classe: classeGrille, echelon: echelonGrille } = data.resolveFromGrille;
+    const regime = data.resolveFromGrille.regime || grilleIndiciaireService.regimeDepuisCorps(data.corps ?? existing.corps);
+    const resolution = await grilleIndiciaireService.resolveIndice({
+      regime, cadre, echelle, categorie, classe: classeGrille, echelon: echelonGrille, dateEffet: new Date().toISOString().slice(0, 10),
+    });
+    classe = resolution.classe;
+    echelon = String(resolution.echelon);
+    indice = resolution.display;
+    indiceNum = resolution.indice;
+    indiceSource = 'REGLEMENTAIRE';
+    ligneGrilleActuelleId = resolution.ligneGrilleId;
+  } else if (data.indice !== undefined && data.indice !== existing.indice) {
+    indiceNum = grilleIndiciaireService.parseIndiceAffiche(data.indice).indiceNum;
+    indiceSource = data.indice ? 'SAISIE_RH' : 'A_CONFIRMER';
+    ligneGrilleActuelleId = null;
+  }
+
   const updated = await personnelRepository.updateFiche(id, {
     nom: data.nom ?? existing.nom,
     prenom: data.prenom ?? existing.prenom,
@@ -43,9 +73,7 @@ async function updatePersonnel(id, data, updatedBy) {
     dateRecrutement: data.dateRecrutement ?? existing.date_recrutement,
     dateEcheanceContrat: data.dateEcheanceContrat ?? existing.date_echeance_contrat,
     contratPermanent: data.contratPermanent ?? existing.contrat_permanent,
-    classe: data.classe ?? existing.classe,
-    echelon: data.echelon ?? existing.echelon,
-    indice: data.indice ?? existing.indice,
+    classe, echelon, indice, indiceNum, indiceSource, ligneGrilleActuelleId,
     chapitreIb: data.chapitreIb ?? existing.chapitre_ib,
     categorieId: data.categorieId ?? existing.categorie_id,
   });
@@ -89,8 +117,49 @@ function validateRow(row) {
   return null;
 }
 
+// Classe/échelon/indice sont des colonnes OPTIONNELLES de l'import (absentes = tout
+// reste null, comportement inchangé). Quand elles sont fournies mais non reconnues
+// ou structurellement incohérentes (Art.46, ex. "2ème classe" échelon 5), la ligne
+// n'est PAS rejetée : la valeur brute est conservée telle quelle (indice_source
+// 'A_CONFIRMER') et un avertissement est renvoyé au RH, jamais un écrasement
+// silencieux (prompt §18).
+function resoudreClasseEchelonImport(row) {
+  const classeNormalisee = normaliserClasse(row.classe);
+  const echelonNum = normaliserEchelon(row.echelon);
+  const indiceBrut = row.indice !== undefined && row.indice !== null && String(row.indice).trim() !== '' ? String(row.indice).trim() : null;
+  const { indiceNum } = grilleIndiciaireService.parseIndiceAffiche(indiceBrut);
+
+  if (!row.classe && !row.echelon && !indiceBrut) {
+    return { classe: null, echelon: null, indice: null, indiceNum: null, indiceSource: 'A_CONFIRMER', warning: null };
+  }
+
+  if (classeNormalisee && echelonNum) {
+    try {
+      grilleIndiciaireService.validateCoherence({ classe: classeNormalisee, echelon: echelonNum });
+      return {
+        classe: classeNormalisee, echelon: String(echelonNum), indice: indiceBrut,
+        indiceNum, indiceSource: indiceBrut ? 'IMPORT_EXCEL' : 'A_CONFIRMER', warning: null,
+      };
+    } catch (err) {
+      return {
+        classe: String(row.classe).trim(), echelon: String(row.echelon).trim(), indice: indiceBrut,
+        indiceNum, indiceSource: 'A_CONFIRMER', warning: err.message,
+      };
+    }
+  }
+
+  return {
+    classe: row.classe ? String(row.classe).trim() : null,
+    echelon: row.echelon ? String(row.echelon).trim() : null,
+    indice: indiceBrut, indiceNum, indiceSource: 'A_CONFIRMER',
+    warning: (row.classe || row.echelon)
+      ? 'Classe/échelon non reconnus tels quels : valeur conservée sans validation réglementaire, à vérifier.'
+      : null,
+  };
+}
+
 async function importFromRows(rows, importedBy) {
-  const results = { inserted: 0, errors: [] };
+  const results = { inserted: 0, errors: [], warnings: [] };
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -120,6 +189,7 @@ async function importFromRows(rows, importedBy) {
       const fonction = row.fonction ? String(row.fonction).trim() : null;
       const service = row.service ? String(row.service).trim() : null;
       const direction = row.direction ? String(row.direction).trim() : null;
+      const carriereResolue = resoudreClasseEchelonImport(row);
 
       const personnel = await personnelRepository.create({
         matricule,
@@ -134,8 +204,13 @@ async function importFromRows(rows, importedBy) {
         direction,
         telephone: row.telephone ? String(row.telephone).trim() : null,
         typeContrat: row.type_contrat ? String(row.type_contrat).trim() : null,
+        classe: carriereResolue.classe, echelon: carriereResolue.echelon,
+        indice: carriereResolue.indice, indiceNum: carriereResolue.indiceNum, indiceSource: carriereResolue.indiceSource,
       });
       await organisationRepository.syncResponsable(personnel.id, fonction, service, direction);
+      if (carriereResolue.warning) {
+        results.warnings.push({ line: lineNumber, reason: carriereResolue.warning });
+      }
       results.inserted++;
     } catch (err) {
       results.errors.push({ line: lineNumber, reason: err.message });

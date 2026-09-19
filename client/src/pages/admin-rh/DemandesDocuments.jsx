@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getDemandesEnAttente, traiterDemande, refuserDemande } from '../../services/documentApi';
 import PageHeader from '../../components/PageHeader';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 
 const TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation' };
 
@@ -48,9 +49,14 @@ export default function DemandesDocuments() {
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Documents' }, { label: 'Demandes de documents' }]} title="Demandes de documents" subtitle="Demandes en attente, initiées par le personnel" />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
-      {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && demandes.length === 0 && <p className="text-gray-500">Aucune demande en attente.</p>}
 
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {demandes.map((d) => (
           <div key={d.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center justify-between">
@@ -79,6 +85,7 @@ export default function DemandesDocuments() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

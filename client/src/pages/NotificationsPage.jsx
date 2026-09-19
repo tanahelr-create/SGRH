@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/notificationApi';
 import PageHeader from '../components/PageHeader';
+import { SkeletonCard } from '../components/ui/Skeleton';
 
 const TYPE_LABELS = {
   info: 'Information', reunion: 'Réunion', echeance: 'Échéance',
@@ -49,7 +50,7 @@ export default function NotificationsPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <PageHeader crumbs={[{ label: 'Notifications' }]} title="Notifications" />
       <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
         <div className="flex gap-2">
@@ -72,11 +73,18 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {loading && <p className="text-gray-500 text-sm">Chargement...</p>}
       {!loading && filtered.length === 0 && (
         <p className="text-gray-400 text-sm">Aucune notification ici.</p>
       )}
 
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {filtered.map((n) => (
           <div
@@ -119,6 +127,7 @@ export default function NotificationsPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

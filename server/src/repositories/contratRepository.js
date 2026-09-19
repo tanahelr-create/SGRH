@@ -29,6 +29,14 @@ async function findByPersonnel(personnelId) {
   return result.rows;
 }
 
+async function findActifByPersonnel(personnelId) {
+  const result = await pool.query(
+    `SELECT * FROM contrats WHERE personnel_id = $1 AND statut = 'actif' LIMIT 1`,
+    [personnelId]
+  );
+  return result.rows[0] || null;
+}
+
 async function updateDecision(id, { decision, motifNonRenouvellement, referenceDecision, updatedBy }) {
   const result = await pool.query(
     `UPDATE contrats
@@ -125,7 +133,7 @@ async function findDocumentById(id) {
 }
 
 module.exports = {
-  createContrat, findById, findByPersonnel, updateDecision, marquerRenouvele,
+  createContrat, findById, findByPersonnel, findActifByPersonnel, updateDecision, marquerRenouvele,
   markNotified, findEcheancesDansNJours, addDocument, findDocumentsByContrat, findDocumentById,
   markExpirationNotified, findExpiresNonNotifies,
 };

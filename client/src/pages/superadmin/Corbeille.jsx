@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listCorbeille, restoreFromCorbeille, deletePermanently } from '../../services/corbeilleApi';
 import PageHeader from '../../components/PageHeader';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 
 const TYPE_LABELS = { compte: 'Compte utilisateur' };
 
@@ -45,7 +46,7 @@ export default function Corbeille() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <PageHeader
         crumbs={[{ label: 'Administration' }, { label: 'Corbeille' }]}
         title="Corbeille"
@@ -53,9 +54,14 @@ export default function Corbeille() {
       />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
-      {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && items.length === 0 && <p className="text-gray-500">La corbeille est vide.</p>}
 
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <SkeletonCard lines={1} />
+          <SkeletonCard lines={1} />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {items.map((item) => (
           <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -108,6 +114,7 @@ export default function Corbeille() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

@@ -3,12 +3,16 @@ const path = require('path');
 const crypto = require('crypto');
 const situationAdministrativeService = require('../services/situationAdministrativeService');
 const personnelRepository = require('../repositories/personnelRepository');
+const { sendUploadedFile } = require('../utils/secureFileServing');
+const { isAllowedFile } = require('../utils/fileSignature');
 
 const ALLOWED_EXT = ['.pdf', '.jpg', '.jpeg', '.png'];
 
 async function saveFile(file) {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (!ALLOWED_EXT.includes(ext)) throw new Error('Formats acceptés : PDF, JPG, PNG');
+  if (!ALLOWED_EXT.includes(ext) || !isAllowedFile(file.buffer, file.originalname, ['pdf', 'jpg', 'png'])) {
+    throw new Error('Formats acceptés : PDF, JPG, PNG');
+  }
   const filename = `${crypto.randomUUID()}${ext}`;
   const folder = path.join(__dirname, '../../uploads/situations-administratives');
   await fs.mkdir(folder, { recursive: true });
@@ -70,4 +74,14 @@ async function deleteSituation(req, res) {
   }
 }
 
-module.exports = { types, getForPersonnel, getMine, addSituation, updateSituation, deleteSituation };
+async function telechargerDocument(req, res) {
+  try {
+    const situation = await situationAdministrativeService.getDocumentPourTelechargement(req.params.id, req.user);
+    return sendUploadedFile(res, situation.document_path, situation.document_filename);
+  } catch (err) {
+    const status = err.message === 'Accès refusé à ce document' ? 403 : 404;
+    return res.status(status).json({ message: err.message });
+  }
+}
+
+module.exports = { types, getForPersonnel, getMine, addSituation, updateSituation, deleteSituation, telechargerDocument };

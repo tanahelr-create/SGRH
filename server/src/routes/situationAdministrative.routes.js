@@ -19,6 +19,7 @@ const router = express.Router();
 
 router.get('/types', requireAuth, controller.types);
 router.get('/me', requireAuth, requirePermission('view_profil'), controller.getMine);
+router.get('/document/:id', requireAuth, controller.telechargerDocument);
 router.get('/:personnelId', requireAuth, requirePermission('manage_situations_administratives'), controller.getForPersonnel);
 router.post('/:personnelId', requireAuth, requirePermission('manage_situations_administratives'), uploadJustificatif, controller.addSituation);
 router.patch('/:id', requireAuth, requirePermission('manage_situations_administratives'), controller.updateSituation);

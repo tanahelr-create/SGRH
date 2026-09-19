@@ -2,6 +2,8 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const congeService = require('../services/congeService');
+const { sendUploadedFile } = require('../utils/secureFileServing');
+const { isAllowedFile } = require('../utils/fileSignature');
 
 async function create(req, res) {
   const { typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant } = req.body;
@@ -23,7 +25,7 @@ async function uploadJustificatif(req, res) {
 
   const allowedExt = ['.pdf', '.jpg', '.jpeg', '.png'];
   const ext = path.extname(req.file.originalname).toLowerCase();
-  if (!allowedExt.includes(ext)) {
+  if (!allowedExt.includes(ext) || !isAllowedFile(req.file.buffer, req.file.originalname, ['pdf', 'jpg', 'png'])) {
     return res.status(400).json({ message: 'Formats acceptés : PDF, JPG, PNG' });
   }
 
@@ -100,4 +102,17 @@ async function getOne(req, res) {
   }
 }
 
-module.exports = { create, myDemandes, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne, uploadJustificatif };
+async function telechargerJustificatif(req, res) {
+  try {
+    const demande = await congeService.getJustificatifPourTelechargement(req.params.id, req.user);
+    return sendUploadedFile(res, demande.justificatif_path, demande.justificatif_filename);
+  } catch (err) {
+    const status = err.message === 'Accès refusé à ce document' ? 403 : 404;
+    return res.status(status).json({ message: err.message });
+  }
+}
+
+module.exports = {
+  create, myDemandes, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne, uploadJustificatif,
+  telechargerJustificatif,
+};

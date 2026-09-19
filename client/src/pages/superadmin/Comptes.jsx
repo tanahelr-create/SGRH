@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listAccounts, deactivateAccount, reactivateAccount, deleteAccount } from '../../services/accountAdminApi';
 import PageHeader from '../../components/PageHeader';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 
 const ROLE_LABELS = { ADMIN_RH: 'Admin RH', SUPERADMIN: 'Superadmin', PE: 'Personnel PE', PAT: 'Personnel PAT' };
 
@@ -52,7 +53,7 @@ export default function Comptes() {
   const filtered = filterRole ? accounts.filter((a) => a.role === filterRole) : accounts;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <PageHeader crumbs={[{ label: 'Administration' }, { label: 'Gestion des comptes' }]} title="Gestion des comptes" subtitle="Activer, désactiver ou supprimer un compte utilisateur" />
       <div className="flex items-center gap-2 mb-6 flex-wrap">
         <button
@@ -73,8 +74,15 @@ export default function Comptes() {
       </div>
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
-      {loading && <p className="text-gray-500">Chargement...</p>}
 
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {filtered.map((a) => (
           <div key={a.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-center justify-between">
@@ -135,6 +143,7 @@ export default function Comptes() {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

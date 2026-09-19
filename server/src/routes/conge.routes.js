@@ -24,6 +24,7 @@ router.get('/pending-equipe', requireAuth, congeController.pendingPourValidateur
 router.get('/recent', requireAuth, requirePermission('view_conges_admin'), congeController.recent);
 router.get('/calendar', requireAuth, requirePermission('view_conges_admin'), congeController.calendar);
 router.get('/:id', requireAuth, congeController.getOne);
+router.get('/:id/justificatif', requireAuth, congeController.telechargerJustificatif);
 router.post('/:id/justificatif', requireAuth, uploadJustificatif, congeController.uploadJustificatif);
 router.post('/:id/review-intermediaire', requireAuth, congeController.reviewIntermediaire);
 router.post('/:id/review', requireAuth, requirePermission('view_conges_admin'), congeController.review);

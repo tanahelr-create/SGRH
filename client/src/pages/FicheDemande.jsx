@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDemandeDetails } from '../services/congeApi';
+import { Skeleton, SkeletonText } from '../components/ui/Skeleton';
 
 const STATUS_LABELS = { en_attente: 'En attente', approuvee: 'Approuvée', refusee: 'Refusée' };
 
@@ -19,7 +20,19 @@ export default function FicheDemande() {
   }, [id]);
 
   if (error) return <div className="p-8 text-status-rejected">{error}</div>;
-  if (!demande) return <div className="p-8 text-gray-500">Chargement...</div>;
+
+  if (!demande) {
+    return (
+      <div className="min-h-screen bg-gray-100 py-8">
+        <div className="max-w-2xl mx-auto bg-white p-10 shadow" role="status" aria-label="Chargement de la demande">
+          <Skeleton className="h-3 w-2/3 rounded mx-auto mb-2" />
+          <Skeleton className="h-3 w-1/2 rounded mx-auto mb-6" />
+          <Skeleton className="h-5 w-1/3 rounded mx-auto mb-8" />
+          <SkeletonText lines={8} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 print:bg-white print:py-0">

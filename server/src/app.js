@@ -25,14 +25,22 @@ const categorieRoutes = require('./routes/categorie.routes');
 const situationAdministrativeRoutes = require('./routes/situationAdministrative.routes');
 const parametreCarriereRoutes = require('./routes/parametreCarriere.routes');
 const contratRoutes = require('./routes/contrat.routes');
+const grilleIndiciaireRoutes = require('./routes/grilleIndiciaire.routes');
 const contratEcheanceJob = require('./services/contratEcheanceJob');
+const avancementEcheanceJob = require('./services/avancementEcheanceJob');
 
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Seules les photos de profil restent servies publiquement (avatars affichés partout
+// dans l'app, sensibilité faible, noms de fichiers UUID). Les autres pièces jointes
+// (justificatifs congés/carrière/situations, diplômes) ne sont plus sous express.static :
+// elles ne sont accessibles que via une route authentifiée avec vérification RH/propriétaire
+// (voir server/src/utils/secureFileServing.js) — un répertoire /uploads entier servi sans
+// authentification était une fuite potentielle de documents personnels.
+app.use('/uploads/profile-photos', express.static(path.join(__dirname, '../uploads/profile-photos')));
 
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/auth', authRoutes);
@@ -57,6 +65,7 @@ app.use('/api/categories', categorieRoutes);
 app.use('/api/situations-administratives', situationAdministrativeRoutes);
 app.use('/api/parametres-carriere', parametreCarriereRoutes);
 app.use('/api/contrats', contratRoutes);
+app.use('/api/indiciaire', grilleIndiciaireRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Route introuvable' }));
 
@@ -64,3 +73,4 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Serveur RH démarré sur le port ${PORT}`));
 
 contratEcheanceJob.start();
+avancementEcheanceJob.start();

@@ -13,4 +13,9 @@ async function update(cle, valeur, updatedBy) {
   return result.rows[0] || null;
 }
 
-module.exports = { listAll, update };
+async function findByCle(cle) {
+  const result = await pool.query(`SELECT cle, valeur FROM parametres_carriere WHERE cle = $1`, [cle]);
+  return result.rows[0] || null;
+}
+
+module.exports = { listAll, update, findByCle };

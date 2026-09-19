@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PermissionProvider } from './context/PermissionContext';
 import { TextProvider } from './context/TextContext';
@@ -49,6 +50,7 @@ const ADMIN_OR_SUPERADMIN = ['ADMIN_RH', 'SUPERADMIN'];
 
 function App() {
   return (
+    <ToastProvider>
     <ThemeProvider>
       <TextProvider>
         <SettingsPreferencesProvider>
@@ -236,6 +238,7 @@ function App() {
         </SettingsPreferencesProvider>
       </TextProvider>
     </ThemeProvider>
+    </ToastProvider>
   );
 }
 

@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const contratService = require('../services/contratService');
 const personnelRepository = require('../repositories/personnelRepository');
+const { isAllowedFile } = require('../utils/fileSignature');
 
 // Dossier PRIVÉ, jamais enregistré dans express.static — à la différence de
 // uploads/, ces fichiers ne sont accessibles que via telechargerDocument ci-dessous,
@@ -11,7 +12,7 @@ const PRIVATE_UPLOADS_ROOT = path.join(__dirname, '../../private-uploads/contrat
 
 async function saveContratFile(file) {
   const ext = path.extname(file.originalname).toLowerCase();
-  if (ext !== '.pdf') {
+  if (ext !== '.pdf' || !isAllowedFile(file.buffer, file.originalname, ['pdf'])) {
     throw new Error('Seuls les fichiers PDF sont acceptés pour un contrat.');
   }
   const filename = `${crypto.randomUUID()}${ext}`;

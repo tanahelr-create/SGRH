@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getPendingDemandes, reviewDemande } from '../../services/congeApi';
+import { getPendingDemandes, reviewDemande, telechargerJustificatifConge } from '../../services/congeApi';
 import PageHeader from '../../components/PageHeader';
 import { JUSTIFICATIF_OBLIGATOIRE } from '../../constants/conges';
+import { SkeletonCard, EmptyState } from '../../components/ui';
 
 const JUSTIFICATIF_REQUIS_VALIDATION = ['Congé de maladie', 'Congé de maternité'];
 
@@ -11,6 +12,7 @@ export default function CongesAdmin() {
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState('');
   const [avisMap, setAvisMap] = useState({});
+  const [reviewingId, setReviewingId] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -26,12 +28,16 @@ export default function CongesAdmin() {
   useEffect(() => { load(); }, []);
 
   async function handleReview(id, decision) {
+    if (reviewingId) return; // empêche un double-clic pendant une décision déjà en cours
     setActionError('');
+    setReviewingId(id);
     try {
       await reviewDemande(id, decision, avisMap[id] || '');
       setDemandes((prev) => prev.filter((d) => d.id !== id));
     } catch (err) {
       setActionError(err.message);
+    } finally {
+      setReviewingId(null);
     }
   }
 
@@ -40,8 +46,13 @@ export default function CongesAdmin() {
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Congés & absences' }]} title="Congés & absences" subtitle="Demandes en attente de décision" />
 
       {actionError && <p className="text-sm text-status-rejected mb-4">{actionError}</p>}
-      {loading && <p className="text-gray-500">Chargement...</p>}
-      {!loading && demandes.length === 0 && <p className="text-gray-500">Aucune demande en attente.</p>}
+      {loading && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+        </div>
+      )}
+      {!loading && demandes.length === 0 && <EmptyState title="Aucune demande en attente." />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {demandes.map((d) => {
@@ -67,11 +78,13 @@ export default function CongesAdmin() {
                   Voir / télécharger la fiche
                 </Link>
                 {d.justificatif_path ? (
-                  <a href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000'}${d.justificatif_path}`}
-                     target="_blank" rel="noreferrer"
-                     className="text-xs text-navy underline inline-block">
+                  <button
+                    type="button"
+                    onClick={() => telechargerJustificatifConge(d.id, d.justificatif_filename)}
+                    className="text-xs text-navy underline inline-block"
+                  >
                     Voir le justificatif
-                  </a>
+                  </button>
                 ) : JUSTIFICATIF_OBLIGATOIRE.includes(d.type_conge) && (
                   <span className="text-xs text-status-pending">Aucun justificatif fourni</span>
                 )}
@@ -94,16 +107,17 @@ export default function CongesAdmin() {
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => handleReview(d.id, 'refusee')}
-                  className="px-4 py-2 rounded-md border border-status-rejected text-status-rejected text-sm font-medium hover:bg-red-50"
+                  disabled={reviewingId !== null}
+                  className="px-4 py-2 rounded-md border border-status-rejected text-status-rejected text-sm font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Refuser
+                  {reviewingId === d.id ? 'Refus...' : 'Refuser'}
                 </button>
                 <button
                   onClick={() => handleReview(d.id, 'approuvee')}
-                  disabled={justificatifManquant}
+                  disabled={justificatifManquant || reviewingId !== null}
                   className="px-4 py-2 rounded-md bg-status-approved text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Approuver
+                  {reviewingId === d.id ? 'Approbation...' : 'Approuver'}
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import { getMesContrats, telechargerDocumentContrat } from '../../services/contratApi';
+import { SkeletonCard } from '../../components/ui';
 
 const STATUT_CONTRAT_LABELS = {
   actif: 'Actif', expire: 'Expiré', renouvele: 'Renouvelé', non_renouvele: 'Non renouvelé', resilie: 'Résilié',
@@ -23,10 +24,17 @@ export default function MesContrats() {
   }
 
   if (error && !contrats) return <p className="text-status-rejected text-sm">{error}</p>;
-  if (!contrats) return <p className="text-gray-500 text-sm">Chargement...</p>;
+  if (!contrats) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <SkeletonCard lines={3} />
+        <SkeletonCard lines={3} />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader
         crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Mes contrats' }]}
         title="Mes contrats"

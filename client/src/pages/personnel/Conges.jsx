@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
-import { createDemande, getMyDemandes, uploadJustificatif } from '../../services/congeApi';
+import { createDemande, getMyDemandes, uploadJustificatif, telechargerJustificatifConge } from '../../services/congeApi';
 import { getMyPersonnel } from '../../services/personnelApi';
 import { TYPES_CONGE, JUSTIFICATIF_OBLIGATOIRE, STATUS_LABELS } from '../../constants/conges';
+import { SkeletonText } from '../../components/ui';
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -271,7 +272,7 @@ export default function Conges() {
 
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="font-semibold text-navy mb-4">Mes demandes</h3>
-        {loading && <p className="text-gray-500 text-sm">Chargement...</p>}
+        {loading && <SkeletonText lines={4} />}
         {!loading && demandes.length === 0 && (
           <p className="text-gray-400 text-sm">Aucune demande pour l'instant.</p>
         )}
@@ -295,11 +296,13 @@ export default function Conges() {
                 <p className="text-xs text-gray-500 mt-1">Avis : {d.avis_chef_service}</p>
               )}
               {d.justificatif_path && (
-                <a href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000'}${d.justificatif_path}`}
-                   target="_blank" rel="noreferrer"
-                   className="text-xs text-navy underline mt-1 inline-block mr-3">
+                <button
+                  type="button"
+                  onClick={() => telechargerJustificatifConge(d.id, d.justificatif_filename)}
+                  className="text-xs text-navy underline mt-1 inline-block mr-3"
+                >
                   Voir le justificatif
-                </a>
+                </button>
               )}
               <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy underline mt-1 inline-block">
                 Voir / télécharger la fiche

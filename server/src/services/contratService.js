@@ -27,6 +27,11 @@ async function importerContrat(personnelId, data, fichier, importePar) {
   const personnel = await personnelRepository.findByIdRaw(personnelId);
   if (!personnel) throw new Error('Fiche personnel introuvable');
 
+  const dejaActif = await contratRepository.findActifByPersonnel(personnelId);
+  if (dejaActif) {
+    throw new Error('Ce personnel a déjà un contrat actif (#' + dejaActif.id + '). Clôturez-le ou passez par le renouvellement.');
+  }
+
   const contrat = await contratRepository.createContrat({
     personnelId,
     typeContrat: data.typeContrat,
@@ -122,6 +127,10 @@ async function finaliserRenouvellement(personnelId, contratPrecedentId, data, fi
     throw new Error('Contrat précédent introuvable pour ce personnel');
   }
 
+  // L'ancien contrat doit être clôturé AVANT la création du nouveau : les deux ne
+  // peuvent jamais être "actif" en même temps (contrainte uniq_contrats_actif_par_personnel).
+  await contratRepository.marquerRenouvele(precedent.id, userId);
+
   const nouveau = await contratRepository.createContrat({
     personnelId,
     typeContrat: data.typeContrat,
@@ -143,8 +152,6 @@ async function finaliserRenouvellement(personnelId, contratPrecedentId, data, fi
     tailleOctets: fichier.tailleOctets,
     importePar: userId,
   });
-
-  await contratRepository.marquerRenouvele(precedent.id, userId);
 
   await activityLogRepository.create(
     userId, 'contrat_renouvele',
@@ -170,7 +177,7 @@ async function getDocumentPourTelechargement(documentId, requestingUser) {
   const document = await contratRepository.findDocumentById(documentId);
   if (!document) throw new Error('Document introuvable');
 
-  const isAdmin = requestingUser.role === 'ADMIN_RH';
+  const isAdmin = requestingUser.role === 'ADMIN_RH' || requestingUser.role === 'SUPERADMIN';
   const isOwner = requestingUser.personnel_id === document.personnel_id;
   if (!isAdmin && !isOwner) throw new Error('Accès refusé à ce document');
 

@@ -1,3 +1,4 @@
+import { makeApiError } from '../utils/apiError';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 function authHeaders() {
@@ -12,7 +13,7 @@ export async function createPersonnel(data) {
     body: JSON.stringify(data),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || 'Échec de la création');
+  if (!res.ok) throw makeApiError(res, result, 'Échec de la création');
   return result;
 }
 
@@ -23,21 +24,21 @@ export async function updatePersonnel(id, data) {
     body: JSON.stringify(data),
   });
   const result = await res.json();
-  if (!res.ok) throw new Error(result.message || 'Échec de la modification');
+  if (!res.ok) throw makeApiError(res, result, 'Échec de la modification');
   return result;
 }
 
 export async function listPersonnel() {
   const res = await fetch(`${API_URL}/personnel`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.personnel;
 }
 
 export async function listPersonnelWithoutAccount() {
   const res = await fetch(`${API_URL}/personnel/sans-compte`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.personnel;
 }
 
@@ -47,14 +48,14 @@ export async function sendRegistrationLink(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de l'envoi");
+  if (!res.ok) throw makeApiError(res, data, "Échec de l'envoi");
   return data;
 }
 
 export async function getMyPersonnel() {
   const res = await fetch(`${API_URL}/personnel/me`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.personnel;
 }
 
@@ -68,14 +69,14 @@ export async function updateMyProfilePhoto(file) {
     body: formData,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de l'enregistrement de la photo");
+  if (!res.ok) throw makeApiError(res, data, "Échec de l'enregistrement de la photo");
   return data.personnel;
 }
 
 export async function getMonEquipe() {
   const res = await fetch(`${API_URL}/personnel/mon-equipe`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data;
 }
 
@@ -84,7 +85,7 @@ export async function exportPersonnelExcel() {
   const res = await fetch(`${API_URL}/personnel/export`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Échec de l'export");
+  if (!res.ok) throw makeApiError(res, null, "Échec de l'export");
 
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -108,14 +109,14 @@ export async function importPersonnelExcel(file) {
     body: formData,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de l'import");
+  if (!res.ok) throw makeApiError(res, data, "Échec de l'import");
   return data;
 }
 
 export async function getPendingAccounts() {
   const res = await fetch(`${API_URL}/pending-accounts`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.accounts;
 }
 
@@ -125,7 +126,7 @@ export async function approvePendingAccount(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec de la validation');
+  if (!res.ok) throw makeApiError(res, data, 'Échec de la validation');
   return data;
 }
 
@@ -135,7 +136,7 @@ export async function rejectPendingAccount(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec du refus');
+  if (!res.ok) throw makeApiError(res, data, 'Échec du refus');
   return data;
 }
 
@@ -147,6 +148,6 @@ export async function updateMesInfos({ telephone, adresse, situationFamiliale, d
     body: JSON.stringify({ telephone, adresse, situationFamiliale, dateNaissance, sexe, lieuNaissance, nationalite, datePriseFonction }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec de la mise à jour');
+  if (!res.ok) throw makeApiError(res, data, 'Échec de la mise à jour');
   return data.personnel;
 }

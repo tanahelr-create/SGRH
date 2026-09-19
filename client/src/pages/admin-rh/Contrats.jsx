@@ -7,6 +7,9 @@ import {
   ajouterDocument as ajouterDocumentContrat, marquerDecision, telechargerDocumentContrat,
 } from '../../services/contratApi';
 import { TYPES_CONTRAT } from '../../constants/contrats';
+import { SkeletonCard } from '../../components/ui';
+import Modal from '../../components/ui/Modal';
+import { toast } from '../../utils/toast';
 
 const STATUT_CONTRAT_LABELS = {
   actif: 'Actif', expire: 'Expiré', renouvele: 'Renouvelé', non_renouvele: 'Non renouvelé', resilie: 'Résilié',
@@ -29,7 +32,9 @@ export default function Contrats() {
   const [renouvelFile, setRenouvelFile] = useState(null);
   const [nonRenouvelModal, setNonRenouvelModal] = useState(null);
   const [nonRenouvelMotif, setNonRenouvelMotif] = useState('');
+  const [confirmingNonRenouvellement, setConfirmingNonRenouvellement] = useState(false);
   const [avenantFile, setAvenantFile] = useState({});
+  const [avenantUploadingId, setAvenantUploadingId] = useState(null);
 
   useEffect(() => {
     listPersonnel().then(setPersonnelList).catch(() => {});
@@ -101,10 +106,11 @@ export default function Contrats() {
   }
 
   async function handleConfirmerNonRenouvellement() {
-    if (!nonRenouvelMotif.trim()) {
-      setContratFeedback('Le motif est obligatoire.');
+    if (!nonRenouvelMotif.trim() || confirmingNonRenouvellement) {
+      if (!nonRenouvelMotif.trim()) setContratFeedback('Le motif est obligatoire.');
       return;
     }
+    setConfirmingNonRenouvellement(true);
     try {
       await marquerDecision(nonRenouvelModal, 'non_renouvele', { motif: nonRenouvelMotif });
       setNonRenouvelModal(null);
@@ -112,19 +118,25 @@ export default function Contrats() {
       loadContrats(selectedId);
     } catch (err) {
       setContratFeedback(err.message);
+    } finally {
+      setConfirmingNonRenouvellement(false);
     }
   }
 
   async function handleAjouterAvenant(e, contratId) {
     e.preventDefault();
     const file = avenantFile[contratId];
-    if (!file) return;
+    if (!file || avenantUploadingId) return;
+    setAvenantUploadingId(contratId);
     try {
       await ajouterDocumentContrat(contratId, file, 'avenant');
       setAvenantFile((prev) => ({ ...prev, [contratId]: null }));
+      toast.success('Avenant ajouté.');
       loadContrats(selectedId);
     } catch (err) {
-      setContratFeedback(err.message);
+      toast.error(err.message);
+    } finally {
+      setAvenantUploadingId(null);
     }
   }
 
@@ -137,7 +149,7 @@ export default function Contrats() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Contrats' }]} title="Contrats" subtitle="Historique, renouvellement et documents contractuels" />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Choisir un employé</label>
@@ -153,7 +165,12 @@ export default function Contrats() {
         </select>
       </div>
 
-      {loading && <p className="text-gray-500 text-sm">Chargement...</p>}
+      {loading && (
+        <div className="space-y-4">
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={3} />
+        </div>
+      )}
 
       {contrats && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -319,9 +336,7 @@ export default function Contrats() {
           </div>
 
           {nonRenouvelModal && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
-                <h4 className="font-semibold text-navy dark:text-gold mb-3">Non-renouvellement du contrat</h4>
+            <Modal onClose={() => setNonRenouvelModal(null)} title="Non-renouvellement du contrat" maxWidth="max-w-md">
                 <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Motif (obligatoire)</label>
                 <textarea
                   rows={3} value={nonRenouvelMotif}
@@ -331,20 +346,20 @@ export default function Contrats() {
                 <div className="flex justify-end gap-2 mt-4">
                   <button
                     type="button" onClick={() => setNonRenouvelModal(null)}
-                    className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300"
+                    disabled={confirmingNonRenouvellement}
+                    className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300 disabled:opacity-50"
                   >
                     Annuler
                   </button>
                   <button
                     type="button" onClick={handleConfirmerNonRenouvellement}
-                    disabled={!nonRenouvelMotif.trim()}
+                    disabled={!nonRenouvelMotif.trim() || confirmingNonRenouvellement}
                     className="px-4 py-2 rounded-md bg-status-rejected text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
                   >
-                    Confirmer le non-renouvellement
+                    {confirmingNonRenouvellement ? 'Confirmation...' : 'Confirmer le non-renouvellement'}
                   </button>
                 </div>
-              </div>
-            </div>
+            </Modal>
           )}
         </div>
       )}

@@ -77,12 +77,14 @@ async function update(req, res) {
   const {
     nom, prenom, email, corps, grade, poste, service, direction, telephone, typeContrat,
     dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb, categorieId,
+    resolveFromGrille,
   } = req.body;
 
   try {
     const personnel = await personnelService.updatePersonnel(req.params.id, {
       nom, prenom, email, corps, grade, poste, service, direction, telephone, typeContrat,
       dateRecrutement, dateEcheanceContrat, contratPermanent, classe, echelon, indice, chapitreIb, categorieId,
+      resolveFromGrille,
     }, req.user.id);
     return res.status(200).json({ message: 'Fiche mise à jour', personnel });
   } catch (err) {
@@ -129,6 +131,9 @@ async function exportExcel(req, res) {
       { header: 'Direction', key: 'direction', width: 20 },
       { header: 'Téléphone', key: 'telephone', width: 16 },
       { header: 'Type de contrat', key: 'type_contrat', width: 16 },
+      { header: 'Classe', key: 'classe', width: 20 },
+      { header: 'Échelon', key: 'echelon', width: 10 },
+      { header: 'Indice', key: 'indice', width: 12 },
     ];
     sheet.getRow(1).font = { bold: true };
 
@@ -163,6 +168,8 @@ async function importExcel(req, res) {
         matricule: values[0], nom: values[1], prenom: values[2], email: values[3],
         role: values[4], fonction: values[5], corps: values[6], grade: values[7],
         service: values[8], direction: values[9], telephone: values[10], type_contrat: values[11],
+        // Colonnes optionnelles (absentes = undefined, l'import continue de fonctionner à l'identique) :
+        classe: values[12], echelon: values[13], indice: values[14],
       });
     });
 

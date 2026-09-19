@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { sendNotification } from '../../services/notificationApi';
 import { listUsers } from '../../services/userApi';
 import PageHeader from '../../components/PageHeader';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 const FONCTIONS = [
   'Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur',
@@ -14,6 +15,7 @@ export default function EnvoyerNotification() {
   const [fonction, setFonction] = useState(FONCTIONS[0]);
   const [individuals, setIndividuals] = useState([]);
   const [selectedIndividual, setSelectedIndividual] = useState('');
+  const [individualsLoading, setIndividualsLoading] = useState(false);
 
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
@@ -23,7 +25,8 @@ export default function EnvoyerNotification() {
 
   useEffect(() => {
     if (ciblage === 'individual') {
-      listUsers().then(setIndividuals).catch(() => {});
+      setIndividualsLoading(true);
+      listUsers().then(setIndividuals).catch(() => {}).finally(() => setIndividualsLoading(false));
     }
   }, [ciblage]);
 
@@ -49,90 +52,112 @@ export default function EnvoyerNotification() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Envoyer une notification' }]} title="Envoyer une notification" subtitle="Ciblez un groupe, une fonction ou une personne précise" />
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sm:p-8 w-full">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destinataires</label>
-          <select
-            value={ciblage}
-            onChange={(e) => setCiblage(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          >
-            <option value="role">Tout un groupe (PE ou PAT)</option>
-            <option value="fonction">Une fonction précise (ex: chefs de service)</option>
-            <option value="individual">Une personne précise</option>
-          </select>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destinataires</label>
+            <select
+              value={ciblage}
+              onChange={(e) => setCiblage(e.target.value)}
+              className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            >
+              <option value="role">Tout un groupe (PE ou PAT)</option>
+              <option value="fonction">Une fonction précise (ex: chefs de service)</option>
+              <option value="individual">Une personne précise</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {ciblage === 'role' ? 'Groupe' : ciblage === 'fonction' ? 'Fonction' : 'Personne'}
+            </label>
+            {ciblage === 'role' && (
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              >
+                <option value="PE">Tous les PE</option>
+                <option value="PAT">Tous les PAT</option>
+              </select>
+            )}
+
+            {ciblage === 'fonction' && (
+              <select
+                value={fonction}
+                onChange={(e) => setFonction(e.target.value)}
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              >
+                {FONCTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+            )}
+
+            {ciblage === 'individual' && (
+              individualsLoading ? (
+                <Skeleton className="h-9 w-full rounded-md" />
+              ) : (
+              <select
+                required
+                value={selectedIndividual}
+                onChange={(e) => setSelectedIndividual(e.target.value)}
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+              >
+                <option value="">-- Choisir une personne --</option>
+                {individuals.map((u) => (
+                  <option key={u.id} value={u.id}>{u.email} ({u.role}{u.fonction ? ` - ${u.fonction}` : ''})</option>
+                ))}
+              </select>
+              )
+            )}
+          </div>
         </div>
 
-        {ciblage === 'role' && (
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          >
-            <option value="PE">Tous les PE</option>
-            <option value="PAT">Tous les PAT</option>
-          </select>
-        )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            >
+              <option value="info">Information</option>
+              <option value="reunion">Réunion</option>
+              <option value="echeance">Échéance de contrat</option>
+            </select>
+          </div>
 
-        {ciblage === 'fonction' && (
-          <select
-            value={fonction}
-            onChange={(e) => setFonction(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          >
-            {FONCTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-          </select>
-        )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Titre</label>
+            <input
+              type="text"
+              required
+              placeholder="Titre"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+            />
+          </div>
+        </div>
 
-        {ciblage === 'individual' && (
-          <select
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Message</label>
+          <textarea
             required
-            value={selectedIndividual}
-            onChange={(e) => setSelectedIndividual(e.target.value)}
+            rows={4}
+            placeholder="Message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
             className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-          >
-            <option value="">-- Choisir une personne --</option>
-            {individuals.map((u) => (
-              <option key={u.id} value={u.id}>{u.email} ({u.role}{u.fonction ? ` - ${u.fonction}` : ''})</option>
-            ))}
-          </select>
-        )}
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-        >
-          <option value="info">Information</option>
-          <option value="reunion">Réunion</option>
-          <option value="echeance">Échéance de contrat</option>
-        </select>
-
-        <input
-          type="text"
-          required
-          placeholder="Titre"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-        />
-
-        <textarea
-          required
-          rows={3}
-          placeholder="Message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-        />
+          />
+        </div>
 
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="w-full bg-navy text-white rounded-md py-2 font-medium hover:opacity-90 disabled:opacity-50"
+          className="w-full sm:w-auto bg-navy text-white rounded-md px-8 py-2 font-medium hover:opacity-90 disabled:opacity-50"
         >
           {status === 'loading' ? 'Envoi...' : 'Envoyer'}
         </button>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { createPersonnel } from '../services/personnelApi';
 import { fetchDirections, fetchServices } from '../services/organisationApi';
 import { fetchCategories } from '../services/categorieApi';
+import Modal from './ui/Modal';
 
 const FONCTIONS_PAR_ROLE = {
   PE: ['Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur'],
@@ -81,15 +81,7 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-navy dark:text-gold">Ajouter un employé</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
-        </div>
-
+    <Modal onClose={onClose} title="Ajouter un employé" maxWidth="max-w-2xl">
         <p className="text-sm text-gray-500 mb-4">Les champs marqués * sont obligatoires.</p>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
@@ -275,7 +267,6 @@ export default function AjouterEmployeModal({ onClose, onSuccess }) {
             )}
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

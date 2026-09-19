@@ -32,6 +32,9 @@ async function login(email, password) {
     { expiresIn: '8h' }
   );
 
+  const nomComplet = [user.prenom, user.nom].filter(Boolean).join(' ');
+  await activityLogRepository.create(user.id, 'connexion', `Connexion${nomComplet ? ` de ${nomComplet}` : ''} (${user.email})`);
+
   return {
     token,
     user: {

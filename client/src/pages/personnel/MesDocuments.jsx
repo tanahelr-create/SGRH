@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import { demanderDocument, getMesDemandesDocuments } from '../../services/documentApi';
+import { SkeletonText } from '../../components/ui';
 
 const TYPES_DOCUMENT = [
   { value: 'certificat_administratif', label: 'Certificat administratif' },
@@ -95,7 +96,7 @@ export default function MesDocuments() {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 className="font-semibold text-navy dark:text-gold mb-4">Mes demandes</h3>
-        {loading && <p className="text-sm text-gray-400">Chargement...</p>}
+        {loading && <SkeletonText lines={3} />}
         {!loading && demandes.length === 0 && <p className="text-sm text-gray-400">Aucune demande pour l'instant.</p>}
         <div className="space-y-3">
           {demandes.map((d) => (

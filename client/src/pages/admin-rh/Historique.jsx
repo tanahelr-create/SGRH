@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getActivityLog } from '../../services/activityLogApi';
 import PageHeader from '../../components/PageHeader';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 const ACTION_LABELS = {
   invitation_envoyee: { label: 'Invitation envoyée', color: 'bg-blue-50 text-blue-600' },
@@ -57,7 +58,7 @@ export default function Historique() {
   const filtered = filterType ? logs.filter((l) => l.action_type === filterType) : logs;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Audit & journal' }]} title="Audit & journal" subtitle="Historique des actions effectuées dans le SGRH" />
       <div className="mb-6">
         <select
@@ -72,13 +73,26 @@ export default function Historique() {
         </select>
       </div>
 
-      {loading && <p className="text-gray-500 text-sm">Chargement...</p>}
       {!loading && filtered.length === 0 && (
         <p className="text-gray-400 text-sm">Aucune activité enregistrée.</p>
       )}
 
+      {loading && (
+        <div className="space-y-2" role="status" aria-label="Chargement du journal d'activité">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-start gap-3">
+              <Skeleton className="h-5 w-28 rounded shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-2/3 rounded" />
+                <Skeleton className="h-3 w-1/3 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-2">
-        {filtered.map((log) => {
+        {!loading && filtered.map((log) => {
           const meta = ACTION_LABELS[log.action_type] || { label: log.action_type, color: 'bg-gray-100 text-gray-600' };
           return (
             <div key={log.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-start gap-3">

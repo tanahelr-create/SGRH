@@ -3,6 +3,8 @@ import { getAllTexts, updateText } from '../../services/siteTextsApi';
 import { getSiteSettings, updateSiteSetting } from '../../services/siteSettingsAdminApi';
 import { useTextContext } from '../../context/TextContext';
 import PageHeader from '../../components/PageHeader';
+import { toast } from '../../utils/toast';
+import { Skeleton } from '../../components/ui/Skeleton';
 
 const COLOR_LABELS = {
   color_navy: 'Bleu marine (accent principal)',
@@ -18,11 +20,14 @@ export default function ApparenceSite() {
   const [textList, setTextList] = useState([]);
   const [search, setSearch] = useState('');
   const [savingKey, setSavingKey] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { reload: reloadTexts } = useTextContext();
 
   useEffect(() => {
-    getSiteSettings().then(setColors);
-    getAllTexts().then((data) => setTextList(data.list || []));
+    Promise.all([
+      getSiteSettings().then(setColors),
+      getAllTexts().then((data) => setTextList(data.list || [])),
+    ]).finally(() => setLoading(false));
   }, []);
 
   async function handleColorChange(key, value) {
@@ -34,8 +39,9 @@ export default function ApparenceSite() {
     try {
       await updateSiteSetting(key, colors[key]);
       document.documentElement.style.setProperty(`--${key.replace('color_', 'color-').replace(/_/g, '-')}`, colors[key]);
+      toast.success('Couleur enregistrée.');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingKey(null);
     }
@@ -50,8 +56,9 @@ export default function ApparenceSite() {
     try {
       await updateText(key, value);
       await reloadTexts();
+      toast.success('Texte enregistré.');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingKey(null);
     }
@@ -66,7 +73,7 @@ export default function ApparenceSite() {
     });
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-5xl">
       <PageHeader crumbs={[{ label: 'Administration' }, { label: 'Apparence' }]} title="Apparence" subtitle="Couleurs et textes personnalisables du site" />
       <div className="flex gap-2 mb-6">
         <button
@@ -83,7 +90,24 @@ export default function ApparenceSite() {
         </button>
       </div>
 
-      {tab === 'couleurs' && (
+      {tab === 'couleurs' && loading && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-2 gap-4" role="status" aria-label="Chargement de l'apparence">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-10 h-10 rounded shrink-0" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-32 rounded" />
+                  <Skeleton className="h-2.5 w-16 rounded" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-20 rounded-md" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'couleurs' && !loading && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Object.entries(colors).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between gap-4">
@@ -111,7 +135,19 @@ export default function ApparenceSite() {
         </div>
       )}
 
-      {tab === 'textes' && (
+      {tab === 'textes' && loading && (
+        <div className="space-y-3" role="status" aria-label="Chargement des textes">
+          <Skeleton className="h-9 w-full rounded-md" />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+            <Skeleton className="h-3 w-2/3 rounded" />
+            <Skeleton className="h-8 w-full rounded-md" />
+            <Skeleton className="h-3 w-1/2 rounded" />
+            <Skeleton className="h-8 w-full rounded-md" />
+          </div>
+        </div>
+      )}
+
+      {tab === 'textes' && !loading && (
         <div>
           <input
             type="text"

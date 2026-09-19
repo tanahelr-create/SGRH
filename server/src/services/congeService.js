@@ -217,9 +217,22 @@ async function getDemandeDetails(id, requestingUser) {
   if (!demande) throw new Error('Demande introuvable');
 
   const isOwner = demande.user_id === requestingUser.id;
-  const isAdmin = requestingUser.role === 'ADMIN_RH';
+  const isAdmin = requestingUser.role === 'ADMIN_RH' || requestingUser.role === 'SUPERADMIN';
   const isValidateur = demande.validateur_id === requestingUser.id;
   if (!isOwner && !isAdmin && !isValidateur) throw new Error('Accès refusé à cette demande');
+
+  return demande;
+}
+
+async function getJustificatifPourTelechargement(id, requestingUser) {
+  const demande = await congeRepository.findById(id);
+  if (!demande) throw new Error('Demande introuvable');
+  if (!demande.justificatif_path) throw new Error('Aucun justificatif pour cette demande');
+
+  const isOwner = demande.user_id === requestingUser.id;
+  const isAdmin = requestingUser.role === 'ADMIN_RH' || requestingUser.role === 'SUPERADMIN';
+  const isValidateur = demande.validateur_id === requestingUser.id;
+  if (!isOwner && !isAdmin && !isValidateur) throw new Error('Accès refusé à ce document');
 
   return demande;
 }
@@ -228,4 +241,5 @@ module.exports = {
   createDemande, getMyDemandes, getPendingDemandes, reviewDemande,
   getRecentDemandes, getCalendarDemandes, getDemandeDetails,
   getPendingForValidateur, reviewIntermediaire, uploadJustificatif,
+  getJustificatifPourTelechargement,
 };

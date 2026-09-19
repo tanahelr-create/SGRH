@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import { getMonEquipe } from '../../services/personnelApi';
+import { SkeletonAvatar, Skeleton } from '../../components/ui/Skeleton';
 
 export default function MonEquipe() {
   const [data, setData] = useState(null);
@@ -11,7 +12,25 @@ export default function MonEquipe() {
   }, []);
 
   if (error) return <p className="text-status-rejected text-sm">{error}</p>;
-  if (!data) return <p className="text-gray-500 text-sm">Chargement...</p>;
+
+  if (!data) {
+    return (
+      <div>
+        <PageHeader crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Mon équipe' }]} title="Mon équipe" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Chargement de l'équipe">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-center gap-3">
+              <SkeletonAvatar size={40} />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-2/3 rounded" />
+                <Skeleton className="h-2.5 w-1/2 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

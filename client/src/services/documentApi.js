@@ -1,3 +1,4 @@
+import { makeApiError } from '../utils/apiError';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 function authHeaders() {
@@ -12,28 +13,28 @@ export async function generateDocument(personnelId, typeDocument, donnees = {}) 
     body: JSON.stringify({ personnelId, typeDocument, donnees }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec de la génération');
+  if (!res.ok) throw makeApiError(res, data, 'Échec de la génération');
   return data.document;
 }
 
 export async function getDocument(id) {
   const res = await fetch(`${API_URL}/documents/${id}`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.document;
 }
 
 export async function getHistoriquePersonnel(personnelId) {
   const res = await fetch(`${API_URL}/documents/personnel/${personnelId}`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.historique;
 }
 
 export async function getMesDocuments() {
   const res = await fetch(`${API_URL}/documents/me`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.historique;
 }
 
@@ -44,21 +45,21 @@ export async function demanderDocument(typeDocument, motif) {
     body: JSON.stringify({ typeDocument, motif }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Échec de l'envoi");
+  if (!res.ok) throw makeApiError(res, data, "Échec de l'envoi");
   return data.demande;
 }
 
 export async function getMesDemandesDocuments() {
   const res = await fetch(`${API_URL}/documents/demandes/me`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.demandes;
 }
 
 export async function getDemandesEnAttente() {
   const res = await fetch(`${API_URL}/documents/demandes/en-attente`, { headers: authHeaders() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Erreur de chargement');
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
   return data.demandes;
 }
 
@@ -69,7 +70,7 @@ export async function traiterDemande(id, donnees = {}) {
     body: JSON.stringify({ donnees }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec du traitement');
+  if (!res.ok) throw makeApiError(res, data, 'Échec du traitement');
   return data.document;
 }
 
@@ -79,6 +80,6 @@ export async function refuserDemande(id) {
     headers: authHeaders(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Échec du refus');
+  if (!res.ok) throw makeApiError(res, data, 'Échec du refus');
   return data;
 }
