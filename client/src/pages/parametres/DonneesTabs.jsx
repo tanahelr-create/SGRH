@@ -30,7 +30,7 @@ export function Documents() {
       <SettingsToggle label="Téléchargement automatique" checked={d.autoDownload} onChange={(v) => updateNested('documents', 'autoDownload', v)} />
       <SettingsSelect label="Format préféré" value={d.preferredFormat} onChange={(v) => updateNested('documents', 'preferredFormat', v)}
         options={[{ value: 'pdf', label: 'PDF' }, { value: 'image', label: 'Image' }]} />
-      <div className="py-3">
+      <div className="py-4">
         <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-2">Types de documents</p>
         <div className="flex flex-wrap gap-2">
           {TYPES_DOCUMENTS.map((t) => (

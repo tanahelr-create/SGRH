@@ -34,14 +34,14 @@ async function getMine(req, res) {
 }
 
 async function addSituation(req, res) {
-  const { typeSituationId, dateDebut, referenceDecision, observations } = req.body;
+  const { typeSituationId, dateDebut, referenceDecision, observations, motif } = req.body;
   if (!typeSituationId || !dateDebut) {
     return res.status(400).json({ message: 'typeSituationId et dateDebut sont requis' });
   }
   try {
     const justificatif = req.file ? await saveFile(req.file) : null;
     const situation = await situationAdministrativeService.addSituation(req.params.personnelId, {
-      typeSituationId, dateDebut, referenceDecision, observations, justificatif,
+      typeSituationId, dateDebut, referenceDecision, observations, motif, justificatif,
     }, req.user.id);
     return res.status(201).json({ message: 'Situation enregistrée', situation });
   } catch (err) {
@@ -49,4 +49,25 @@ async function addSituation(req, res) {
   }
 }
 
-module.exports = { types, getForPersonnel, getMine, addSituation };
+async function updateSituation(req, res) {
+  const { referenceDecision, observations, motif } = req.body;
+  try {
+    const situation = await situationAdministrativeService.updateSituation(
+      req.params.id, { referenceDecision, observations, motif }, req.user.id
+    );
+    return res.status(200).json({ message: 'Situation modifiée', situation });
+  } catch (err) {
+    return res.status(err.message === 'Situation introuvable' ? 404 : 400).json({ message: err.message });
+  }
+}
+
+async function deleteSituation(req, res) {
+  try {
+    await situationAdministrativeService.deleteSituation(req.params.id, req.user.id);
+    return res.status(200).json({ message: 'Situation supprimée' });
+  } catch (err) {
+    return res.status(err.message === 'Situation introuvable' ? 404 : 400).json({ message: err.message });
+  }
+}
+
+module.exports = { types, getForPersonnel, getMine, addSituation, updateSituation, deleteSituation };

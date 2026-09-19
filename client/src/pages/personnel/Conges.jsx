@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader';
 import { createDemande, getMyDemandes, uploadJustificatif } from '../../services/congeApi';
 import { getMyPersonnel } from '../../services/personnelApi';
 import { TYPES_CONGE, JUSTIFICATIF_OBLIGATOIRE, STATUS_LABELS } from '../../constants/conges';
@@ -99,7 +100,13 @@ export default function Conges() {
   const obligatoire = JUSTIFICATIF_OBLIGATOIRE.includes(createdType);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <PageHeader
+        crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Mes congés & absences' }]}
+        title="Mes congés & absences"
+        subtitle="Déposez une demande et suivez son traitement"
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="font-semibold text-navy mb-4">Nouvelle demande</h3>
 
@@ -300,6 +307,7 @@ export default function Conges() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

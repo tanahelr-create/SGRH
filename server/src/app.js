@@ -24,6 +24,8 @@ const organisationRoutes = require('./routes/organisation.routes');
 const categorieRoutes = require('./routes/categorie.routes');
 const situationAdministrativeRoutes = require('./routes/situationAdministrative.routes');
 const parametreCarriereRoutes = require('./routes/parametreCarriere.routes');
+const contratRoutes = require('./routes/contrat.routes');
+const contratEcheanceJob = require('./services/contratEcheanceJob');
 
 
 const app = express();
@@ -54,8 +56,11 @@ app.use('/api/organisation', organisationRoutes);
 app.use('/api/categories', categorieRoutes);
 app.use('/api/situations-administratives', situationAdministrativeRoutes);
 app.use('/api/parametres-carriere', parametreCarriereRoutes);
+app.use('/api/contrats', contratRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Route introuvable' }));
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Serveur RH démarré sur le port ${PORT}`));
+
+contratEcheanceJob.start();

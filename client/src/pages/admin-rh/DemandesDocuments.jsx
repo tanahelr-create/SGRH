@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getDemandesEnAttente, traiterDemande, refuserDemande } from '../../services/documentApi';
+import PageHeader from '../../components/PageHeader';
 
 const TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation' };
 
@@ -43,14 +44,14 @@ export default function DemandesDocuments() {
   }
 
   return (
-    <div className="max-w-3xl">
-      <p className="text-sm text-gray-500 mb-6">Demandes de documents en attente, initiées par le personnel.</p>
+    <div>
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Documents' }, { label: 'Demandes de documents' }]} title="Demandes de documents" subtitle="Demandes en attente, initiées par le personnel" />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
       {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && demandes.length === 0 && <p className="text-gray-500">Aucune demande en attente.</p>}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {demandes.map((d) => (
           <div key={d.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center justify-between">
             <div>

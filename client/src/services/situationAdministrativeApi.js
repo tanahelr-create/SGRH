@@ -40,3 +40,24 @@ export async function addSituation(personnelId, data, file) {
   if (!res.ok) throw new Error(result.message || "Échec de l'ajout");
   return result;
 }
+
+export async function updateSituation(id, data) {
+  const res = await fetch(`${API_URL}/situations-administratives/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(data),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || 'Échec de la modification');
+  return result.situation;
+}
+
+export async function deleteSituation(id) {
+  const res = await fetch(`${API_URL}/situations-administratives/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec de la suppression');
+  return data;
+}

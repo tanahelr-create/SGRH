@@ -1,13 +1,25 @@
+import { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import Footer from './Footer';
 
 export default function AppShell({ title, subtitle, children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    }
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [sidebarOpen]);
+
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-100 dark:bg-gray-950">
-      <Sidebar />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col bg-slate-50 dark:bg-gray-900">
-        <TopBar title={title} subtitle={subtitle} />
+        <TopBar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-7 xl:px-8">
           <div className="mx-auto w-full max-w-[1600px]">{children}</div>
           <Footer />

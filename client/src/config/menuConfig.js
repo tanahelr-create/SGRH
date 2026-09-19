@@ -1,82 +1,122 @@
 import {
-  LayoutDashboard, Users, UserPlus, UserCheck, Bell, Briefcase, GitBranch, SlidersHorizontal,
+  LayoutDashboard, Users, UserPlus, UserCheck, Bell, Briefcase, GitBranch, FileSignature, SlidersHorizontal,
   CalendarClock, FileText, FileStack, History, ShieldCheck, Trash2, KeyRound, Palette,
   UserRound, Award, Users2, ClipboardCheck, FolderOpen, HelpCircle, Info, BookOpen,
 } from 'lucide-react';
 
-export const menuConfig = {
-  ADMIN_RH: [
+const CHEF_OU_RESPONSABLE = (u) => u?.fonction === 'Chef de service' || u?.fonction === 'Responsable/Directeur';
+
+// Bloc central Admin RH : Tableau de bord, Personnel, Carrière, Contrats, Congés &
+// absences, Documents, Utilisateurs & comptes, Audit & journal (+ les fonctionnalités
+// existantes non citées dans ce plan, regroupées sous l'item le plus proche pour ne
+// rien retirer de l'application).
+const ADMIN_RH_MENU = [
+  {
+    title: null,
+    items: [
+      { label: 'Tableau de bord', path: '/admin/dashboard', icon: LayoutDashboard, permission: 'view_dashboard_admin' },
+    ],
+  },
+  {
+    title: 'Personnel',
+    items: [
+      { label: 'Personnel', path: '/admin/personnel', icon: Users, permission: 'view_personnel' },
+    ],
+  },
+  {
+    title: 'Carrière',
+    items: [
+      { label: 'Carrière', path: '/admin/carriere', icon: GitBranch, permission: 'manage_fonctions' },
+      { label: 'Fonctions', path: '/admin/fonctions', icon: Briefcase, permission: 'manage_fonctions' },
+      { label: 'Paramètres carrière', path: '/admin/parametres-carriere', icon: SlidersHorizontal, permission: 'manage_parametres_carriere' },
+    ],
+  },
+  {
+    title: null,
+    items: [
+      { label: 'Contrats', path: '/admin/contrats', icon: FileSignature, permission: 'manage_fonctions' },
+    ],
+  },
+  {
+    title: null,
+    items: [
+      { label: 'Congés & absences', path: '/admin/conges', icon: CalendarClock, permission: 'view_conges_admin' },
+    ],
+  },
+  {
+    title: 'Documents',
+    items: [
+      { label: 'Documents administratifs', path: '/admin/documents', icon: FileText, permission: 'manage_documents' },
+      { label: 'Demandes de documents', path: '/admin/demandes-documents', icon: FolderOpen, permission: 'manage_documents' },
+    ],
+  },
+  {
+    title: 'Utilisateurs & comptes',
+    items: [
+      { label: 'Inviter un personnel', path: '/admin/invitations', icon: UserPlus, permission: 'send_registration_link' },
+      { label: 'Comptes en attente', path: '/admin/comptes-attente', icon: UserCheck, permission: 'view_pending_accounts' },
+    ],
+  },
+  {
+    title: null,
+    items: [
+      { label: 'Envoyer une notification', path: '/admin/notifications', icon: Bell, permission: 'send_notification' },
+    ],
+  },
+  {
+    title: null,
+    items: [
+      { label: 'Audit & journal', path: '/admin/historique', icon: History, permission: 'view_historique' },
+    ],
+  },
+];
+
+// Bloc Personnel (PE/PAT) : Tableau de bord, Mon dossier, Ma carrière, Mes contrats,
+// Mes congés & absences, Mes documents. Profil/Paramètres restent dans le menu
+// utilisateur (TopBar), pas ici. Mon équipe/Validation équipe et l'aide sont
+// conservées : elles existaient déjà et ne sont pas mentionnées comme à retirer.
+function personnelMenu() {
+  return [
     {
-      title: 'Gestion des Ressources Humaines',
+      title: 'Mon espace',
       items: [
-        { label: 'Tableau de bord', path: '/admin/dashboard', icon: LayoutDashboard, permission: 'view_dashboard_admin' },
-        { label: 'Personnel', path: '/admin/personnel', icon: Users, permission: 'view_personnel' },
-        { label: 'Inviter un personnel', path: '/admin/invitations', icon: UserPlus, permission: 'send_registration_link' },
-        { label: 'Comptes en attente', path: '/admin/comptes-attente', icon: UserCheck, permission: 'view_pending_accounts' },
-        { label: 'Notifications', path: '/admin/notifications', icon: Bell, permission: 'send_notification' },
-        { label: 'Fonctions', path: '/admin/fonctions', icon: Briefcase, permission: 'manage_fonctions' },
-        { label: 'Carrière', path: '/admin/carriere', icon: GitBranch, permission: 'manage_fonctions' },
-        { label: 'Paramètres carrière', path: '/admin/parametres-carriere', icon: SlidersHorizontal, permission: 'manage_parametres_carriere' },
-        { label: 'Congés', path: '/admin/conges', icon: CalendarClock, permission: 'view_conges_admin' },
-        { label: 'Documents administratifs', path: '/admin/documents', icon: FileText, permission: 'manage_documents' },
-        { label: 'Demandes de documents', path: '/admin/demandes-documents', icon: FolderOpen, permission: 'manage_documents' },
-        { label: 'Historique', path: '/admin/historique', icon: History, permission: 'view_historique' },
+        { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, permission: null },
+        { label: 'Mon dossier', path: '/profil', icon: UserRound, permission: 'view_profil' },
+        { label: 'Ma carrière', path: '/carriere', icon: Award, permission: 'view_profil' },
+        { label: 'Mes contrats', path: '/mes-contrats', icon: FileSignature, permission: 'view_profil' },
+        { label: 'Mes congés & absences', path: '/conges', icon: CalendarClock, permission: 'view_mes_conges' },
+        { label: 'Mes documents', path: '/mes-documents', icon: FileStack, permission: 'demander_document' },
+        { label: 'Mon équipe', path: '/mon-equipe', icon: Users2, permission: null, showIf: CHEF_OU_RESPONSABLE },
+        { label: 'Validation équipe', path: '/validation-equipe', icon: ClipboardCheck, permission: null, showIf: CHEF_OU_RESPONSABLE },
       ],
     },
-  ],
+    {
+      title: 'Aide',
+      items: [
+        { label: 'Par où commencer', path: '/aide/commencer', icon: Info, permission: null },
+        { label: 'Vos droits', path: '/aide/droits', icon: HelpCircle, permission: null },
+        { label: 'Les procédures', path: '/aide/procedures', icon: BookOpen, permission: null },
+      ],
+    },
+  ];
+}
+
+export const menuConfig = {
+  ADMIN_RH: ADMIN_RH_MENU,
+  // Le Super Admin voit exactement le menu Admin RH (Sidebar.jsx les fusionne déjà),
+  // plus ce bloc exclusif : gestion des comptes, corbeille, rôles & permissions,
+  // apparence du site.
   SUPERADMIN: [
     {
-      title: 'Administration',
+      title: 'Super Administration',
       items: [
-        { label: 'Comptes', path: '/superadmin/comptes', icon: ShieldCheck, permission: 'manage_accounts' },
+        { label: 'Gestion des comptes', path: '/superadmin/comptes', icon: ShieldCheck, permission: 'manage_accounts' },
         { label: 'Corbeille', path: '/superadmin/corbeille', icon: Trash2, permission: 'manage_corbeille' },
-        { label: 'Permissions', path: '/superadmin/permissions', icon: KeyRound, permission: 'manage_permissions' },
+        { label: 'Rôles & permissions', path: '/superadmin/permissions', icon: KeyRound, permission: 'manage_permissions' },
         { label: 'Apparence', path: '/superadmin/apparence', icon: Palette, permission: 'manage_site_texts' },
       ],
     },
   ],
-  PE: [
-    {
-      title: null,
-      items: [
-        { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, permission: null },
-        { label: 'Mon profil', path: '/profil', icon: UserRound, permission: 'view_profil' },
-        { label: 'Ma carrière', path: '/carriere', icon: Award, permission: 'view_profil' },
-        { label: 'Congés', path: '/conges', icon: CalendarClock, permission: 'view_mes_conges' },
-        { label: 'Mon équipe', path: '/mon-equipe', icon: Users2, permission: null, showIf: (u) => u?.fonction === 'Chef de service' || u?.fonction === 'Responsable/Directeur' },
-        { label: 'Validation équipe', path: '/validation-equipe', icon: ClipboardCheck, permission: null, showIf: (u) => u?.fonction === 'Chef de service' || u?.fonction === 'Responsable/Directeur' },
-        { label: 'Mes documents', path: '/mes-documents', icon: FileStack, permission: 'demander_document' },
-      ],
-    },
-    {
-      title: 'Aide',
-      items: [
-        { label: 'Par où commencer', path: '/aide/commencer', icon: Info, permission: null },
-        { label: 'Vos droits', path: '/aide/droits', icon: HelpCircle, permission: null },
-        { label: 'Les procédures', path: '/aide/procedures', icon: BookOpen, permission: null },
-      ],
-    },
-  ],
-  PAT: [
-    {
-      title: null,
-      items: [
-        { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, permission: null },
-        { label: 'Mon profil', path: '/profil', icon: UserRound, permission: 'view_profil' },
-        { label: 'Ma carrière', path: '/carriere', icon: Award, permission: 'view_profil' },
-        { label: 'Congés', path: '/conges', icon: CalendarClock, permission: 'view_mes_conges' },
-        { label: 'Mon équipe', path: '/mon-equipe', icon: Users2, permission: null, showIf: (u) => u?.fonction === 'Chef de service' || u?.fonction === 'Responsable/Directeur' },
-        { label: 'Validation équipe', path: '/validation-equipe', icon: ClipboardCheck, permission: null, showIf: (u) => u?.fonction === 'Chef de service' || u?.fonction === 'Responsable/Directeur' },
-        { label: 'Mes documents', path: '/mes-documents', icon: FileStack, permission: 'demander_document' },
-      ],
-    },
-    {
-      title: 'Aide',
-      items: [
-        { label: 'Par où commencer', path: '/aide/commencer', icon: Info, permission: null },
-        { label: 'Vos droits', path: '/aide/droits', icon: HelpCircle, permission: null },
-        { label: 'Les procédures', path: '/aide/procedures', icon: BookOpen, permission: null },
-      ],
-    },
-  ],
+  PE: personnelMenu(),
+  PAT: personnelMenu(),
 };

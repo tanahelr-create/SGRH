@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { ChevronDown, ChevronUp, Search, UserPlus, Download, Upload } from 'lucide-react';
 import { listPersonnel, exportPersonnelExcel, importPersonnelExcel } from '../../services/personnelApi';
 import { getFonctionHistory } from '../../services/userApi';
 import AjouterEmployeModal from '../../components/AjouterEmployeModal';
 import ModifierEmployeModal from '../../components/ModifierEmployeModal';
+import PageHeader from '../../components/PageHeader';
 
 const COLUMNS = [
   { key: 'nom', label: 'Nom' },
@@ -121,7 +122,7 @@ export default function Personnel() {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy"
+        className="max-w-[9.5rem] border border-gray-300 rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy"
       >
         <option value="">{placeholder}</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -131,6 +132,7 @@ export default function Personnel() {
 
   return (
     <div>
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Personnel' }]} title="Personnel" subtitle="Recherchez, filtrez et gérez les fiches du personnel" />
       <div className="flex justify-end gap-2 mb-2">
         <button
           onClick={handleExport}
@@ -242,9 +244,8 @@ export default function Personnel() {
             </thead>
             <tbody>
               {filtered.map((p) => (
-                <>
+                <Fragment key={p.id}>
                   <tr
-                    key={p.id}
                     onClick={() => toggleExpand(p)}
                     className="border-b last:border-0 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                   >
@@ -304,7 +305,7 @@ export default function Personnel() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
               {filtered.length === 0 && (
                 <tr>

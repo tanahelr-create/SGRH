@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Check, FileText, LoaderCircle, Pencil, Upload, UserRound, X } from 'lucide-react';
+import {
+  Briefcase, Building2, Calendar, CalendarClock, Camera, Check, FileText,
+  Globe2, Hash, Heart, Home, LoaderCircle, Mail, MapPin, Pencil, Phone, ShieldCheck,
+  UserCog, UserRound, Users, X,
+} from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { getMaCarriere } from '../../services/carriereApi';
 import { getMyPersonnel, updateMyProfilePhoto, updateMesInfos } from '../../services/personnelApi';
@@ -43,23 +48,30 @@ function photoUrl(photo) {
   return `${API_URL.replace(/\/api\/?$/, '')}${photo}`;
 }
 
-function InfoRow({ label, value }) {
+function Field({ icon: Icon, label, value }) {
   return (
-    <div className="border-b border-slate-100 py-3 last:border-b-0 dark:border-gray-700">
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-slate-800 dark:text-gray-100">{present(value)}</dd>
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy/5 text-navy dark:bg-gold/10 dark:text-gold">
+        <Icon size={16} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs text-slate-500 dark:text-gray-400">{label}</p>
+        <p className="mt-0.5 break-words text-sm font-semibold text-slate-800 dark:text-gray-100">{present(value)}</p>
+      </div>
     </div>
   );
 }
 
-function Section({ title, action, children }) {
+function Card({ icon: Icon, title, action, children }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-      <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3 dark:border-gray-700 dark:bg-gray-800 sm:px-6">
-        <h2 className="text-sm font-bold tracking-wide text-navy dark:text-gold">{title}</h2>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+      <div className="mb-5 flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-navy dark:text-gold">
+          <Icon size={18} aria-hidden="true" /> {title}
+        </h2>
         {action}
       </div>
-      <dl className="grid grid-cols-1 gap-x-8 px-5 sm:grid-cols-2 sm:px-6">{children}</dl>
+      {children}
     </section>
   );
 }
@@ -195,176 +207,231 @@ export default function Profil() {
   const fullName = [personnel.prenom, personnel.nom].filter(Boolean).join(' ') || user?.email;
   const currentPhoto = photoUrl(personnel.photo_profil);
   const contractStatus = personnel.contrat_permanent ? 'Permanent' : personnel.type_contrat;
+  const estActif = (user?.status || 'active') === 'active';
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-2">
-      <div className="overflow-hidden rounded-2xl bg-navy shadow-sm">
-        <div className="flex flex-col gap-5 p-5 text-white sm:flex-row sm:items-center sm:p-7">
-          <div className="relative mx-auto shrink-0 sm:mx-0">
-            {currentPhoto ? <img src={currentPhoto} alt={`Photo de ${fullName}`} className="h-28 w-28 rounded-2xl border-4 border-white/30 object-cover" /> : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-2xl border-4 border-white/30 bg-white/10" aria-label="Aucune photo de profil"><UserRound size={52} aria-hidden="true" /></div>
-            )}
-            <button type="button" onClick={() => inputRef.current?.click()} className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full bg-gold text-navy shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Modifier la photo de profil"><Camera size={18} aria-hidden="true" /></button>
-            <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={selectPhoto} />
-          </div>
-          <div className="min-w-0 text-center sm:text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Dossier du personnel</p>
-            <h1 className="mt-1 break-words text-2xl font-bold">{fullName || 'Non renseigné'}</h1>
-            <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-white/80 sm:justify-start">
-              <span>Matricule : {present(personnel.matricule)}</span><span>Fonction : {present(personnel.fonction)}</span><span>Catégorie : {present(personnel.role)}</span>
+      <PageHeader
+        crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Mon dossier' }]}
+        title="Mon dossier"
+        subtitle="Informations personnelles et administratives"
+      />
+
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-navy to-navy/80 shadow-sm">
+        <div className="flex flex-col gap-5 p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+            <div className="relative shrink-0">
+              {currentPhoto ? (
+                <img src={currentPhoto} alt={`Photo de ${fullName}`} className="h-24 w-24 rounded-full border-4 border-white/20 object-cover" />
+              ) : (
+                <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white/20 bg-white/10" aria-label="Aucune photo de profil">
+                  <UserRound size={44} aria-hidden="true" />
+                </div>
+              )}
+              <button
+                type="button" onClick={() => inputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-gold text-navy shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                aria-label="Modifier la photo de profil"
+              >
+                <Camera size={16} aria-hidden="true" />
+              </button>
+              <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={selectPhoto} />
             </div>
-            <button type="button" onClick={() => inputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/40 px-3 py-2 text-sm font-medium transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"><Upload size={16} aria-hidden="true" /> Modifier la photo</button>
+            <div className="min-w-0">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${estActif ? 'bg-emerald-400/20 text-emerald-300' : 'bg-red-400/20 text-red-300'}`}>
+                {estActif ? 'Actif' : 'Inactif'}
+              </span>
+              <h2 className="mt-1.5 break-words text-xl font-bold">{fullName || 'Non renseigné'}</h2>
+              <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-white/80 sm:justify-start">
+                <span>Matricule : {present(personnel.matricule)}</span>
+                <span>Fonction : {present(personnel.fonction)}</span>
+                <span>Catégorie : {present(personnel.role)}</span>
+              </div>
+            </div>
           </div>
+          {!editingContact && (
+            <button
+              type="button" onClick={startEditingContact}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-navy shadow hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <Pencil size={16} aria-hidden="true" /> Modifier mes informations
+            </button>
+          )}
         </div>
-        {selectedPhoto && <div className="border-t border-white/15 bg-white/10 p-5 sm:px-7"><div className="flex flex-col items-center gap-4 sm:flex-row">
-          <img src={preview} alt="Aperçu de la nouvelle photo" className="h-20 w-20 rounded-xl object-cover" />
-          <div className="flex-1 text-center sm:text-left"><p className="font-semibold">Aperçu de la nouvelle photo</p><p className="text-sm text-white/75">{selectedPhoto.name}</p></div>
-          <div className="flex gap-3"><button type="button" onClick={cancelPhoto} disabled={savingPhoto} className="inline-flex items-center gap-1 rounded-lg border border-white/40 px-3 py-2 text-sm font-medium disabled:opacity-50"><X size={16} /> Annuler</button><button type="button" onClick={savePhoto} disabled={savingPhoto} className="inline-flex items-center gap-1 rounded-lg bg-gold px-3 py-2 text-sm font-semibold text-navy disabled:opacity-50">{savingPhoto ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />} Enregistrer</button></div>
-        </div></div>}
+        {selectedPhoto && (
+          <div className="border-t border-white/15 bg-white/10 p-5 text-white sm:px-7">
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <img src={preview} alt="Aperçu de la nouvelle photo" className="h-20 w-20 rounded-xl object-cover" />
+              <div className="flex-1 text-center sm:text-left">
+                <p className="font-semibold">Aperçu de la nouvelle photo</p>
+                <p className="text-sm text-white/75">{selectedPhoto.name}</p>
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={cancelPhoto} disabled={savingPhoto} className="inline-flex items-center gap-1 rounded-lg border border-white/40 px-3 py-2 text-sm font-medium disabled:opacity-50">
+                  <X size={16} /> Annuler
+                </button>
+                <button type="button" onClick={savePhoto} disabled={savingPhoto} className="inline-flex items-center gap-1 rounded-lg bg-gold px-3 py-2 text-sm font-semibold text-navy disabled:opacity-50">
+                  {savingPhoto ? <LoaderCircle size={16} className="animate-spin" /> : <Check size={16} />} Enregistrer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {error && <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-status-rejected dark:border-red-900 dark:bg-red-950/30">{error}</p>}
-
-      <Section
-        title="IDENTITÉ"
-        action={
-          !editingContact ? (
-            <button
-              type="button"
-              onClick={startEditingContact}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-navy/20 px-3 py-1.5 text-xs font-medium text-navy hover:bg-navy/5 dark:border-gold/30 dark:text-gold dark:hover:bg-gold/10"
-            >
-              <Pencil size={14} /> Modifier mes informations
-            </button>
-          ) : null
-        }
-      >
-        <InfoRow label="Nom" value={personnel.nom} />
-        <InfoRow label="Prénom" value={personnel.prenom} />
-        <InfoRow label="E-mail" value={personnel.email} />
-
-        {!editingContact ? (
-          <>
-            <InfoRow label="Sexe" value={personnel.sexe} />
-            <InfoRow label="Date de naissance" value={formatDate(personnel.date_naissance)} />
-            <InfoRow label="Lieu de naissance" value={personnel.lieu_naissance} />
-            <InfoRow label="Nationalité" value={personnel.nationalite} />
-            <InfoRow label="Situation familiale" value={personnel.situation_familiale} />
-            <InfoRow label="Téléphone" value={personnel.telephone} />
-            <InfoRow label="Adresse" value={personnel.adresse} />
-          </>
-        ) : (
-          <form onSubmit={saveContact} className="col-span-1 sm:col-span-2 py-3 space-y-3 border-t border-slate-100 dark:border-gray-700 mt-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Sexe</label>
-                <select
-                  value={formSexe}
-                  onChange={(e) => setFormSexe(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                >
-                  {SEXES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Date de naissance</label>
-                <input
-                  type="date" value={formDateNaissance}
-                  onChange={(e) => setFormDateNaissance(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Lieu de naissance</label>
-                <input
-                  type="text" value={formLieuNaissance}
-                  onChange={(e) => setFormLieuNaissance(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Nationalité</label>
-                <input
-                  type="text" value={formNationalite}
-                  onChange={(e) => setFormNationalite(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Date de prise de fonction</label>
-                <input
-                  type="date" value={formDatePriseFonction}
-                  onChange={(e) => setFormDatePriseFonction(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Situation familiale</label>
-                <select
-                  value={formSituation}
-                  onChange={(e) => setFormSituation(e.target.value)}
-                  className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-                >
-                  {SITUATIONS_FAMILIALES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Téléphone</label>
-              <input
-                type="text" value={formTelephone}
-                onChange={(e) => setFormTelephone(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-1">Adresse</label>
-              <textarea
-                rows={2} value={formAdresse}
-                onChange={(e) => setFormAdresse(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setEditingContact(false)}
-                disabled={savingContact}
-                className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm font-medium text-slate-600 dark:text-gray-300 disabled:opacity-50"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={savingContact}
-                className="px-3 py-2 rounded-md bg-navy text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
-              >
-                {savingContact ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </div>
-          </form>
-        )}
-      </Section>
-
       {contactMessage && (
         <p className={`text-sm px-1 ${contactStatus === 'success' ? 'text-status-approved' : 'text-status-rejected'}`}>
           {contactMessage}
         </p>
       )}
 
-      <Section title="INFORMATIONS ADMINISTRATIVES">
-        <InfoRow label="Matricule" value={personnel.matricule} /><InfoRow label="Catégorie du personnel" value={roleLabels[personnel.role] || personnel.role} /><InfoRow label="Type de personnel" value={personnel.role} /><InfoRow label="Statut" value={contractStatus} /><InfoRow label="Fonction" value={personnel.fonction} /><InfoRow label="Poste" value={personnel.poste} /><InfoRow label="Grade" value={personnel.grade} /><InfoRow label="Date de recrutement" value={formatDate(personnel.date_recrutement)} /><InfoRow label="Date de prise de fonction" value={formatDate(personnel.date_prise_fonction)} /><InfoRow label="Ancienneté" value={seniority(personnel.date_recrutement)} />
-      </Section>
+      {editingContact ? (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold text-navy dark:text-gold">
+            <Pencil size={18} aria-hidden="true" /> Modifier mes informations
+          </h2>
+          <form onSubmit={saveContact} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Sexe</label>
+                <select
+                  value={formSexe} onChange={(e) => setFormSexe(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                >
+                  {SEXES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Date de naissance</label>
+                <input
+                  type="date" value={formDateNaissance} onChange={(e) => setFormDateNaissance(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Lieu de naissance</label>
+                <input
+                  type="text" value={formLieuNaissance} onChange={(e) => setFormLieuNaissance(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Nationalité</label>
+                <input
+                  type="text" value={formNationalite} onChange={(e) => setFormNationalite(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Date de prise de fonction</label>
+                <input
+                  type="date" value={formDatePriseFonction} onChange={(e) => setFormDatePriseFonction(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Situation familiale</label>
+                <select
+                  value={formSituation} onChange={(e) => setFormSituation(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                >
+                  {SITUATIONS_FAMILIALES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Téléphone</label>
+              <input
+                type="text" value={formTelephone} onChange={(e) => setFormTelephone(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-gray-400">Adresse</label>
+              <textarea
+                rows={2} value={formAdresse} onChange={(e) => setFormAdresse(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button" onClick={() => setEditingContact(false)} disabled={savingContact}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit" disabled={savingContact}
+                className="rounded-md bg-navy px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {savingContact ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card icon={Users} title="Informations personnelles">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+              <Field icon={UserRound} label="Nom" value={personnel.nom} />
+              <Field icon={UserRound} label="Prénom" value={personnel.prenom} />
+              <Field icon={Mail} label="E-mail" value={personnel.email} />
+              <Field icon={Users} label="Sexe" value={personnel.sexe} />
+              <Field icon={Calendar} label="Date de naissance" value={formatDate(personnel.date_naissance)} />
+              <Field icon={MapPin} label="Lieu de naissance" value={personnel.lieu_naissance} />
+              <Field icon={Globe2} label="Nationalité" value={personnel.nationalite} />
+              <Field icon={Heart} label="Situation familiale" value={personnel.situation_familiale} />
+              <Field icon={Phone} label="Téléphone" value={personnel.telephone} />
+              <Field icon={Home} label="Adresse" value={personnel.adresse} />
+            </div>
+          </Card>
 
-      <Section title="INFORMATIONS PROFESSIONNELLES">
-        <InfoRow label="Fonction actuelle" value={personnel.fonction} /><InfoRow label="Poste" value={personnel.poste} /><InfoRow label="Service" value={personnel.service} /><InfoRow label="Catégorie" value={personnel.role} /><InfoRow label="Statut professionnel" value={contractStatus} /><InfoRow label="Responsable hiérarchique" value={personnel.responsable_hierarchique} />
-      </Section>
+          <Card icon={Briefcase} title="Informations administratives">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+              <Field icon={Hash} label="Matricule" value={personnel.matricule} />
+              <Field icon={UserCog} label="Catégorie du personnel" value={roleLabels[personnel.role] || personnel.role} />
+              <Field icon={Users} label="Type de personnel" value={personnel.role} />
+              <Field icon={ShieldCheck} label="Statut" value={contractStatus} />
+              <Field icon={Briefcase} label="Fonction" value={personnel.fonction} />
+              <Field icon={Briefcase} label="Poste" value={personnel.poste} />
+              <Field icon={Building2} label="Service" value={personnel.service} />
+              <Field icon={UserRound} label="Supérieur hiérarchique" value={personnel.responsable_hierarchique} />
+              <Field icon={CalendarClock} label="Date de prise de fonction" value={formatDate(personnel.date_prise_fonction)} />
+              <Field icon={CalendarClock} label="Ancienneté" value={seniority(personnel.date_recrutement)} />
+            </div>
+          </Card>
+        </div>
+      )}
+
+      <Card icon={Building2} title="Établissements d'affectation">
+        <p className="rounded-lg bg-navy/5 px-4 py-3 text-sm text-slate-600 dark:bg-gold/10 dark:text-gray-300">
+          Aucune affectation d'établissement renseignée.
+        </p>
+      </Card>
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold tracking-wide text-navy dark:border-gray-700 dark:bg-gray-800 dark:text-gold sm:px-6">PARCOURS PROFESSIONNEL</h2>
+        <h2 className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold tracking-wide text-navy dark:border-gray-700 dark:bg-gray-800 dark:text-gold sm:px-6">
+          <FileText size={18} aria-hidden="true" /> Parcours professionnel
+        </h2>
         <div className="p-5 sm:p-6">
-          {timeline.length === 0 ? <p className="text-sm text-slate-500 dark:text-gray-400">Aucune information de carrière n'est actuellement enregistrée.</p> : <ol className="space-y-4 border-l-2 border-slate-200 pl-5 dark:border-gray-700">{timeline.map((item, index) => <li key={`${item.source}-${item.date}-${index}`} className="relative"><span className="absolute -left-[30px] top-1 h-3 w-3 rounded-full bg-gold ring-4 ring-white dark:ring-gray-800" /><p className="text-xs text-slate-500 dark:text-gray-400">{formatDate(item.date)}</p><p className="mt-0.5 text-sm font-semibold text-navy dark:text-gray-100">{item.type}</p>{item.description && <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{item.description}</p>}</li>)}</ol>}
-          <div className="mt-5 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-gray-700 dark:text-gray-300"><FileText size={17} className="text-gold" aria-hidden="true" /> Date de recrutement : <span className="font-medium">{formatDate(personnel.date_recrutement)}</span></div>
+          {timeline.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-gray-400">Aucune information de carrière n'est actuellement enregistrée.</p>
+          ) : (
+            <ol className="space-y-4 border-l-2 border-slate-200 pl-5 dark:border-gray-700">
+              {timeline.map((item, index) => (
+                <li key={`${item.source}-${item.date}-${index}`} className="relative">
+                  <span className="absolute -left-[30px] top-1 h-3 w-3 rounded-full bg-gold ring-4 ring-white dark:ring-gray-800" />
+                  <p className="text-xs text-slate-500 dark:text-gray-400">{formatDate(item.date)}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-navy dark:text-gray-100">{item.type}</p>
+                  {item.description && <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{item.description}</p>}
+                </li>
+              ))}
+            </ol>
+          )}
+          <div className="mt-5 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-gray-700 dark:text-gray-300">
+            <FileText size={17} className="text-gold" aria-hidden="true" /> Date de recrutement : <span className="font-medium">{formatDate(personnel.date_recrutement)}</span>
+          </div>
         </div>
       </section>
     </div>

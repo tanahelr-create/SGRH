@@ -41,7 +41,7 @@ export function ProfilCompte() {
         { icon: Phone, label: 'Téléphone', value: user?.telephone },
         { icon: Briefcase, label: 'Fonction', value: user?.fonction },
       ].map(({ icon: Icon, label, value }) => (
-        <div key={label} className="flex items-center gap-3 py-3">
+        <div key={label} className="flex items-center gap-3 py-4">
           <Icon size={16} className="text-slate-400 shrink-0" />
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">{label}</p>

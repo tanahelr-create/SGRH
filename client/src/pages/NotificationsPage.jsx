@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getMyNotifications, markNotificationAsRead } from '../services/notificationApi';
+import { useNavigate } from 'react-router-dom';
+import { getMyNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/notificationApi';
+import PageHeader from '../components/PageHeader';
 
 const TYPE_LABELS = {
   info: 'Information', reunion: 'Réunion', echeance: 'Échéance',
@@ -10,6 +12,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('toutes'); // 'toutes' | 'non_lues' | 'lues'
+  const navigate = useNavigate();
 
   async function load() {
     setLoading(true);
@@ -27,6 +30,18 @@ export default function NotificationsPage() {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
   }
 
+  async function handleMarkAllRead() {
+    await markAllNotificationsAsRead();
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  }
+
+  async function handleGoTo(n) {
+    if (!n.is_read) await handleRead(n.id);
+    if (n.lien) navigate(n.lien);
+  }
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
   const filtered = notifications.filter((n) => {
     if (filter === 'non_lues') return !n.is_read;
     if (filter === 'lues') return n.is_read;
@@ -34,19 +49,27 @@ export default function NotificationsPage() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex gap-2 mb-6">
-        {['toutes', 'non_lues', 'lues'].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-              filter === f ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            {f === 'toutes' ? 'Toutes' : f === 'non_lues' ? 'Non lues' : 'Lues'}
+    <div className="max-w-4xl mx-auto">
+      <PageHeader crumbs={[{ label: 'Notifications' }]} title="Notifications" />
+      <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2">
+          {['toutes', 'non_lues', 'lues'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                filter === f ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              {f === 'toutes' ? 'Toutes' : f === 'non_lues' ? 'Non lues' : 'Lues'}
+            </button>
+          ))}
+        </div>
+        {unreadCount > 0 && (
+          <button onClick={handleMarkAllRead} className="text-sm text-navy dark:text-gold font-medium underline">
+            Tout marquer comme lu
           </button>
-        ))}
+        )}
       </div>
 
       {loading && <p className="text-gray-500 text-sm">Chargement...</p>}
@@ -54,7 +77,7 @@ export default function NotificationsPage() {
         <p className="text-gray-400 text-sm">Aucune notification ici.</p>
       )}
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {filtered.map((n) => (
           <div
             key={n.id}
@@ -75,14 +98,24 @@ export default function NotificationsPage() {
                 {new Date(n.created_at).toLocaleString('fr-FR')}
               </p>
             </div>
-            {!n.is_read && (
-              <button
-                onClick={() => handleRead(n.id)}
-                className="text-xs text-navy dark:text-gold underline whitespace-nowrap"
-              >
-                Marquer lue
-              </button>
-            )}
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {n.lien && (
+                <button
+                  onClick={() => handleGoTo(n)}
+                  className="text-xs text-navy dark:text-gold underline whitespace-nowrap"
+                >
+                  Voir
+                </button>
+              )}
+              {!n.is_read && (
+                <button
+                  onClick={() => handleRead(n.id)}
+                  className="text-xs text-gray-400 underline whitespace-nowrap"
+                >
+                  Marquer lue
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

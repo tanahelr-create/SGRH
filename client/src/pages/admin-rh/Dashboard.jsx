@@ -5,6 +5,7 @@ import { getAdminDashboardStats } from '../../services/statsApi';
 import { getRecentDemandes, getCalendarDemandes } from '../../services/congeApi';
 import { getEcheancesProches } from '../../services/carriereApi';
 import MiniCalendar from '../../components/Calendar';
+import PageHeader from '../../components/PageHeader';
 
 const STATUS_LABELS = {
   en_attente: { label: 'En attente', color: 'text-status-pending' },
@@ -55,6 +56,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <PageHeader crumbs={[{ label: 'Admin RH' }]} title="Tableau de bord" subtitle="Vue d'ensemble des ressources humaines" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Personnel total" value={stats.totalPersonnel} icon={Users} />
         <StatCard label="Enseignants (PE)" value={stats.pe} icon={GraduationCap} />

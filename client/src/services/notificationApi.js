@@ -32,3 +32,13 @@ export async function markNotificationAsRead(id) {
   if (!res.ok) throw new Error(data.message || 'Échec');
   return data;
 }
+
+export async function markAllNotificationsAsRead() {
+  const res = await fetch(`${API_URL}/notifications/read-all`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec');
+  return data;
+}

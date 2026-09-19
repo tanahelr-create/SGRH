@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAllTexts, updateText } from '../../services/siteTextsApi';
 import { getSiteSettings, updateSiteSetting } from '../../services/siteSettingsAdminApi';
 import { useTextContext } from '../../context/TextContext';
+import PageHeader from '../../components/PageHeader';
 
 const COLOR_LABELS = {
   color_navy: 'Bleu marine (accent principal)',
@@ -65,7 +66,8 @@ export default function ApparenceSite() {
     });
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
+      <PageHeader crumbs={[{ label: 'Administration' }, { label: 'Apparence' }]} title="Apparence" subtitle="Couleurs et textes personnalisables du site" />
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setTab('couleurs')}
@@ -82,7 +84,7 @@ export default function ApparenceSite() {
       </div>
 
       {tab === 'couleurs' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Object.entries(colors).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">

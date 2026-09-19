@@ -15,13 +15,13 @@ async function resolveRecipientIds(target) {
   throw new Error('Type de cible invalide');
 }
 
-async function sendNotification(senderId, target, title, message, type) {
+async function sendNotification(senderId, target, title, message, type, lien) {
   const recipientIds = await resolveRecipientIds(target);
   if (recipientIds.length === 0) throw new Error('Aucun destinataire trouvé pour cette cible');
 
   const created = [];
   for (const recipientId of recipientIds) {
-    created.push(await notificationRepository.create({ senderId, recipientId, title, message, type }));
+    created.push(await notificationRepository.create({ senderId, recipientId, title, message, type, lien }));
   }
 
   await activityLogRepository.create(senderId, 'notification_envoyee', `Notification "${title}" envoyée à ${recipientIds.length} personne(s)`);
@@ -37,4 +37,8 @@ async function markAsRead(id, userId) {
   return notificationRepository.markAsRead(id, userId);
 }
 
-module.exports = { sendNotification, getMyNotifications, markAsRead };
+async function markAllAsRead(userId) {
+  return notificationRepository.markAllAsRead(userId);
+}
+
+module.exports = { sendNotification, getMyNotifications, markAsRead, markAllAsRead };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchParametresCarriere, updateParametreCarriere } from '../../services/parametreCarriereApi';
+import PageHeader from '../../components/PageHeader';
 
 export default function ParametresCarriere() {
   const [params, setParams] = useState([]);
@@ -31,15 +32,20 @@ export default function ParametresCarriere() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
+      <PageHeader
+        crumbs={[{ label: 'Admin RH' }, { label: 'Carrière' }, { label: 'Paramètres carrière' }]}
+        title="Paramètres carrière"
+        subtitle="Ces valeurs pilotent les règles de progression de carrière"
+      />
       <p className="text-sm text-gray-500 mb-4">
-        Ces valeurs pilotent les règles de progression de carrière. Les paramètres marqués <span className="text-status-pending font-medium">à valider</span> sont
+        Les paramètres marqués <span className="text-status-pending font-medium">à valider</span> sont
         issus d'informations recueillies mais non encore confirmées officiellement par la RH — modifie-les dès que la règle définitive est connue.
       </p>
 
       {loading && <p className="text-gray-500">Chargement...</p>}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {params.map((p) => (
           <div key={p.cle} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="flex items-start justify-between gap-3">
@@ -50,21 +56,21 @@ export default function ParametresCarriere() {
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <input
-                  type="text"
-                  defaultValue={p.valeur}
-                  onChange={(e) => setEdits((prev) => ({ ...prev, [p.cle]: e.target.value }))}
-                  className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-1.5 text-sm w-40"
-                />
-                <button
-                  onClick={() => handleSave(p.cle)}
-                  disabled={status[p.cle] === 'loading'}
-                  className="bg-navy text-white rounded-md px-3 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50"
-                >
-                  Enregistrer
-                </button>
-              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <input
+                type="text"
+                defaultValue={p.valeur}
+                onChange={(e) => setEdits((prev) => ({ ...prev, [p.cle]: e.target.value }))}
+                className="flex-1 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-1.5 text-sm"
+              />
+              <button
+                onClick={() => handleSave(p.cle)}
+                disabled={status[p.cle] === 'loading'}
+                className="bg-navy text-white rounded-md px-3 py-1.5 text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              >
+                Enregistrer
+              </button>
             </div>
             {status[p.cle] === 'success' && <p className="text-xs text-status-approved mt-1">Enregistré.</p>}
           </div>

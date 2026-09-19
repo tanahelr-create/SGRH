@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader';
 import { demanderDocument, getMesDemandesDocuments } from '../../services/documentApi';
 
 const TYPES_DOCUMENT = [
@@ -49,7 +50,13 @@ export default function MesDocuments() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <PageHeader
+        crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Mes documents' }]}
+        title="Mes documents"
+        subtitle="Demandez un document administratif et suivez son traitement"
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 className="font-semibold text-navy dark:text-gold mb-4">Demander un document</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -112,6 +119,7 @@ export default function MesDocuments() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

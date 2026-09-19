@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sendNotification } from '../../services/notificationApi';
 import { listUsers } from '../../services/userApi';
+import PageHeader from '../../components/PageHeader';
 
 const FONCTIONS = [
   'Enseignant', 'Enseignant Chercheur', 'Maître de Conférences', 'Professeur',
@@ -48,7 +49,9 @@ export default function EnvoyerNotification() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full max-w-md">
+    <div className="max-w-2xl mx-auto">
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Envoyer une notification' }]} title="Envoyer une notification" subtitle="Ciblez un groupe, une fonction ou une personne précise" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 w-full">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destinataires</label>
@@ -140,6 +143,7 @@ export default function EnvoyerNotification() {
           </p>
         )}
       </form>
+      </div>
     </div>
   );
 }

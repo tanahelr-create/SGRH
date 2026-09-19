@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { listCorbeille, restoreFromCorbeille, deletePermanently } from '../../services/corbeilleApi';
+import PageHeader from '../../components/PageHeader';
 
 const TYPE_LABELS = { compte: 'Compte utilisateur' };
 
@@ -44,16 +45,18 @@ export default function Corbeille() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        Les éléments supprimés restent ici jusqu'à restauration ou suppression définitive.
-      </p>
+    <div className="max-w-5xl mx-auto">
+      <PageHeader
+        crumbs={[{ label: 'Administration' }, { label: 'Corbeille' }]}
+        title="Corbeille"
+        subtitle="Les éléments supprimés restent ici jusqu'à restauration ou suppression définitive"
+      />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
       {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && items.length === 0 && <p className="text-gray-500">La corbeille est vide.</p>}
 
-      <div className="space-y-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {items.map((item) => (
           <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="flex items-center justify-between">

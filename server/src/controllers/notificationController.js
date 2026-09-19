@@ -26,4 +26,9 @@ async function markRead(req, res) {
   return res.status(200).json({ notification: notif });
 }
 
-module.exports = { send, myNotifications, markRead };
+async function markAllRead(req, res) {
+  const count = await notificationService.markAllAsRead(req.user.id);
+  return res.status(200).json({ message: 'Notifications marquées comme lues', count });
+}
+
+module.exports = { send, myNotifications, markRead, markAllRead };

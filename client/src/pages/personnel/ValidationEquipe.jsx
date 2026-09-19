@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader';
 import { getPendingEquipe, reviewIntermediaire } from '../../services/congeApi';
 
 export default function ValidationEquipe() {
@@ -32,16 +33,18 @@ export default function ValidationEquipe() {
   }
 
   return (
-    <div className="max-w-3xl">
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        Demandes de votre équipe en attente de votre avis, avant transmission à l'Admin RH.
-      </p>
+    <div>
+      <PageHeader
+        crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Validation équipe' }]}
+        title="Validation équipe"
+        subtitle="Demandes de votre équipe en attente de votre avis, avant transmission à l'Admin RH"
+      />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
       {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && demandes.length === 0 && <p className="text-gray-500">Aucune demande en attente.</p>}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {demandes.map((d) => (
           <div key={d.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
             <div className="flex items-center justify-between mb-2">

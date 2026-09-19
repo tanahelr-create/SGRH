@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../context/PermissionContext';
 import { SETTINGS_CATEGORIES } from '../config/settingsConfig';
 import SettingsRedirect from '../components/settings/SettingsRedirect';
+import PageHeader from '../components/PageHeader';
 import { ProfilCompte, Securite, Sessions } from './parametres/CompteTabs';
 import { Apparence, Notifications, LangueRegion, Accessibilite } from './parametres/PreferencesTabs';
 import { PreferencesTableaux, Documents } from './parametres/DonneesTabs';
@@ -44,12 +45,11 @@ export default function Parametres() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-navy dark:text-gold">Paramètres</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Gérez votre compte, vos préférences et les paramètres de votre espace SGRH.
-        </p>
-      </div>
+      <PageHeader
+        crumbs={[{ label: 'Paramètres' }]}
+        title="Paramètres"
+        subtitle="Gérez votre compte, vos préférences et les paramètres de votre espace SGRH"
+      />
 
       <div className="flex flex-col gap-6 lg:flex-row">
         <nav className="lg:w-64 shrink-0 overflow-x-auto lg:overflow-visible">

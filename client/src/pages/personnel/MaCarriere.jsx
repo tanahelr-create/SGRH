@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageHeader from '../../components/PageHeader';
 import { getMaCarriere } from '../../services/carriereApi';
 import { getMesSituations } from '../../services/situationAdministrativeApi';
 
@@ -22,12 +23,43 @@ export default function MaCarriere() {
   if (!data) return <p className="text-gray-500 text-sm">Chargement...</p>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {situations?.actuelle && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="font-semibold text-navy dark:text-gold mb-2">Situation administrative</h3>
-          <p className="text-sm text-navy dark:text-gray-100 font-medium">{situations.actuelle.libelle}</p>
-          <p className="text-xs text-gray-400">Depuis le {new Date(situations.actuelle.date_debut).toLocaleDateString('fr-FR')}</p>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <PageHeader
+        crumbs={[{ label: 'Mon espace', path: '/dashboard' }, { label: 'Ma carrière' }]}
+        title="Ma carrière"
+        subtitle="Situation administrative, parcours et diplômes"
+      />
+
+      {(situations?.actuelle || data.personnel.role === 'PE') && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {situations?.actuelle && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="font-semibold text-navy dark:text-gold mb-2">Situation administrative</h3>
+              <p className="text-sm text-navy dark:text-gray-100 font-medium">{situations.actuelle.libelle}</p>
+              <p className="text-xs text-gray-400">Depuis le {new Date(situations.actuelle.date_debut).toLocaleDateString('fr-FR')}</p>
+              {situations.actuelle.motif && <p className="text-xs text-gray-400">Motif : {situations.actuelle.motif}</p>}
+            </div>
+          )}
+
+          {data.personnel.role === 'PE' && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="font-semibold text-navy dark:text-gold mb-3">Diplômes et qualifications</h3>
+              {data.diplomes.length === 0 && <p className="text-sm text-gray-400">Aucun diplôme enregistré.</p>}
+              <div className="space-y-2">
+                {data.diplomes.map((d) => (
+                  <div key={d.id} className="border-b border-gray-100 dark:border-gray-700 pb-2 last:border-0">
+                    <p className="text-sm font-medium text-navy dark:text-gray-100">{d.intitule}</p>
+                    <p className="text-xs text-gray-400">{[d.etablissement, d.annee_obtention].filter(Boolean).join(' — ')}</p>
+                    {d.document_path && (
+                      <a href={fileUrl(d.document_path)} target="_blank" rel="noreferrer" className="text-xs text-navy underline">
+                        Voir le document
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -58,26 +90,6 @@ export default function MaCarriere() {
           ))}
         </div>
       </div>
-
-      {data.personnel.role === 'PE' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="font-semibold text-navy dark:text-gold mb-3">Diplômes et qualifications</h3>
-          {data.diplomes.length === 0 && <p className="text-sm text-gray-400">Aucun diplôme enregistré.</p>}
-          <div className="space-y-2">
-            {data.diplomes.map((d) => (
-              <div key={d.id} className="border-b border-gray-100 dark:border-gray-700 pb-2 last:border-0">
-                <p className="text-sm font-medium text-navy dark:text-gray-100">{d.intitule}</p>
-                <p className="text-xs text-gray-400">{[d.etablissement, d.annee_obtention].filter(Boolean).join(' — ')}</p>
-                {d.document_path && (
-                  <a href={fileUrl(d.document_path)} target="_blank" rel="noreferrer" className="text-xs text-navy underline">
-                    Voir le document
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

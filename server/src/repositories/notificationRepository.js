@@ -1,11 +1,11 @@
 const pool = require('../config/db');
 
-async function create({ senderId, recipientId, title, message, type }) {
+async function create({ senderId, recipientId, title, message, type, lien }) {
   const result = await pool.query(
-    `INSERT INTO notifications (sender_id, recipient_id, title, message, type)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO notifications (sender_id, recipient_id, title, message, type, lien)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [senderId, recipientId, title, message, type || 'info']
+    [senderId, recipientId, title, message, type || 'info', lien || null]
   );
   return result.rows[0];
 }
@@ -26,4 +26,12 @@ async function markAsRead(id, recipientId) {
   return result.rows[0];
 }
 
-module.exports = { create, findByRecipient, markAsRead };
+async function markAllAsRead(recipientId) {
+  const result = await pool.query(
+    `UPDATE notifications SET is_read = true WHERE recipient_id = $1 AND is_read = false RETURNING id`,
+    [recipientId]
+  );
+  return result.rows.length;
+}
+
+module.exports = { create, findByRecipient, markAsRead, markAllAsRead };

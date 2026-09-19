@@ -26,14 +26,16 @@ async function remove(req, res) {
     return res.status(400).json({ message: 'Impossible de supprimer son propre compte' });
   }
 
-  const fullRow = await userRepository.findFullByIdRaw(req.params.id);
-  if (!fullRow) return res.status(404).json({ message: 'Compte introuvable' });
+  try {
+    const archived = await corbeilleRepository.archiveAndDeleteCompte(req.params.id, req.user.id);
+    if (!archived) return res.status(404).json({ message: 'Compte introuvable' });
 
-  await corbeilleRepository.add('compte', fullRow, req.user.id);
-  await userRepository.deleteRaw(req.params.id);
-  await activityLogRepository.create(req.user.id, 'compte_supprime', `Compte #${req.params.id} déplacé dans la corbeille`);
-
-  return res.status(200).json({ message: 'Compte déplacé dans la corbeille' });
+    await activityLogRepository.create(req.user.id, 'compte_supprime', `Compte #${req.params.id} déplacé dans la corbeille`);
+    return res.status(200).json({ message: 'Compte déplacé dans la corbeille' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression du compte', req.params.id, err);
+    return res.status(500).json({ message: "La suppression du compte a échoué. Aucune donnée n'a été modifiée." });
+  }
 }
 
 module.exports = { list, deactivate, reactivate, remove };

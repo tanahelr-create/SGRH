@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listUsers, changeFonction, getFonctionHistory } from '../../services/userApi';
 import { FONCTIONS_PAR_ROLE } from '../../constants/fonctions';
+import PageHeader from '../../components/PageHeader';
 
 export default function GestionFonctions() {
   const [users, setUsers] = useState([]);
@@ -41,11 +42,14 @@ export default function GestionFonctions() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Modifier la fonction d'un membre du personnel (avancement de grade, changement de poste...).
-        </p>
+    <div className="max-w-5xl mx-auto">
+      <PageHeader
+        crumbs={[{ label: 'Admin RH' }, { label: 'Carrière' }, { label: 'Fonctions' }]}
+        title="Fonctions"
+        subtitle="Modifier la fonction d'un membre du personnel (avancement de grade, changement de poste...)"
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-fit">
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -97,7 +101,7 @@ export default function GestionFonctions() {
       </div>
 
       {selectedUserId && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-fit">
           <h3 className="text-sm font-semibold text-navy mb-3">Historique des changements</h3>
           {history.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-400">Aucun changement enregistré.</p>}
           <div className="space-y-2">
@@ -114,6 +118,7 @@ export default function GestionFonctions() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

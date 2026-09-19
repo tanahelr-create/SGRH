@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listPersonnel } from '../../services/personnelApi';
 import { generateDocument, getHistoriquePersonnel } from '../../services/documentApi';
+import PageHeader from '../../components/PageHeader';
 
 const TYPES_DOCUMENT = [
   { value: 'certificat_administratif', label: 'Certificat administratif' },
@@ -48,7 +49,9 @@ export default function DocumentsAdmin() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-5xl space-y-6">
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Documents' }, { label: 'Documents administratifs' }]} title="Documents administratifs" subtitle="Générer des certificats et lettres pour le personnel" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h3 className="font-semibold text-navy dark:text-gold mb-4">Générer un document</h3>
         <form onSubmit={handleGenerate} className="grid grid-cols-2 gap-3">
@@ -109,6 +112,7 @@ export default function DocumentsAdmin() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

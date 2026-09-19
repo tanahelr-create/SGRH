@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell } from 'lucide-react';
-import { getMyNotifications, markNotificationAsRead } from '../../services/notificationApi';
-import { Link } from 'react-router-dom';
+import { Bell, CheckCheck } from 'lucide-react';
+import { getMyNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../services/notificationApi';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const navigate = useNavigate();
 
   async function load() {
     try {
@@ -37,6 +38,17 @@ export default function NotificationBell() {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
   }
 
+  async function handleItemClick(n) {
+    if (!n.is_read) await handleRead(n.id);
+    setOpen(false);
+    if (n.lien) navigate(n.lien);
+  }
+
+  async function handleMarkAllRead() {
+    await markAllNotificationsAsRead();
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  }
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
@@ -52,13 +64,21 @@ export default function NotificationBell() {
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border max-h-96 overflow-y-auto z-10">
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              className="w-full flex items-center justify-center gap-1.5 text-xs text-navy font-medium py-2 border-b hover:bg-gray-50"
+            >
+              <CheckCheck size={14} /> Tout marquer comme lu
+            </button>
+          )}
           {notifications.length === 0 && (
             <p className="p-4 text-sm text-gray-500">Aucune notification.</p>
           )}
           {notifications.slice(0, 5).map((n) => (
             <button
               key={n.id}
-              onClick={() => handleRead(n.id)}
+              onClick={() => handleItemClick(n)}
               className={`w-full text-left p-3 border-b hover:bg-gray-50 ${
                 n.is_read ? 'opacity-60' : ''
               }`}

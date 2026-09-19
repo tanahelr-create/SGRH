@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, LogOut, Settings, UserRound } from 'lucide-react';
+import { ChevronDown, LogOut, Menu, Settings, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePermissions } from '../../context/PermissionContext';
@@ -13,7 +13,7 @@ const roleLabels = {
   PAT: 'Personnel PAT',
 };
 
-export default function TopBar({ title, subtitle }) {
+export default function TopBar({ title, subtitle, onMenuClick }) {
   const { user, logout } = useAuth();
   const { can, loading } = usePermissions();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -50,9 +50,19 @@ export default function TopBar({ title, subtitle }) {
   return (
     <header className="flex min-h-20 shrink-0 items-center border-b border-slate-200 bg-white/95 px-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/95 sm:px-6 xl:px-8">
       <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="font-bold text-lg text-navy dark:text-gold leading-tight truncate">{title}</h1>
-        {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Ouvrir le menu"
+          className="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-slate-100 dark:text-gray-300 dark:hover:bg-gray-700 lg:hidden"
+        >
+          <Menu size={22} />
+        </button>
+        <div className="min-w-0">
+          <h1 className="font-bold text-lg text-navy dark:text-gold leading-tight truncate">{title}</h1>
+          {subtitle && <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">

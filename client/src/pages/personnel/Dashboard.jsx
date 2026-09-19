@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, CalendarDays, Bell, ArrowRight } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { getMyDemandes } from '../../services/congeApi';
 import { getMyNotifications } from '../../services/notificationApi';
@@ -33,6 +34,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        crumbs={[{ label: 'Mon espace' }]}
+        title="Tableau de bord"
+        subtitle="Vue d'ensemble de votre espace personnel"
+      />
       {/* Bannière d'accueil */}
       <div className="bg-navy rounded-xl p-6 text-white relative overflow-hidden">
         <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none" viewBox="0 0 400 150">

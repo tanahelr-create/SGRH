@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { listAllPermissions, updatePermission } from '../../services/permissionApi';
+import PageHeader from '../../components/PageHeader';
 
 const ROLES = ['ADMIN_RH', 'SUPERADMIN', 'PE', 'PAT'];
 const ROLE_LABELS = { ADMIN_RH: 'Admin RH', SUPERADMIN: 'Superadmin', PE: 'PE', PAT: 'PAT' };
@@ -50,19 +51,21 @@ export default function Permissions() {
   if (loading) return <p className="text-gray-500">Chargement...</p>;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-        Coche ou décoche pour activer/désactiver une fonctionnalité pour un rôle. La modification est immédiate.
-      </p>
+    <div className="max-w-5xl mx-auto">
+      <PageHeader
+        crumbs={[{ label: 'Administration' }, { label: 'Rôles & permissions' }]}
+        title="Rôles & permissions"
+        subtitle="Coche ou décoche pour activer/désactiver une fonctionnalité pour un rôle — la modification est immédiate"
+      />
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
 
       {Object.entries(grouped).map(([category, permissions]) => (
-        <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4 overflow-hidden">
+        <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4 overflow-x-auto">
           <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 font-semibold text-navy dark:text-gold text-sm">
             {category}
           </div>
-          <table className="w-full text-sm">
+          <table className="w-full min-w-max text-sm">
             <thead>
               <tr className="border-b dark:border-gray-700">
                 <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-gray-400">Fonctionnalité</th>

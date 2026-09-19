@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PermissionProvider } from './context/PermissionContext';
 import { TextProvider } from './context/TextContext';
+import { SettingsPreferencesProvider } from './context/SettingsPreferencesContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/layout/AppShell';
 import Login from './pages/Login';
@@ -23,6 +24,7 @@ import ComptesEnAttente from './pages/admin-rh/ComptesEnAttente';
 import EnvoyerNotification from './pages/admin-rh/EnvoyerNotification';
 import GestionFonctions from './pages/admin-rh/GestionFonctions';
 import Carriere from './pages/admin-rh/Carriere';
+import ContratsAdmin from './pages/admin-rh/Contrats';
 import ParametresCarriere from './pages/admin-rh/ParametresCarriere';
 import CongesAdmin from './pages/admin-rh/CongesAdmin';
 import DocumentsAdmin from './pages/admin-rh/DocumentsAdmin';
@@ -35,6 +37,7 @@ import ApparenceSite from './pages/superadmin/ApparenceSite';
 import PersonnelDashboard from './pages/personnel/Dashboard';
 import Profil from './pages/personnel/Profil';
 import MaCarriere from './pages/personnel/MaCarriere';
+import MesContrats from './pages/personnel/MesContrats';
 import Conges from './pages/personnel/Conges';
 import MonEquipe from './pages/personnel/MonEquipe';
 import ValidationEquipe from './pages/personnel/ValidationEquipe';
@@ -48,6 +51,7 @@ function App() {
   return (
     <ThemeProvider>
       <TextProvider>
+        <SettingsPreferencesProvider>
         <BrowserRouter>
           <AuthProvider>
             <PermissionProvider>
@@ -146,6 +150,11 @@ function App() {
                     <AppShell title="Carrière" subtitle="Gestion des Ressources Humaines"><Carriere /></AppShell>
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/contrats" element={
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_fonctions">
+                    <AppShell title="Contrats" subtitle="Gestion des Ressources Humaines"><ContratsAdmin /></AppShell>
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin/parametres-carriere" element={
                   <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_parametres_carriere">
                     <AppShell title="Paramètres de carrière" subtitle="Gestion des Ressources Humaines"><ParametresCarriere /></AppShell>
@@ -153,7 +162,7 @@ function App() {
                 } />
                 <Route path="/admin/conges" element={
                   <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_conges_admin">
-                    <AppShell title="Congés" subtitle="Gestion des Ressources Humaines"><CongesAdmin /></AppShell>
+                    <AppShell title="Congés & absences" subtitle="Gestion des Ressources Humaines"><CongesAdmin /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/documents" element={
@@ -168,7 +177,7 @@ function App() {
                 } />
                 <Route path="/admin/historique" element={
                   <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_historique">
-                    <AppShell title="Historique" subtitle="Gestion des Ressources Humaines"><Historique /></AppShell>
+                    <AppShell title="Audit & journal" subtitle="Gestion des Ressources Humaines"><Historique /></AppShell>
                   </ProtectedRoute>
                 } />
 
@@ -200,7 +209,7 @@ function App() {
                 } />
                 <Route path="/profil" element={
                   <ProtectedRoute allowedRoles={PE_PAT} permission="view_profil">
-                    <AppShell title="Mon profil" subtitle="Gestion des Ressources Humaines"><Profil /></AppShell>
+                    <AppShell title="Mon dossier" subtitle="Gestion des Ressources Humaines"><Profil /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/carriere" element={
@@ -208,9 +217,14 @@ function App() {
                     <AppShell title="Ma carrière" subtitle="Gestion des Ressources Humaines"><MaCarriere /></AppShell>
                   </ProtectedRoute>
                 } />
+                <Route path="/mes-contrats" element={
+                  <ProtectedRoute allowedRoles={PE_PAT} permission="view_profil">
+                    <AppShell title="Mes contrats" subtitle="Gestion des Ressources Humaines"><MesContrats /></AppShell>
+                  </ProtectedRoute>
+                } />
                 <Route path="/conges" element={
                   <ProtectedRoute allowedRoles={PE_PAT} permission="view_mes_conges">
-                    <AppShell title="Congés" subtitle="Gestion des Ressources Humaines"><Conges /></AppShell>
+                    <AppShell title="Mes congés & absences" subtitle="Gestion des Ressources Humaines"><Conges /></AppShell>
                   </ProtectedRoute>
                 } />
 
@@ -219,6 +233,7 @@ function App() {
             </PermissionProvider>
           </AuthProvider>
         </BrowserRouter>
+        </SettingsPreferencesProvider>
       </TextProvider>
     </ThemeProvider>
   );

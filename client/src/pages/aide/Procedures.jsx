@@ -1,7 +1,10 @@
+import PageHeader from '../../components/PageHeader';
+
 export default function Procedures() {
   return (
-    <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
-      <h2 className="font-semibold text-navy dark:text-gold">Les procédures</h2>
+    <div className="max-w-2xl mx-auto">
+      <PageHeader crumbs={[{ label: 'Aide' }, { label: 'Les procédures' }]} title="Les procédures" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
       <div className="text-sm text-gray-600 dark:text-gray-300 space-y-4">
         <div>
           <p className="font-medium text-navy dark:text-gray-100">Demande de congé / permission</p>
@@ -15,6 +18,7 @@ export default function Procedures() {
           <p className="font-medium text-navy dark:text-gray-100">Fiche imprimable</p>
           <p>Chaque demande dispose d'un lien "Voir / télécharger la fiche", reprenant le format officiel de l'université.</p>
         </div>
+      </div>
       </div>
     </div>
   );

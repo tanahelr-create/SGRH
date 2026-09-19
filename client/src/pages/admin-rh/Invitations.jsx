@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, Send, UserRoundCheck } from 'lucide-react';
 import { listPersonnelWithoutAccount, sendRegistrationLink } from '../../services/personnelApi';
+import PageHeader from '../../components/PageHeader';
 
 export default function Invitations() {
   const [personnel, setPersonnel] = useState([]);
@@ -49,7 +50,8 @@ export default function Invitations() {
   }
 
   return (
-    <section className="w-full max-w-4xl mx-auto">
+    <section className="w-full max-w-5xl mx-auto">
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Utilisateurs & comptes' }, { label: 'Inviter un personnel' }]} title="Inviter un personnel" />
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="border-b border-slate-100 bg-gradient-to-r from-navy/[0.07] to-gold/[0.09] px-5 py-5 sm:px-7 sm:py-6 dark:border-gray-700">
           <div className="flex items-start gap-3">

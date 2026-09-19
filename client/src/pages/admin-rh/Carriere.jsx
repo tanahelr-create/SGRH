@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
+import PageHeader from '../../components/PageHeader';
 import { usePermissions } from '../../context/PermissionContext';
 import { listPersonnel } from '../../services/personnelApi';
 import {
   getCarriere, addEvenement, updateEvenement, deleteEvenement, addDiplome, deleteDiplome,
 } from '../../services/carriereApi';
-import { fetchTypesSituation, getSituationsForPersonnel, addSituation } from '../../services/situationAdministrativeApi';
+import {
+  fetchTypesSituation, getSituationsForPersonnel, addSituation,
+  updateSituation, deleteSituation,
+} from '../../services/situationAdministrativeApi';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -47,9 +51,12 @@ export default function Carriere() {
 
   const [typesSituation, setTypesSituation] = useState([]);
   const [situations, setSituations] = useState(null);
-  const [situationForm, setSituationForm] = useState({ typeSituationId: '', dateDebut: '', referenceDecision: '', observations: '' });
+  const [situationForm, setSituationForm] = useState({ typeSituationId: '', dateDebut: '', referenceDecision: '', observations: '', motif: '' });
   const [situationFile, setSituationFile] = useState(null);
   const [situationStatus, setSituationStatus] = useState(null);
+  const [editingSituationId, setEditingSituationId] = useState(null);
+  const [situationEditForm, setSituationEditForm] = useState({ referenceDecision: '', observations: '', motif: '' });
+  const [confirmDeleteSituationId, setConfirmDeleteSituationId] = useState(null);
 
   useEffect(() => {
     listPersonnel().then(setPersonnelList).catch(() => {});
@@ -77,7 +84,10 @@ export default function Carriere() {
     }
   }
 
-  useEffect(() => { loadCarriere(selectedId); loadSituations(selectedId); }, [selectedId]);
+  useEffect(() => {
+    loadCarriere(selectedId);
+    loadSituations(selectedId);
+  }, [selectedId]);
 
   function updateForm(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -164,7 +174,7 @@ export default function Carriere() {
     try {
       await addSituation(selectedId, situationForm, situationFile);
       setSituationStatus('success');
-      setSituationForm({ typeSituationId: '', dateDebut: '', referenceDecision: '', observations: '' });
+      setSituationForm({ typeSituationId: '', dateDebut: '', referenceDecision: '', observations: '', motif: '' });
       setSituationFile(null);
       loadSituations(selectedId);
     } catch (err) {
@@ -173,8 +183,37 @@ export default function Carriere() {
     }
   }
 
+  function startEditSituation(s) {
+    setEditingSituationId(s.id);
+    setSituationEditForm({
+      referenceDecision: s.reference_decision || '', observations: s.observations || '', motif: s.motif || '',
+    });
+  }
+
+  async function handleUpdateSituation(e) {
+    e.preventDefault();
+    try {
+      await updateSituation(editingSituationId, situationEditForm);
+      setEditingSituationId(null);
+      loadSituations(selectedId);
+    } catch (err) {
+      setFeedback(err.message);
+    }
+  }
+
+  async function handleDeleteSituation(id) {
+    try {
+      await deleteSituation(id);
+      setConfirmDeleteSituationId(null);
+      loadSituations(selectedId);
+    } catch (err) {
+      setFeedback(err.message);
+    }
+  }
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Carrière' }]} title="Carrière" subtitle="Situation administrative, événements de carrière et diplômes" />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Choisir un employé</label>
         <select
@@ -234,7 +273,12 @@ export default function Carriere() {
               <input
                 type="text" placeholder="Observations" value={situationForm.observations}
                 onChange={(e) => setSituationForm((p) => ({ ...p, observations: e.target.value }))}
-                className="sm:col-span-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
+              />
+              <input
+                type="text" placeholder="Motif du changement" value={situationForm.motif}
+                onChange={(e) => setSituationForm((p) => ({ ...p, motif: e.target.value }))}
+                className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm"
               />
               <input
                 type="file" accept=".pdf,.jpg,.jpeg,.png"
@@ -254,10 +298,54 @@ export default function Carriere() {
               <div className="space-y-2">
                 <p className="text-xs text-gray-400 font-medium">Historique des situations</p>
                 {situations.historique.map((s) => (
-                  <div key={s.id} className="text-xs text-gray-500 border-b border-gray-100 dark:border-gray-700 pb-1">
-                    {s.libelle} — du {new Date(s.date_debut).toLocaleDateString('fr-FR')}
-                    {s.date_fin ? ` au ${new Date(s.date_fin).toLocaleDateString('fr-FR')}` : ' (en cours)'}
-                    {s.reference_decision && ` — réf. ${s.reference_decision}`}
+                  <div key={s.id} className="border-b border-gray-100 dark:border-gray-700 pb-2">
+                    {editingSituationId === s.id ? (
+                      <form onSubmit={handleUpdateSituation} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input
+                          type="text" placeholder="Référence décision" value={situationEditForm.referenceDecision}
+                          onChange={(e) => setSituationEditForm((p) => ({ ...p, referenceDecision: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        />
+                        <input
+                          type="text" placeholder="Observations" value={situationEditForm.observations}
+                          onChange={(e) => setSituationEditForm((p) => ({ ...p, observations: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        />
+                        <input
+                          type="text" placeholder="Motif" value={situationEditForm.motif}
+                          onChange={(e) => setSituationEditForm((p) => ({ ...p, motif: e.target.value }))}
+                          className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-2 py-1.5 text-xs"
+                        />
+                        <div className="sm:col-span-3 flex gap-2">
+                          <button type="submit" className="text-xs px-3 py-1 rounded-md bg-navy text-white font-medium">Enregistrer</button>
+                          <button type="button" onClick={() => setEditingSituationId(null)} className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">Annuler</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-xs text-gray-500">
+                          <p>
+                            {s.libelle} — du {new Date(s.date_debut).toLocaleDateString('fr-FR')}
+                            {s.date_fin ? ` au ${new Date(s.date_fin).toLocaleDateString('fr-FR')}` : ' (en cours)'}
+                            {s.reference_decision && ` — réf. ${s.reference_decision}`}
+                          </p>
+                          {s.motif && <p className="text-gray-400">Motif : {s.motif}</p>}
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <button onClick={() => startEditSituation(s)} className="text-xs text-navy dark:text-gold underline">Modifier</button>
+                          {!s.date_fin && (
+                            confirmDeleteSituationId === s.id ? (
+                              <div className="flex gap-1">
+                                <button onClick={() => handleDeleteSituation(s.id)} className="text-xs text-status-rejected font-medium">Confirmer</button>
+                                <button onClick={() => setConfirmDeleteSituationId(null)} className="text-xs text-gray-400">Annuler</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmDeleteSituationId(s.id)} className="text-xs text-gray-400 hover:text-status-rejected">Supprimer</button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

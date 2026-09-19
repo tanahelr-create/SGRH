@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPendingDemandes, reviewDemande } from '../../services/congeApi';
+import PageHeader from '../../components/PageHeader';
 import { JUSTIFICATIF_OBLIGATOIRE } from '../../constants/conges';
 
 const JUSTIFICATIF_REQUIS_VALIDATION = ['Congé de maladie', 'Congé de maternité'];
@@ -35,14 +36,14 @@ export default function CongesAdmin() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <p className="text-sm text-gray-500 mb-6">Demandes en attente de décision.</p>
+    <div>
+      <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Congés & absences' }]} title="Congés & absences" subtitle="Demandes en attente de décision" />
 
       {actionError && <p className="text-sm text-status-rejected mb-4">{actionError}</p>}
       {loading && <p className="text-gray-500">Chargement...</p>}
       {!loading && demandes.length === 0 && <p className="text-gray-500">Aucune demande en attente.</p>}
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {demandes.map((d) => {
           const justificatifManquant = JUSTIFICATIF_REQUIS_VALIDATION.includes(d.type_conge) && !d.justificatif_path;
 
