@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 
-async function create({ senderId, recipientId, title, message, type, lien }) {
-  const result = await pool.query(
+async function create({ senderId, recipientId, title, message, type, lien }, db = pool) {
+  const result = await db.query(
     `INSERT INTO notifications (sender_id, recipient_id, title, message, type, lien)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
