@@ -3,7 +3,7 @@ import { getDemandesEnAttente, traiterDemande, refuserDemande } from '../../serv
 import PageHeader from '../../components/PageHeader';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 
-const TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation' };
+const TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation', etat_conge: 'État de congé' };
 
 export default function DemandesDocuments() {
   const [demandes, setDemandes] = useState([]);

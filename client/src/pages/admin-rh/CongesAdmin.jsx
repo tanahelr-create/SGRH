@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getPendingDemandes, reviewDemande, telechargerJustificatifConge } from '../../services/congeApi';
+import { getPendingDemandes, reviewDemande, telechargerJustificatifConge, getCongesSansDecision } from '../../services/congeApi';
+import { generateDocument } from '../../services/documentApi';
+import OuvertureSoldes from './OuvertureSoldes';
 import PageHeader from '../../components/PageHeader';
 import { JUSTIFICATIF_OBLIGATOIRE } from '../../constants/conges';
 import { SkeletonCard, EmptyState } from '../../components/ui';
@@ -13,11 +15,14 @@ export default function CongesAdmin() {
   const [actionError, setActionError] = useState('');
   const [avisMap, setAvisMap] = useState({});
   const [reviewingId, setReviewingId] = useState(null);
+  const [sansDecision, setSansDecision] = useState([]);
+  const [generatingId, setGeneratingId] = useState(null);
 
   async function load() {
     setLoading(true);
     try {
       setDemandes(await getPendingDemandes());
+      setSansDecision(await getCongesSansDecision());
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -26,6 +31,22 @@ export default function CongesAdmin() {
   }
 
   useEffect(() => { load(); }, []);
+
+  // Décision d'octroi : établie pour un congé annuel approuvé, puis ouverte pour impression.
+  async function handleGenererDecision(conge) {
+    if (generatingId) return;
+    setActionError('');
+    setGeneratingId(conge.id);
+    try {
+      const document = await generateDocument(conge.personnel_id, 'decision_conge', { congeId: conge.id });
+      setSansDecision((prev) => prev.filter((c) => c.id !== conge.id));
+      window.open(`/documents/${document.id}`, '_blank');
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setGeneratingId(null);
+    }
+  }
 
   async function handleReview(id, decision) {
     if (reviewingId) return; // empêche un double-clic pendant une décision déjà en cours
@@ -124,6 +145,31 @@ export default function CongesAdmin() {
           );
         })}
       </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 mt-8">
+        <h3 className="font-semibold text-navy dark:text-gold">Décisions d'octroi à établir</h3>
+        <p className="text-xs text-gray-500 mt-1 mb-3">Congés annuels approuvés pour lesquels la décision (fraction de congé) n'a pas encore été générée.</p>
+        {sansDecision.length === 0 && !loading && <p className="text-sm text-gray-400">Aucune décision en attente.</p>}
+        <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+          {sansDecision.map((c) => (
+            <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
+              <span className="text-navy dark:text-gray-100">
+                {c.prenom} {c.nom} <span className="text-xs text-gray-400">— du {new Date(c.date_debut).toLocaleDateString('fr-FR')} au {new Date(c.date_fin).toLocaleDateString('fr-FR')}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleGenererDecision(c)}
+                disabled={generatingId !== null}
+                className="text-xs px-3 py-1.5 rounded-md bg-navy text-white font-medium hover:opacity-90 disabled:opacity-50"
+              >
+                {generatingId === c.id ? 'Génération…' : 'Générer la décision'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <OuvertureSoldes />
     </div>
   );
 }

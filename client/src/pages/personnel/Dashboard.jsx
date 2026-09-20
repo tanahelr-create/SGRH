@@ -9,7 +9,7 @@ import { getMyPersonnel } from '../../services/personnelApi';
 import { getMesContrats } from '../../services/contratApi';
 import { getMesSituations } from '../../services/situationAdministrativeApi';
 import { getMaCarriere } from '../../services/carriereApi';
-import { getMyDemandes } from '../../services/congeApi';
+import { getMyDemandes, getSoldeConges } from '../../services/congeApi';
 import { getMesDocuments } from '../../services/documentApi';
 import { getMyNotifications } from '../../services/notificationApi';
 import { Card, Badge, Skeleton, SkeletonText, EmptyState } from '../../components/ui';
@@ -28,7 +28,7 @@ const STATUT_CONTRAT_BADGE = {
   actif: 'approved', renouvele: 'approved', expire: 'rejected', resilie: 'rejected', non_renouvele: 'neutral',
 };
 const CONGE_STATUS_LABELS = { en_attente: 'En attente', approuvee: 'Approuvée', refusee: 'Refusée' };
-const DOCUMENT_TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation' };
+const DOCUMENT_TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation', etat_conge: 'État de congé', decision_conge: "Décision d'octroi de congé" };
 
 const QUICK_LINKS = [
   { label: 'Mon profil', to: '/profil', icon: UserRound },
@@ -95,8 +95,9 @@ export default function Dashboard() {
       getMyDemandes(),
       getMesDocuments(),
       getMyNotifications(),
+      getSoldeConges().catch(() => null),
     ])
-      .then(([personnel, contratsRes, situations, carriere, demandes, documents, notifications]) => {
+      .then(([personnel, contratsRes, situations, carriere, demandes, documents, notifications, solde]) => {
         setData({
           personnel,
           contrats: contratsRes?.contrats || [],
@@ -105,6 +106,7 @@ export default function Dashboard() {
           demandes: demandes || [],
           documents: documents || [],
           notifications: notifications || [],
+          solde,
         });
       })
       .catch((err) => setError(err.message));

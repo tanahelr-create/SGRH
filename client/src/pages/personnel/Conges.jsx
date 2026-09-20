@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
-import { createDemande, getMyDemandes, uploadJustificatif, telechargerJustificatifConge } from '../../services/congeApi';
+import { createDemande, getMyDemandes, getSoldeConges, uploadJustificatif, telechargerJustificatifConge } from '../../services/congeApi';
 import { getMyPersonnel } from '../../services/personnelApi';
 import { TYPES_CONGE, JUSTIFICATIF_OBLIGATOIRE, STATUS_LABELS } from '../../constants/conges';
 import { SkeletonText } from '../../components/ui';
+
+function formatJours(n) {
+  if (n === null || n === undefined) return '—';
+  return `${Number(n).toLocaleString('fr-FR')} jour${Number(n) > 1 ? 's' : ''}`;
+}
 
 function ReadOnlyField({ label, value }) {
   return (
@@ -18,6 +23,7 @@ function ReadOnlyField({ label, value }) {
 export default function Conges() {
   const [personnel, setPersonnel] = useState(null);
   const [demandes, setDemandes] = useState([]);
+  const [solde, setSolde] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [step, setStep] = useState('form'); // 'form' | 'justificatif'
@@ -40,9 +46,10 @@ export default function Conges() {
   async function load() {
     setLoading(true);
     try {
-      const [p, d] = await Promise.all([getMyPersonnel(), getMyDemandes()]);
+      const [p, d, s] = await Promise.all([getMyPersonnel(), getMyDemandes(), getSoldeConges()]);
       setPersonnel(p);
       setDemandes(d);
+      setSolde(s);
     } catch (err) {
       setFeedback(err.message);
     } finally {
@@ -120,10 +127,21 @@ export default function Conges() {
           </div>
         )}
 
-        {personnel && (
-          <div className="flex items-center justify-between mb-5 p-3 bg-navy/5 rounded-md">
-            <span className="text-sm text-navy font-medium">Solde de congé annuel</span>
-            <span className="text-xl font-bold text-navy">{personnel.solde_conges} jour(s)</span>
+        {solde && (
+          <div className="mb-5 p-3 bg-navy/5 rounded-md">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-navy font-medium">Solde de congé annuel disponible</span>
+              <span className="text-xl font-bold text-navy">{formatJours(solde.soldeDisponible)}</span>
+            </div>
+            {solde.dateRecrutementConnue ? (
+              <p className="mt-1 text-xs text-gray-500">
+                Droits acquis en {solde.annee} : {formatJours(solde.droitsAnnee)} · Reliquat des années précédentes : {formatJours(solde.reliquat)} · Déjà posés en {solde.annee} : {formatJours(solde.joursPrisAnnee)}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                Date de recrutement non renseignée : les droits de l'année ne peuvent pas être calculés automatiquement. Votre solde actuel est conservé comme solde d'ouverture.
+              </p>
+            )}
           </div>
         )}
 
@@ -140,7 +158,7 @@ export default function Conges() {
               </select>
               {typeConge === 'Congé annuel' && (
                 <p className="text-xs text-gray-400 mt-1">
-                  Minimum 15 jours pour votre première demande de congé annuel de l'année.
+                  Minimum 15 jours pour votre première demande de congé annuel de l'année (ou votre solde disponible s'il est inférieur).
                 </p>
               )}
               {typeConge === 'Congé de paternité' && (

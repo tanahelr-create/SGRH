@@ -36,6 +36,41 @@ export async function uploadJustificatif(id, file) {
   return data;
 }
 
+// Solde et droits calculés par le backend (source unique du calcul).
+export async function getSoldeConges() {
+  const res = await fetch(`${API_URL}/conges/solde`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
+  return data;
+}
+
+// Congés annuels approuvés dont la décision d'octroi n'est pas encore établie (RH).
+export async function getCongesSansDecision() {
+  const res = await fetch(`${API_URL}/conges/sans-decision`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
+  return data.conges;
+}
+
+// Suivi par année d'un personnel (droits, pris, restant) et saisie des soldes d'ouverture (RH).
+export async function getSuiviConges(personnelId) {
+  const res = await fetch(`${API_URL}/conges/suivi/${personnelId}`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
+  return data;
+}
+
+export async function saisirOuvertureConges(personnelId, payload) {
+  const res = await fetch(`${API_URL}/conges/ouverture/${personnelId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw makeApiError(res, data, "Échec de la saisie d'ouverture");
+  return data;
+}
+
 export async function getMyDemandes() {
   const res = await fetch(`${API_URL}/conges/me`, { headers: authHeaders() });
   const data = await res.json();

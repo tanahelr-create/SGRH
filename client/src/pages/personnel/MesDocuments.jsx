@@ -7,6 +7,7 @@ import { SkeletonText } from '../../components/ui';
 const TYPES_DOCUMENT = [
   { value: 'certificat_administratif', label: 'Certificat administratif' },
   { value: 'lettre_confirmation', label: 'Lettre de confirmation' },
+  { value: 'etat_conge', label: 'État de congé' },
 ];
 
 const STATUT_LABELS = {
@@ -103,7 +104,7 @@ export default function MesDocuments() {
             <div key={d.id} className="border-b last:border-0 dark:border-gray-700 pb-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-navy dark:text-gray-100">
-                  {TYPES_DOCUMENT.find((t) => t.value === d.type_document)?.label || d.type_document}
+                  {TYPES_DOCUMENT.find((t) => t.value === d.type_document)?.label || (d.type_document === 'decision_conge' ? "Décision d'octroi de congé" : d.type_document)}
                 </p>
                 <span className={`text-xs font-medium ${STATUT_LABELS[d.statut].color}`}>
                   {STATUT_LABELS[d.statut].label}

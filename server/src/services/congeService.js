@@ -3,6 +3,11 @@ const notificationRepository = require('../repositories/notificationRepository')
 const userRepository = require('../repositories/userRepository');
 const personnelRepository = require('../repositories/personnelRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
+const congeDroitsService = require('./congeDroitsService');
+const congeSuiviRepository = require('../repositories/congeSuiviRepository');
+const verificationService = require('./verificationService');
+const congeUtilisationService = require('./congeUtilisationService');
+const pool = require('../config/db');
 
 const JUSTIFICATIF_REQUIS_VALIDATION = ['Congé de maladie', 'Congé de maternité'];
 
@@ -25,6 +30,16 @@ async function determineValidateur(userId, personnel) {
   return { validateurId: null, decisionIntermediaire: 'non_requise' };
 }
 
+// Restitue au solde les jours d'un congé annuel refusé. À n'appeler qu'après un
+// changement d'état valide (en_attente -> refusee) obtenu dans la même transaction.
+async function restituerJoursSiCongeAnnuel(demande, client) {
+  if (demande.type_conge !== 'Congé annuel') return;
+  const requester = await userRepository.findById(demande.user_id);
+  if (requester?.personnel_id) {
+    await personnelRepository.crediterSolde(requester.personnel_id, nombreDeJours(demande.date_debut, demande.date_fin), client);
+  }
+}
+
 async function createDemande(userId, { typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant }) {
   if (new Date(dateFin) < new Date(dateDebut)) {
     throw new Error('La date de fin doit être après la date de début');
@@ -35,37 +50,44 @@ async function createDemande(userId, { typeConge, dateDebut, dateFin, motif, lie
     throw new Error('Aucune fiche personnel associée à ce compte');
   }
 
-  await personnelRepository.rechargeAnnuelleSiNecessaire(user.personnel_id);
-
   const jours = nombreDeJours(dateDebut, dateFin);
 
-  if (typeConge === 'Congé annuel') {
-    const nbDemandesCetteAnnee = await congeRepository.countCongesAnnuelCetteAnnee(userId);
-    if (nbDemandesCetteAnnee === 0 && jours < 15) {
-      throw new Error("La première demande de congé annuel de l'année doit être d'au moins 15 jours");
+  // Tout ce qui touche au solde (recharge, contrôles, création, débit) se fait dans
+  // UNE transaction qui verrouille la fiche : deux demandes simultanées sont
+  // sérialisées, le solde ne peut pas devenir négatif et un échec annule tout.
+  const { demande, validateurId } = await pool.withTransaction(async (client) => {
+    // Acquisition des droits : 2,5 jours par mois de service effectif (années manquantes incluses).
+    await congeDroitsService.rechargerSiNecessaire(user.personnel_id, client);
+
+    // Règles de prise du congé (distinctes de l'acquisition des droits ci-dessus).
+    if (typeConge === 'Congé annuel') {
+      const solde = await personnelRepository.getSolde(user.personnel_id, client);
+      const nbDemandesAnnuellesCetteAnnee = await congeRepository.countCongesAnnuelCetteAnnee(userId, client);
+      congeUtilisationService.verifierPremiereDemandeAnnuelle({ jours, nbDemandesAnnuellesCetteAnnee });
+      congeUtilisationService.verifierSoldeSuffisant({ jours, solde });
+    }
+    if (typeConge === 'Congé de paternité') {
+      congeUtilisationService.verifierDureePaternite({ jours });
     }
 
-    const solde = await personnelRepository.getSolde(user.personnel_id);
-    if (jours > solde) {
-      throw new Error(`Solde insuffisant : il vous reste ${solde} jour(s) de congé annuel`);
+    const soldeAvant = await personnelRepository.getSolde(user.personnel_id, client);
+    const validateur = await determineValidateur(userId, user);
+    const created = await congeRepository.create({
+      userId, typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant,
+    }, client);
+    await congeRepository.setValidateur(created.id, validateur.validateurId, validateur.decisionIntermediaire, client);
+
+    if (typeConge === 'Congé annuel') {
+      const restant = await personnelRepository.debiterSoldeSiSuffisant(user.personnel_id, jours, client);
+      if (restant === null) throw new Error('Solde insuffisant pour cette demande');
+      await congeDroitsService.imputerJours(userId, user.personnel_id, created.id, jours, client);
     }
-  }
-
-  if (typeConge === 'Congé de paternité' && jours > 15) {
-    throw new Error('Le congé de paternité ne peut pas dépasser 15 jours');
-  }
-
-  const { validateurId, decisionIntermediaire } = await determineValidateur(userId, user);
-
-  const demande = await congeRepository.create({
-    userId, typeConge, dateDebut, dateFin, motif, lieuJouissance, dateRepriseService, remplacant,
+    // Photographie du solde à la date de la demande (fiche imprimable) ; les types
+    // sans effet sur le solde le laissent inchangé.
+    const soldeApres = typeConge === 'Congé annuel' ? soldeAvant - jours : soldeAvant;
+    await congeSuiviRepository.setSnapshotSolde(created.id, soldeAvant, soldeApres, client);
+    return { demande: created, validateurId: validateur.validateurId };
   });
-
-  await congeRepository.setValidateur(demande.id, validateurId, decisionIntermediaire);
-
-  if (typeConge === 'Congé annuel') {
-    await personnelRepository.debiterSolde(user.personnel_id, jours);
-  }
 
   if (validateurId) {
     await notificationRepository.create({
@@ -128,19 +150,22 @@ async function reviewIntermediaire(id, decision, validateurUserId, avis) {
     throw new Error('Cette demande a déjà été traitée à ce niveau');
   }
 
-  const updated = await congeRepository.setDecisionIntermediaire(id, decision, avis);
+  // Décision, changement de statut et restitution des jours : atomiques. Chaque
+  // écriture est conditionnelle (état "en attente"), donc rejouer ou doubler la
+  // décision ne peut pas restituer les jours deux fois.
+  const updated = await pool.withTransaction(async (client) => {
+    const row = await congeRepository.setDecisionIntermediaire(id, decision, avis, client);
+    if (!row) throw new Error('Cette demande a déjà été traitée à ce niveau');
+
+    if (decision === 'refusee') {
+      const refused = await congeRepository.updateStatus(id, 'refusee', null, avis, client);
+      if (!refused) throw new Error('Demande introuvable ou déjà traitée');
+      await restituerJoursSiCongeAnnuel(demande, client);
+    }
+    return row;
+  });
 
   if (decision === 'refusee') {
-    await congeRepository.updateStatus(id, 'refusee', null, avis);
-
-    if (demande.type_conge === 'Congé annuel') {
-      const requester = await userRepository.findById(demande.user_id);
-      if (requester?.personnel_id) {
-        const jours = nombreDeJours(demande.date_debut, demande.date_fin);
-        await personnelRepository.crediterSolde(requester.personnel_id, jours);
-      }
-    }
-
     await notificationRepository.create({
       senderId: validateurUserId,
       recipientId: demande.user_id,
@@ -181,15 +206,12 @@ async function reviewDemande(id, decision, reviewedBy, avisChefService) {
     throw new Error('Un justificatif est requis avant de valider ce type de congé');
   }
 
-  const updated = await congeRepository.updateStatus(id, decision, reviewedBy, avisChefService);
-
-  if (decision === 'refusee' && demande.type_conge === 'Congé annuel') {
-    const requester = await userRepository.findById(demande.user_id);
-    if (requester?.personnel_id) {
-      const jours = nombreDeJours(demande.date_debut, demande.date_fin);
-      await personnelRepository.crediterSolde(requester.personnel_id, jours);
-    }
-  }
+  const updated = await pool.withTransaction(async (client) => {
+    const row = await congeRepository.updateStatus(id, decision, reviewedBy, avisChefService, client);
+    if (!row) throw new Error('Demande introuvable ou déjà traitée');
+    if (decision === 'refusee') await restituerJoursSiCongeAnnuel(demande, client);
+    return row;
+  });
 
   await notificationRepository.create({
     senderId: reviewedBy,
@@ -221,7 +243,15 @@ async function getDemandeDetails(id, requestingUser) {
   const isValidateur = demande.validateur_id === requestingUser.id;
   if (!isOwner && !isAdmin && !isValidateur) throw new Error('Accès refusé à cette demande');
 
-  return demande;
+  // Chiffres « à la date de la demande » (numeric -> nombre) et QR de l'avis favorable
+  // qui remplace la signature du chef de service.
+  const nombre = (v) => (v === null || v === undefined ? null : Number(v));
+  return {
+    ...demande,
+    solde_avant: nombre(demande.solde_avant),
+    solde_apres: nombre(demande.solde_apres),
+    avis_qr: demande.decision_intermediaire === 'approuvee' ? await verificationService.genererQrAvis(demande.id) : null,
+  };
 }
 
 async function getJustificatifPourTelechargement(id, requestingUser) {
@@ -237,8 +267,14 @@ async function getJustificatifPourTelechargement(id, requestingUser) {
   return demande;
 }
 
+async function getSolde(userId) {
+  const user = await userRepository.findById(userId);
+  if (!user || !user.personnel_id) throw new Error('Aucune fiche personnel associée à ce compte');
+  return congeDroitsService.getSoldeDetails(userId, user.personnel_id);
+}
+
 module.exports = {
-  createDemande, getMyDemandes, getPendingDemandes, reviewDemande,
+  getSolde, createDemande, getMyDemandes, getPendingDemandes, reviewDemande,
   getRecentDemandes, getCalendarDemandes, getDemandeDetails,
   getPendingForValidateur, reviewIntermediaire, uploadJustificatif,
   getJustificatifPourTelechargement,

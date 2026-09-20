@@ -10,6 +10,41 @@ function fmt(date) {
   return new Date(date).toLocaleDateString('fr-FR');
 }
 
+function jours(n) {
+  if (n === null || n === undefined) return '—';
+  return `${Number(n).toLocaleString('fr-FR')} jour(s)`;
+}
+
+// Avis du chef de service : le QR (authentifiant, vérifiable publiquement) remplace la
+// signature quand l'avis est favorable ; en cas de refus, le motif le remplace.
+function AvisChefService({ demande }) {
+  if (demande.decision_intermediaire === 'approuvee' && demande.avis_qr) {
+    return (
+      <div>
+        <img src={demande.avis_qr.dataUrl} alt="QR code de vérification de l'avis du chef de service" className="w-28 h-28" />
+        <p className="mt-1 font-semibold">Avis favorable</p>
+        <p className="text-xs">
+          {[demande.validateur_prenom, demande.validateur_nom].filter(Boolean).join(' ')}
+          {demande.validateur_fonction ? `, ${demande.validateur_fonction}` : ''}
+          {demande.decision_intermediaire_le ? ` — le ${fmt(demande.decision_intermediaire_le)}` : ''}
+        </p>
+        {demande.avis_chef_service && <p className="text-xs mt-1">{demande.avis_chef_service}</p>}
+        <p className="text-[10px] text-gray-500 mt-1 print:text-gray-600">Scanner le QR code pour vérifier l'authenticité de cet avis.</p>
+      </div>
+    );
+  }
+  if (demande.decision_intermediaire === 'refusee') {
+    return (
+      <div>
+        <p className="font-semibold">Avis défavorable</p>
+        <p>Motif : {demande.avis_chef_service || 'non précisé'}</p>
+      </div>
+    );
+  }
+  if (demande.decision_intermediaire === 'en_attente') return <p>En attente de l'avis du chef de service.</p>;
+  return <p>Aucun chef de service désigné : demande transmise directement au Service du Personnel.</p>;
+}
+
 export default function FicheDemande() {
   const { id } = useParams();
   const [demande, setDemande] = useState(null);
@@ -51,7 +86,7 @@ export default function FicheDemande() {
           <p className="text-xs italic">Fitiavana - Tanindrazana - Fandrosoana</p>
           <p className="text-sm font-semibold mt-2">MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR ET DE LA RECHERCHE SCIENTIFIQUE</p>
           <p className="text-sm font-semibold">UNIVERSITÉ DE MAHAJANGA</p>
-          <p className="text-xs mt-1">Service Administration Réseau et Informatisation</p>
+          {(demande.service || demande.direction) && <p className="text-xs mt-1">{demande.service || demande.direction}</p>}
         </div>
 
         <h1 className="text-center font-bold underline mb-6">
@@ -62,10 +97,13 @@ export default function FicheDemande() {
           <p><span className="font-semibold underline">MATRICULE</span> : {demande.matricule}</p>
           <p><span className="font-semibold underline">NOM ET PRÉNOM(S)</span> : {demande.nom} {demande.prenom}</p>
           <p><span className="font-semibold underline">FONCTION</span> : {demande.fonction || '—'}</p>
-          <p><span className="font-semibold underline">CORPS ET GRADE</span> : {[demande.corps, demande.grade].filter(Boolean).join(' ; ') || '—'}</p>
+          {/* Corps = catégorie professionnelle ; Statut = EFA / ELD / Fonctionnaire (champ personnel.corps) */}
+          <p><span className="font-semibold underline">CORPS ET GRADE</span> : {[demande.categorie, demande.grade].filter(Boolean).join(' ; ') || '—'}</p>
+          <p><span className="font-semibold underline">STATUT</span> : {demande.corps || '—'}</p>
           <p><span className="font-semibold underline">MOTIF</span> : {demande.motif || '—'}</p>
           <p><span className="font-semibold underline">LIEU DE JOUISSANCE</span> : {demande.lieu_jouissance || '—'}</p>
           <p><span className="font-semibold underline">A COMPTER DU</span> : {fmt(demande.date_debut)} au {fmt(demande.date_fin)}</p>
+          <p><span className="font-semibold underline">NOMBRE DE JOURS DEMANDÉ</span> : {demande.nombre_jours} jour(s)</p>
           <p><span className="font-semibold underline">DATE DE REPRISE DE SERVICE</span> : {fmt(demande.date_reprise_service)}</p>
           <p><span className="font-semibold underline">REMPLAÇANT(E)</span> : {demande.remplacant || '—'}</p>
         </div>
@@ -73,7 +111,7 @@ export default function FicheDemande() {
         <div className="grid grid-cols-2 gap-6 mt-10 text-sm">
           <div>
             <p className="font-semibold underline mb-8">AVIS DU CHEF DE SERVICE</p>
-            <p>{demande.avis_chef_service || '.....................................'}</p>
+            <AvisChefService demande={demande} />
           </div>
           <div className="text-right">
             <p>Mahajanga, le {fmt(demande.created_at)}</p>
@@ -82,7 +120,23 @@ export default function FicheDemande() {
           </div>
         </div>
 
-        <div className="mt-10 pt-4 border-t text-sm">
+        {/* Renseigné automatiquement par le système à la date de la demande (Service du Personnel). */}
+        <div className="mt-8 pt-4 border-t text-sm" data-testid="bloc-service-personnel">
+          <p className="font-semibold underline mb-2">A REMPLIR PAR LE SERVICE DU PERSONNEL</p>
+          <p>
+            SITUATION DE(S) CONGÉ(S) AU TITRE DE(S) L'ANNÉE(S) :{' '}
+            {demande.type_conge !== 'Congé annuel'
+              ? 'sans imputation sur le congé annuel'
+              : (demande.imputations || []).length === 0
+                ? '—'
+                : demande.imputations.map((i) => `${i.annee ?? "solde d'ouverture antérieur"} (${jours(i.jours)})`).join(', ')}
+          </p>
+          <p className="mt-2">A encore droit : <strong>{jours(demande.solde_avant)}</strong></p>
+          <p>Nombre de jours demandé : <strong>{jours(demande.nombre_jours)}</strong></p>
+          <p>Nombre de jours restant à la date de la demande : <strong>{jours(demande.solde_apres)}</strong></p>
+        </div>
+
+        <div className="mt-6 pt-4 border-t text-sm">
           <p className="font-semibold">
             Statut : <span className={
               demande.status === 'approuvee' ? 'text-status-approved' :

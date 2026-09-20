@@ -36,7 +36,7 @@ function contratActuel(contrats) {
   return contrats.find((c) => c.statut === 'actif') || contrats[0];
 }
 
-export function answerRhQuestion(key, { personnel, contrats, situations, carriere, demandes, documents }) {
+export function answerRhQuestion(key, { personnel, contrats, situations, carriere, demandes, documents, solde: soldeConges }) {
   switch (key) {
     case 'CONTRACT_CURRENT': {
       const c = contratActuel(contrats);
@@ -58,9 +58,9 @@ export function answerRhQuestion(key, { personnel, contrats, situations, carrier
     }
     case 'LEAVE_BALANCE': {
       const enAttente = (demandes || []).filter((d) => d.status === 'en_attente').length;
-      const solde = personnel?.solde_conges;
+      const solde = soldeConges?.soldeDisponible;
       if (solde === null || solde === undefined) return "Votre solde de congés n'est pas renseigné.";
-      return `Votre solde actuel est de ${solde} jour${solde > 1 ? 's' : ''}.${enAttente > 0 ? ` Vous avez ${enAttente} demande${enAttente > 1 ? 's' : ''} en attente.` : ''}`;
+      return `Votre solde actuel est de ${Number(solde).toLocaleString('fr-FR')} jour${solde > 1 ? 's' : ''}.${enAttente > 0 ? ` Vous avez ${enAttente} demande${enAttente > 1 ? 's' : ''} en attente.` : ''}`;
     }
     case 'LEAVE_LAST_REQUEST': {
       const d = demandes?.[0];

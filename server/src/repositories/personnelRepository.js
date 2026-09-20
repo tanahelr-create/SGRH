@@ -93,37 +93,46 @@ async function listWithoutAccount() {
   return result.rows;
 }
 
-async function rechargeAnnuelleSiNecessaire(personnelId) {
-  const anneeActuelle = new Date().getFullYear();
-  const result = await pool.query(
-    `UPDATE personnel
-     SET solde_conges = solde_conges + 30, derniere_recharge_annee = $2
-     WHERE id = $1 AND (derniere_recharge_annee IS NULL OR derniere_recharge_annee < $2)
-     RETURNING *`,
-    [personnelId, anneeActuelle]
+// Verrouille la fiche (FOR UPDATE, dans la transaction de l'appelant) et renvoie
+// ce qu'il faut pour calculer les droits à congé manquants.
+async function lockPourRecharge(personnelId, db = pool) {
+  const result = await db.query(
+    `SELECT id, solde_conges, derniere_recharge_annee, date_recrutement::text AS date_recrutement, created_at
+     FROM personnel WHERE id = $1 FOR UPDATE`,
+    [personnelId]
   );
   return result.rows[0] || null;
 }
 
-async function getSolde(personnelId) {
-  const result = await pool.query(`SELECT solde_conges FROM personnel WHERE id = $1`, [personnelId]);
-  return result.rows[0]?.solde_conges ?? 0;
+async function appliquerRecharge(personnelId, jours, annee, db = pool) {
+  await db.query(
+    `UPDATE personnel SET solde_conges = solde_conges + $2, derniere_recharge_annee = $3 WHERE id = $1`,
+    [personnelId, jours, annee]
+  );
 }
 
-async function debiterSolde(personnelId, jours) {
-  const result = await pool.query(
-    `UPDATE personnel SET solde_conges = solde_conges - $2 WHERE id = $1 RETURNING solde_conges`,
+async function getSolde(personnelId, db = pool) {
+  const result = await db.query(`SELECT solde_conges FROM personnel WHERE id = $1`, [personnelId]);
+  return Number(result.rows[0]?.solde_conges ?? 0);
+}
+
+// Débit atomique qui ne peut jamais rendre le solde négatif : renvoie le nouveau
+// solde, ou null si le solde est insuffisant (aucune modification dans ce cas).
+async function debiterSoldeSiSuffisant(personnelId, jours, db = pool) {
+  const result = await db.query(
+    `UPDATE personnel SET solde_conges = solde_conges - $2
+     WHERE id = $1 AND solde_conges >= $2 RETURNING solde_conges`,
     [personnelId, jours]
   );
-  return result.rows[0]?.solde_conges ?? 0;
+  return result.rows[0] ? Number(result.rows[0].solde_conges) : null;
 }
 
-async function crediterSolde(personnelId, jours) {
-  const result = await pool.query(
+async function crediterSolde(personnelId, jours, db = pool) {
+  const result = await db.query(
     `UPDATE personnel SET solde_conges = solde_conges + $2 WHERE id = $1 RETURNING solde_conges`,
     [personnelId, jours]
   );
-  return result.rows[0]?.solde_conges ?? 0;
+  return Number(result.rows[0]?.solde_conges ?? 0);
 }
 
 async function findChefDeServiceUser(service, excludeUserId) {
@@ -237,7 +246,7 @@ async function syncSituationCourante(id, { cadre, echelle, classe, echelon, indi
 module.exports = {
   create, findByUserId, updatePhoto, findByMatricule, findByEmailRaw, isLinkedToUser, findLinkedUserId,
   listAll, findByIdRaw, listWithoutAccount,
-  rechargeAnnuelleSiNecessaire, getSolde, debiterSolde, crediterSolde,
+  lockPourRecharge, appliquerRecharge, getSolde, debiterSoldeSiSuffisant, crediterSolde,
   findChefDeServiceUser, findResponsableDirectionUser,
   findEquipeParService, findEquipeParDirection,
   updateInfosPersonnelles, updateFiche, syncSituationCourante,

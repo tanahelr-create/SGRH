@@ -15,6 +15,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import Parametres from './pages/Parametres';
 import FicheDemande from './pages/FicheDemande';
 import DocumentImprimable from './pages/DocumentImprimable';
+import VerificationAvis from './pages/VerificationAvis';
 import ParOuCommencer from './pages/aide/ParOuCommencer';
 import VosDroits from './pages/aide/VosDroits';
 import Procedures from './pages/aide/Procedures';
@@ -62,6 +63,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
+                <Route path="/verification/:token" element={<VerificationAvis />} />
                 <Route path="/reset-password" element={<ReinitialiserMotDePasse />} />
 
                 <Route path="/demandes/:id/fiche" element={

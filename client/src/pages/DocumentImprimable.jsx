@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDocument } from '../services/documentApi';
 import { Skeleton, SkeletonText } from '../components/ui/Skeleton';
+import { DecisionConge, EtatConge } from '../components/documents/DocumentsConge';
 
 function fmt(date) {
   if (!date) return '____/____/____';
@@ -40,8 +41,9 @@ function CertificatAdministratif({ doc }) {
       <div className="space-y-1 text-sm mb-4">
         <p className="font-semibold">{doc.prenom} {doc.nom}</p>
         <p>- I.M : {doc.matricule}</p>
-        <p>- {doc.corps || '—'}</p>
+        <p>- {doc.categorie || '—'}</p>
         <p>- {doc.grade || '—'}</p>
+        <p>- Statut : {doc.corps || '—'}</p>
         <p>- Indice : {doc.indice || '—'}</p>
         <p>- I.B : {doc.chapitre_ib || '—'}</p>
       </div>
@@ -113,7 +115,7 @@ export default function DocumentImprimable() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 print:bg-white print:py-0">
-      <div className="max-w-2xl mx-auto bg-white p-10 shadow print:shadow-none">
+      <div className={`${['decision_conge', 'etat_conge'].includes(doc.type_document) ? 'max-w-3xl' : 'max-w-2xl'} mx-auto bg-white p-10 shadow print:shadow-none`}>
         <div className="flex justify-end mb-6 print:hidden">
           <button
             onClick={() => window.print()}
@@ -127,6 +129,8 @@ export default function DocumentImprimable() {
 
         {doc.type_document === 'certificat_administratif' && <CertificatAdministratif doc={doc} />}
         {doc.type_document === 'lettre_confirmation' && <LettreConfirmation doc={doc} />}
+        {doc.type_document === 'decision_conge' && <DecisionConge doc={doc} />}
+        {doc.type_document === 'etat_conge' && <EtatConge doc={doc} />}
 
         <p className="text-sm text-right mt-10">Mahajanga, le {fmt(doc.genere_le)}</p>
       </div>

@@ -43,12 +43,16 @@ async function archiveAndDeleteCompte(userId, supprimePar) {
     const congesResult = await client.query(`SELECT * FROM conges WHERE user_id = $1`, [userId]);
     const fonctionHistoryResult = await client.query(`SELECT * FROM fonction_history WHERE user_id = $1`, [userId]);
     const notificationsResult = await client.query(`SELECT * FROM notifications WHERE recipient_id = $1`, [userId]);
+    const imputationsResult = await client.query(
+      `SELECT ci.* FROM conges_imputations ci JOIN conges c ON c.id = ci.conge_id WHERE c.user_id = $1`, [userId]
+    );
 
     const donnees = {
       user,
       conges: congesResult.rows,
       fonctionHistory: fonctionHistoryResult.rows,
       notifications: notificationsResult.rows,
+      imputations: imputationsResult.rows,
     };
 
     const corbeilleResult = await client.query(
@@ -87,15 +91,23 @@ async function restoreCompte(donnees) {
            id, user_id, type_conge, date_debut, date_fin, motif, status, reviewed_by, reviewed_at,
            created_at, avis_chef_service, lieu_jouissance, date_reprise_service, remplacant,
            validateur_id, decision_intermediaire, decision_intermediaire_le,
-           justificatif_filename, justificatif_path
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+           justificatif_filename, justificatif_path, solde_avant, solde_apres
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
          ON CONFLICT (id) DO NOTHING`,
         [
           c.id, c.user_id, c.type_conge, c.date_debut, c.date_fin, c.motif, c.status, c.reviewed_by, c.reviewed_at,
           c.created_at, c.avis_chef_service, c.lieu_jouissance, c.date_reprise_service, c.remplacant,
           c.validateur_id, c.decision_intermediaire, c.decision_intermediaire_le,
-          c.justificatif_filename, c.justificatif_path,
+          c.justificatif_filename, c.justificatif_path, c.solde_avant ?? null, c.solde_apres ?? null,
         ]
+      );
+    }
+
+    // Imputations des jours de congé annuel par année (supprimées avec les congés par cascade).
+    for (const i of donnees.imputations || []) {
+      await client.query(
+        `INSERT INTO conges_imputations (id, conge_id, annee, jours) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO NOTHING`,
+        [i.id, i.conge_id, i.annee, i.jours]
       );
     }
 

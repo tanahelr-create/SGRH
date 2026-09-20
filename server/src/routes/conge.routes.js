@@ -19,6 +19,10 @@ const router = express.Router();
 
 router.post('/', requireAuth, requirePermission('create_conge'), congeController.create);
 router.get('/me', requireAuth, requirePermission('view_mes_conges'), congeController.myDemandes);
+router.get('/solde', requireAuth, requirePermission('view_mes_conges'), congeController.solde);
+router.get('/suivi/:personnelId', requireAuth, requirePermission('view_conges_admin'), congeController.suivi);
+router.post('/ouverture/:personnelId', requireAuth, requirePermission('view_conges_admin'), congeController.ouverture);
+router.get('/sans-decision', requireAuth, requirePermission('view_conges_admin'), congeController.sansDecision);
 router.get('/pending', requireAuth, requirePermission('view_conges_admin'), congeController.pending);
 router.get('/pending-equipe', requireAuth, congeController.pendingPourValidateur);
 router.get('/recent', requireAuth, requirePermission('view_conges_admin'), congeController.recent);

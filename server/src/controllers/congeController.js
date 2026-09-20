@@ -2,6 +2,8 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const congeService = require('../services/congeService');
+const congeRepository = require('../repositories/congeRepository');
+const congeOuvertureService = require('../services/congeOuvertureService');
 const { sendUploadedFile } = require('../utils/secureFileServing');
 const { isAllowedFile } = require('../utils/fileSignature');
 
@@ -51,6 +53,41 @@ async function uploadJustificatif(req, res) {
 async function myDemandes(req, res) {
   const demandes = await congeService.getMyDemandes(req.user.id);
   return res.status(200).json({ demandes });
+}
+
+async function solde(req, res) {
+  try {
+    const result = await congeService.getSolde(req.user.id);
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(404).json({ message: err.message });
+  }
+}
+
+function envoyerErreurOuverture(res, err) {
+  if (err instanceof congeOuvertureService.OuvertureError) return res.status(err.status).json({ message: err.message });
+  console.error('[conges-ouverture]', err);
+  return res.status(500).json({ message: 'Une erreur interne est survenue. Veuillez réessayer.' });
+}
+
+async function suivi(req, res) {
+  try {
+    return res.status(200).json(await congeOuvertureService.getSuivi(req.params.personnelId));
+  } catch (err) {
+    return envoyerErreurOuverture(res, err);
+  }
+}
+
+async function ouverture(req, res) {
+  try {
+    return res.status(201).json(await congeOuvertureService.saisirOuverture(req.params.personnelId, req.body, req.user.id));
+  } catch (err) {
+    return envoyerErreurOuverture(res, err);
+  }
+}
+
+async function sansDecision(req, res) {
+  return res.status(200).json({ conges: await congeRepository.findApprouveesSansDecision() });
 }
 
 async function pending(req, res) {
@@ -113,6 +150,6 @@ async function telechargerJustificatif(req, res) {
 }
 
 module.exports = {
-  create, myDemandes, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne, uploadJustificatif,
+  create, myDemandes, solde, suivi, ouverture, sansDecision, pending, pendingPourValidateur, reviewIntermediaire, review, recent, calendar, getOne, uploadJustificatif,
   telechargerJustificatif,
 };

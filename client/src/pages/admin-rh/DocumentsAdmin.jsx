@@ -8,7 +8,11 @@ import { Skeleton } from '../../components/ui/Skeleton';
 const TYPES_DOCUMENT = [
   { value: 'certificat_administratif', label: 'Certificat administratif' },
   { value: 'lettre_confirmation', label: 'Lettre de confirmation' },
+  { value: 'etat_conge', label: 'État de congé' },
 ];
+
+// La décision d'octroi n'est pas sélectionnable ici : elle est établie depuis un congé approuvé (page Congés).
+const LABELS_DOCUMENT = { ...Object.fromEntries(TYPES_DOCUMENT.map((t) => [t.value, t.label])), decision_conge: "Décision d'octroi de congé" };
 
 export default function DocumentsAdmin() {
   const [personnelList, setPersonnelList] = useState([]);
@@ -104,7 +108,7 @@ export default function DocumentsAdmin() {
               <div key={d.id} className="flex items-center justify-between border-b last:border-0 dark:border-gray-700 pb-2">
                 <div>
                   <p className="text-sm text-navy dark:text-gray-100">
-                    {TYPES_DOCUMENT.find((t) => t.value === d.type_document)?.label || d.type_document}
+                    {LABELS_DOCUMENT[d.type_document] || d.type_document}
                   </p>
                   <p className="text-xs text-gray-400">
                     {d.donnees?.numero} — {new Date(d.genere_le).toLocaleDateString('fr-FR')}

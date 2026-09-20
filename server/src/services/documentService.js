@@ -4,24 +4,40 @@ const personnelRepository = require('../repositories/personnelRepository');
 const notificationRepository = require('../repositories/notificationRepository');
 const userRepository = require('../repositories/userRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
+const congeDocumentsService = require('./congeDocumentsService');
+const pool = require('../config/db');
 
-const TYPES_VALIDES = ['certificat_administratif', 'lettre_confirmation'];
+// Types qu'un agent peut demander, et types que la RH peut générer (la décision
+// d'octroi est établie à partir d'un congé approuvé, jamais demandée par l'agent).
+const TYPES_VALIDES = ['certificat_administratif', 'lettre_confirmation', 'etat_conge'];
+const TYPES_GENERABLES = [...TYPES_VALIDES, 'decision_conge'];
 
 async function generateDocument(personnelId, typeDocument, donnees, generePar) {
-  if (!TYPES_VALIDES.includes(typeDocument)) {
+  if (!TYPES_GENERABLES.includes(typeDocument)) {
     throw new Error('Type de document invalide');
   }
   const personnel = await personnelRepository.findByIdRaw(personnelId);
   if (!personnel) throw new Error('Fiche personnel introuvable');
 
-  const numero = await documentRepository.genererNumero(typeDocument);
-  const donneesCompletes = { ...donnees, numero };
+  // Numéro, contrôle d'unicité (une décision par congé) et insertion dans une même
+  // transaction, sous verrou consultatif par type et par année.
+  const document = await pool.withTransaction(async (client) => {
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`doc:${typeDocument}:${new Date().getFullYear()}`]);
 
-  const document = await documentRepository.create({ personnelId, typeDocument, donnees: donneesCompletes, generePar });
+    let donneesFinales = donnees;
+    if (typeDocument === 'decision_conge') {
+      donneesFinales = await congeDocumentsService.construireDonneesDecision(donnees, personnelId, client);
+    } else if (typeDocument === 'etat_conge') {
+      donneesFinales = await congeDocumentsService.construireDonneesEtat(personnelId, client);
+    }
+
+    const numero = await documentRepository.genererNumero(typeDocument, client);
+    return documentRepository.create({ personnelId, typeDocument, donnees: { ...donneesFinales, numero }, generePar }, client);
+  });
 
   await activityLogRepository.create(
     generePar, 'document_genere',
-    `Document "${typeDocument}" (${numero}) généré pour ${personnel.prenom} ${personnel.nom}`
+    `Document "${typeDocument}" (${document.donnees.numero}) généré pour ${personnel.prenom} ${personnel.nom}`
   );
 
   return document;
