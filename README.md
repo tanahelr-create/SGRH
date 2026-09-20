@@ -32,7 +32,7 @@ Les rôles confirmés dans le code sont `SUPERADMIN`, `ADMIN_RH`, `PE` et `PAT`.
 | `ADMIN_RH` | Tableau de bord, personnel, import/export Excel, invitations, comptes en attente, envoi de notifications, fonctions, carrière, situation administrative, **contrats**, congés, documents administratifs, demandes de documents et audit/journal. |
 | `PE` / `PAT` | Tableau de bord, mon dossier (profil), carrière, **mes contrats**, congés & absences, mes documents, notifications, aide et paramètres. Le profil/les paramètres restent accessibles uniquement via le menu utilisateur de la TopBar, pas dans la sidebar. |
 
-Fonctionnalités effectivement implémentées : connexion JWT, changement/réinitialisation de mot de passe, OTP e-mail, inscription par matricule avec validation, fiches personnel, recherche/filtres/tri, import/export Excel, liens d'inscription, invitations, congés, carrière, **situation administrative (avec motif, une seule situation ouverte à la fois, modification, et suppression limitée à la situation en cours)**, **gestion complète des contrats** (import PDF, historique, renouvellement avec renégociation, non-renouvellement motivé, avenants, alerte d'échéance à 183 jours puis notification d'expiration), notifications ciblées **avec lien de navigation direct et « tout marquer comme lu »**, comptes, permissions, **suppression de compte réversible via une corbeille transactionnelle**, historique et personnalisation de textes/couleurs/préférences d'affichage.
+Fonctionnalités effectivement implémentées : connexion JWT, changement/réinitialisation de mot de passe, OTP e-mail, inscription par matricule avec validation, fiches personnel, recherche/filtres/tri, import/export Excel, liens d'inscription, invitations, **congés (droits à 2,5 jours par mois de service, reliquat cumulé, suivi par année, soldes d'ouverture)**, **documents de congé (fiche de demande avec QR de vérification, décision d'octroi, état de congé)**, carrière, **situation administrative (avec motif, une seule situation ouverte à la fois — garantie par la base —, contrôle de chevauchement sur tout l'historique, modification, et suppression limitée à la situation en cours)**, **gestion complète des contrats** (import PDF, historique, renouvellement avec renégociation, non-renouvellement motivé, avenants, alerte d'échéance à 183 jours puis notification d'expiration), notifications ciblées **avec lien de navigation direct et « tout marquer comme lu »**, comptes, permissions, **suppression de compte réversible via une corbeille transactionnelle**, historique et personnalisation de textes/couleurs/préférences d'affichage.
 
 ## Installation locale
 
@@ -52,7 +52,7 @@ cp server/.env.example server/.env
 | Fichier | Variables requises |
 | --- | --- |
 | `client/.env` | `VITE_API_URL` ; l'API locale par défaut est `http://localhost:4000/api`. |
-| `server/.env` | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `PORT`, `FRONTEND_URL`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`. |
+| `server/.env` | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `QR_SECRET` (clé de signature des QR de vérification, distincte de `JWT_SECRET` ; générer une valeur aléatoire de 32 octets), `PORT`, `FRONTEND_URL`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`. |
 
 Sur une base existante, appliquez les migrations dans l'ordre (chacune est réexécutable sans risque) :
 
@@ -117,7 +117,7 @@ L'API Express est montée sous `/api`, active CORS et le JSON, puis répond `404
 4. `requireAuth` vérifie le jeton et recharge l'utilisateur.
 5. `requireRole` ou `requirePermission` applique l'autorisation demandée.
 
-Les repositories emploient des requêtes paramétrées PostgreSQL. Les services portent les règles métier, notamment la validité des dates de congé, les fonctions admises pour PE/PAT, les statuts de compte et les notifications associées.
+Une seule route est volontairement publique et limitée en débit : la vérification des QR d'avis (`GET /api/verification/avis/:token`, middleware `rateLimit`, en mémoire, par IP). Les repositories emploient des requêtes paramétrées PostgreSQL. Les services portent les règles métier, notamment la validité des dates de congé, les fonctions admises pour PE/PAT, les statuts de compte et les notifications associées.
 
 La suppression d'un compte (`DELETE /api/account-admin/:id`) est transactionnelle et réversible : `corbeilleRepository.archiveAndDeleteCompte` capture le compte et tout ce qui lui appartient substantiellement (congés, historique de fonction, notifications reçues) dans la corbeille avant de le supprimer ; `restoreCompte` recrée ces lignes avec leurs identifiants d'origine. Les autres tables qui ne font que référencer l'utilisateur comme auteur d'une action (`activity_log`, `carriere_evenements`, `documents_generes`...) passent à `NULL` automatiquement grâce aux contraintes `ON DELETE` posées par la migration `002` et restent intactes.
 
@@ -139,14 +139,34 @@ La réponse fournit notamment `a_un_compte`, qui indique si une fiche est relié
 ### Demande de congé
 
 ```text
-Personnel → formulaire → POST /api/conges
-→ permission create_conge → insertion dans conges
-→ notification des Admin RH + activity_log
-→ Admin RH : POST /api/conges/:id/review
-→ décision, avis, date de revue + notification au demandeur
+Personnel → formulaire → POST /api/conges  (permission create_conge)
+→ une transaction verrouille la fiche : recharge des droits manquants, contrôles, création, débit
+→ validateur = chef de service (même service) ou responsable de direction, sinon les Admin RH sont notifiés
+→ avis intermédiaire : POST /api/conges/:id/review-intermediaire (validateur assigné uniquement)
+→ décision finale : POST /api/conges/:id/review (permission view_conges_admin)
+→ refus : restitution unique des jours ; notification au demandeur + activity_log
 ```
 
-Les demandes ne peuvent pas finir avant leur date de début. Le détail est accessible à son propriétaire ou à un `ADMIN_RH`.
+Le détail d'une demande est accessible à son propriétaire, à son validateur assigné et aux `ADMIN_RH`/`SUPERADMIN`. Chaque changement de statut est conditionnel (« en attente » uniquement) : rejouer ou doubler une décision ne peut pas restituer les jours deux fois.
+
+### Droits à congé
+
+Base juridique vérifiée : **2,5 jours par mois de service effectif**, congé cumulable — Loi n°2003-011 art. 64 (fonctionnaires) et Loi n°2003-044 art. 86 (Code du travail, agents non encadrés). Le régime détaillé des fonctionnaires relève d'un décret (art. 66) non localisé.
+
+- **Acquisition** (`congeDroitsService`, source de vérité) : mois calendaires **complets** seulement (recruté le 1er du mois, ce mois compte ; sinon le mois suivant), 30 jours pour une année complète. Toutes les années non créditées sont récupérées ; un reliquat n'est jamais supprimé. La recharge est atomique et idempotente (verrou sur la fiche).
+- **Sans date de recrutement** : aucun droit calculé, le solde actuel reste le solde d'ouverture.
+- **Solde** : `personnel.solde_conges` (`numeric(6,1)`, `DEFAULT 0`) = reliquat + droits acquis − congés annuels posés. Seul le **congé annuel** consomme le solde ; permission, autorisation d'absence, maternité, paternité, maladie, formation et autres ne le modifient pas. Le débit est atomique et ne peut jamais rendre le solde négatif.
+- **Règles de prise** (`congeUtilisationService`, séparées de l'acquisition) : 15 jours minimum pour la première demande de congé annuel de l'année, congé de paternité limité à 15 jours, justificatif requis pour maladie et maternité. Leur base juridique par régime n'est pas confirmée pour les fonctionnaires.
+- **Non appliqués, à traiter ultérieurement** : délai de 12 mois avant jouissance et prescription de 3 ans (Code du travail art. 86 et 88), plafond de cumul des fonctionnaires, congé annuel cumulé (permission de 20 jours, Statut art. 64).
+- **Suivi par année** : `conges_droits_annuels` (un droit par année), `conges_imputations` (jours imputés du plus ancien au plus récent ; année `NULL` = solde d'ouverture non ventilé), `conges_historiques` (congés d'avant le SGRH). `GET /api/conges/solde` renvoie solde disponible, droits de l'année, reliquat et jours posés, calculés côté serveur.
+- **Soldes d'ouverture** : saisis par la RH année par année depuis les états de congé officiels (écran « Soldes d'ouverture » de la page Congés). Un solde historique non ventilé n'est remplacé que sur confirmation explicite et la modification est journalisée.
+
+### Documents de congé
+
+- **Fiche de demande imprimable** (`/demandes/:id/fiche`) : identité, service réel, corps (catégorie professionnelle) et statut, nombre de jours, bloc « Service du Personnel » rempli automatiquement (droit avant, jours demandés, reste, années imputées, figés à la date de la demande) et avis du chef de service : **QR code** si favorable, **motif du refus** sinon.
+- **QR de vérification** : l'adresse encodée contient un identifiant signé (HMAC-SHA256, clé `QR_SECRET`) ; `GET /api/verification/avis/:token` est **publique**, limitée à 30 requêtes par 10 minutes et par IP, ne renvoie que des données minimales (numéro, initiale + nom, type, période, validateur, date de l'avis) et relit la base à chaque appel : un avis modifié ensuite n'est plus confirmé.
+- **Décision portant octroi d'une fraction de congé** (`decision_conge`) : établie par la RH depuis un congé annuel approuvé ou un congé historique ; numéro `N°…/année/UMG/PR/DAAF/PERS` ; nombre de jours en lettres ; positions ancienne/nouvelle (l'ancienne vient de l'avant-dernier événement de carrière ; catégorie et chapitre ne sont pas historisés) ; une seule décision par congé.
+- **État de congé** (`etat_conge`) : une ligne par année (droit, dates, pris, restant), solde d'ouverture non ventilé, total en chiffres et en lettres égal au solde ; peut être demandé par l'agent comme un certificat.
 
 ### Inscription par matricule
 
@@ -185,11 +205,12 @@ Aucun contrat ni document n'est jamais supprimé par l'application. Les notifica
 
 ```text
 Admin RH → nouvelle situation (type, date_debut, motif, référence, justificatif) → POST /api/situations-administratives/:personnelId
-→ si une situation est déjà ouverte pour ce personnel, elle est fermée automatiquement (date_fin = nouvelle date_debut)
+→ transaction avec verrou sur la fiche ; validation avant toute écriture (date AAAA-MM-JJ réelle, type existant) ; refus (409) si la date coïncide avec une autre situation ou en chevauche une
+→ si une situation est déjà ouverte pour ce personnel, elle est fermée automatiquement (date_fin = veille de la nouvelle date_debut)
 → notification au personnel concerné, avec le libellé réel de la nouvelle situation
 ```
 
-Une situation déjà close ne peut pas être supprimée (`DELETE /api/situations-administratives/:id` renvoie 400) — seule la situation actuelle (non close) peut l'être, et sa suppression rouvre automatiquement la situation qu'elle avait fermée, pour préserver la continuité de la chronologie.
+Une situation déjà close ne peut pas être supprimée (`DELETE /api/situations-administratives/:id` renvoie 400) — seule la situation actuelle (non close) peut l'être, et sa suppression rouvre automatiquement la situation qu'elle avait fermée (supprimer puis rouvrir, dans une transaction), pour préserver la continuité de la chronologie. L'index unique partiel `uniq_situation_ouverte_par_personnel` (migration `010`) garantit en base qu'un personnel n'a jamais deux situations ouvertes, même sous requêtes simultanées. Les erreurs sont des JSON explicites (400 validation, 404 introuvable, 409 conflit), jamais un message PostgreSQL brut.
 
 ## Grilles indiciaires et carrière
 
@@ -268,7 +289,14 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 | --- | --- | --- | --- |
 | POST / GET | `/api/conges`, `/api/conges/me` | `create_conge` / `view_mes_conges` | Crée et liste ses congés. |
 | GET | `/api/conges/pending`, `/recent`, `/calendar` | `view_conges_admin` | Pilotage RH des congés. |
-| GET / POST | `/api/conges/:id`, `/:id/review` | Propriétaire/Admin RH / `view_conges_admin` | Détail et décision. |
+| GET | `/api/conges/solde` | `view_mes_conges` | Solde disponible, droits de l'année, reliquat, jours posés (calculés par le backend). |
+| GET | `/api/conges/pending-equipe` | Authentifié (validateur) | Demandes de son équipe en attente d'avis. |
+| POST | `/api/conges/:id/review-intermediaire` | Validateur assigné | Avis intermédiaire du chef de service (un refus restitue les jours). |
+| GET / POST | `/api/conges/:id`, `/:id/review` | Propriétaire/validateur/Admin RH / `view_conges_admin` | Détail (avec QR d'avis si favorable) et décision finale. |
+| GET | `/api/conges/suivi/:personnelId` | `view_conges_admin` | Solde, restant par année, congés historiques (avec « décision établie »). |
+| POST | `/api/conges/ouverture/:personnelId` | `view_conges_admin` | Saisie des soldes d'ouverture par année (409 si année existante ou solde non ventilé non confirmé). |
+| GET | `/api/conges/sans-decision` | `view_conges_admin` | Congés annuels approuvés sans décision d'octroi. |
+| GET | `/api/verification/avis/:token` | **Publique**, 30 req / 10 min / IP | Vérifie l'authenticité d'un avis de chef de service (jeton signé). |
 | GET | `/api/carriere/me` | `view_profil` | Carrière personnelle. |
 | GET / POST | `/api/carriere/:personnelId` | `manage_fonctions` | Carrière et événement. |
 | GET | `/api/carriere/echeances` | `manage_fonctions` | Personnel dont `date_echeance_contrat` (champ historique, distinct des contrats ci-dessous) tombe sous 30 jours. |
@@ -302,7 +330,7 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 | GET | `/api/situations-administratives/types` | Authentifié | Catalogue des types de situation. |
 | GET | `/api/situations-administratives/me` | `view_profil` | Situation actuelle et historique de l'utilisateur courant. |
 | GET | `/api/situations-administratives/:personnelId` | `manage_situations_administratives` | Situation actuelle et historique d'une fiche. |
-| POST | `/api/situations-administratives/:personnelId` | `manage_situations_administratives` | Ouvre une nouvelle situation (ferme automatiquement la précédente), multipart `justificatif` optionnel. |
+| POST | `/api/situations-administratives/:personnelId` | `manage_situations_administratives` | Ouvre une nouvelle situation (ferme la précédente la veille), multipart `justificatif` optionnel. 400 validation, 404 fiche, 409 date en conflit. |
 | PATCH | `/api/situations-administratives/:id` | `manage_situations_administratives` | Modifie référence/observations/motif. |
 | DELETE | `/api/situations-administratives/:id` | `manage_situations_administratives` | Supprime la situation actuelle uniquement ; rouvre la précédente. |
 
@@ -310,7 +338,7 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 
 | Méthode | URL | Accès | Objectif |
 | --- | --- | --- | --- |
-| POST | `/api/documents` | `manage_documents` | Génère un document (`certificat_administratif` ou `lettre_confirmation`) pour une fiche. |
+| POST | `/api/documents` | `manage_documents` | Génère un document (`certificat_administratif`, `lettre_confirmation`, `etat_conge`, ou `decision_conge` avec `{ congeId }` ou `{ historiqueId }`) pour une fiche. |
 | GET | `/api/documents/me` | `view_mes_documents` | Documents générés pour l'utilisateur courant. |
 | GET | `/api/documents/personnel/:personnelId` | `manage_documents` | Historique des documents d'une fiche. |
 | GET | `/api/documents/:id` | Authentifié (propriétaire ou `manage_documents`) | Détail d'un document généré, pour affichage/impression. |
@@ -383,10 +411,13 @@ erDiagram
 
 | Table / vue | Colonnes observées et rôle |
 | --- | --- |
-| `personnel` | `id`, matricule, identité, e-mail, rôle, fonction, corps, grade, service, direction, téléphone, contrat, échéance, `photo_profil`. Fiche RH ; matricule validé à six chiffres par l'application. `photo_profil` contient le chemin relatif de la photo, pas l'image elle-même. |
+| `personnel` | `id`, matricule, identité, e-mail, rôle, fonction, corps, grade, service, direction, téléphone, contrat, échéance, `photo_profil`, `solde_conges` (`numeric(6,1)`, défaut 0) et `derniere_recharge_annee` (dernière année de droits créditée). Fiche RH ; matricule validé à six chiffres par l'application. `photo_profil` contient le chemin relatif de la photo, pas l'image elle-même. |
 | `users` | `id`, rôle, e-mail, `password_hash`, `personnel_id`, statut, création. Statuts observés : `pending`, `active`, `inactive`. |
 | `user_details` | Lecture jointe compte/personnel : identité, matricule, rôle, fonction, statut, e-mail et contrat. |
-| `conges` | Identifiant utilisateur, type, dates, motif, statut, relecteur, date/avis de revue. Statuts : `en_attente`, `approuvee`, `refusee`. |
+| `conges` | Identifiant utilisateur, type, dates, motif, statut, relecteur, date/avis de revue, validateur intermédiaire, `solde_avant` / `solde_apres` (solde figé à la date de la demande). Statuts : `en_attente`, `approuvee`, `refusee`. |
+| `conges_droits_annuels` | Un droit par personnel et par année (`droit`, `libelle_periode` comme « 2016-2017 », `source` `CALCULE`/`OUVERTURE`, `reference`). Unique `(personnel_id, annee)`. |
+| `conges_imputations` | Jours d'un congé annuel imputés à une année de droit (`annee` `NULL` = solde d'ouverture non ventilé) ; supprimées avec le congé (cascade), restaurées par la corbeille. |
+| `conges_historiques` | Congés pris avant le SGRH (année de droit, dates, jours, `lieu_jouissance`), rattachés à `personnel` : un agent sans compte peut en avoir. |
 | `invitations` | E-mail, rôle, fonction, jeton, émetteur, expiration, statut, données soumises, utilisateur créé. Statuts : `envoyee`, `soumise`, `confirmee`, `refusee`. |
 | `notifications` | Expéditeur, destinataire, titre, message, type, `lien` (chemin frontend optionnel pour la redirection au clic), lecture et date. |
 | `fonction_history` / `carriere_evenements` | Historique de fonction et événements de carrière. |
@@ -426,8 +457,15 @@ Toutes les clés étrangères vers `users.id` ont un comportement `ON DELETE` ex
 | `006_create_grilles_indiciaires.sql` | Crée `grilles_indiciaires` et `lignes_grille_indiciaire` ; seed de la seule grille chiffrée vérifiée (classe exceptionnelle, régime transitoire par catégorie — Décret n°97-009 + Circulaire n°132/2005). | Non |
 | `007_extend_personnel_carriere_grille.sql` | Ajoute `cadre`/`echelle`/`indice_num`/`indice_source`/`ligne_grille_actuelle_id` sur `personnel` et `ligne_grille_id`/`indice_num`/`indice_source` sur `carriere_evenements` ; rétro-remplit `indice_num` depuis les valeurs texte déjà numériques (aucune perte, aucune valeur devinée pour le reste). | Non |
 | `008_create_alertes_avancement.sql` | Crée `alertes_avancement`. | Non |
+| `009_contrats_unique_actif.sql` | Index unique partiel : un seul contrat actif par personnel. | Non |
+| `010_situations_administratives_unique_ouverte.sql` | Index unique partiel : une seule situation ouverte (`date_fin IS NULL`) par personnel. | Non |
+| `011_carriere_type_evenement_changement_service.sql` | Remplace, dans le `CHECK` de `carriere_evenements`, « Changement de service ou d'établissement » par « Changement de service » (s'interrompt si une ligne utilise l'ancienne valeur). | Non |
+| `012_conges_solde_decimal_default_zero.sql` | `personnel.solde_conges` passe de `integer` à `numeric(6,1)` et de `DEFAULT 30` à `DEFAULT 0` (corrige le double comptage 30 + 30). Aucune ligne modifiée. | Non |
+| `013_conges_suivi_annuel_et_snapshots.sql` | Crée `conges_droits_annuels`, `conges_imputations` ; ajoute `conges.solde_avant` / `solde_apres`. | Non |
+| `014_conges_historiques.sql` | Crée `conges_historiques`. | Non |
+| `015_conges_historiques_lieu.sql` | Ajoute `conges_historiques.lieu_jouissance`. | Non |
 
-Toutes sont réexécutables sans risque (`IF NOT EXISTS` / `DROP CONSTRAINT IF EXISTS` avant chaque `ADD`) et n'altèrent jamais de données existantes.
+Elles sont réexécutables sans risque (`IF NOT EXISTS` / `DROP CONSTRAINT IF EXISTS` avant chaque `ADD`) et n'altèrent jamais de données existantes. Les migrations `012` (type de colonne et `DEFAULT`) et `011` (contrainte) modifient la définition d'une colonne ou d'une contrainte, sans toucher aux lignes.
 
 Les clés primaires déclarées, types SQL exacts, `NOT NULL`, clés étrangères, index et contraintes `UNIQUE` des tables historiques (celles non couvertes par une migration) ne sont pas vérifiables sans schéma complet ; ils devront être formalisés pour permettre une installation de base de données entièrement reproductible depuis zéro.
 
@@ -435,4 +473,4 @@ Les clés primaires déclarées, types SQL exacts, `NOT NULL`, clés étrangère
 
 GitHub Actions s'exécute sur chaque push et pull request vers `main` : `npm ci` dans les deux applications, build du frontend et vérification syntaxique de tous les fichiers backend avec `node --check`.
 
-Le dépôt ne contient pas de tests automatisés ni de déploiement configuré. GitHub Pages ne peut pas héberger Express et PostgreSQL ; un futur hébergeur doit utiliser des GitHub Actions Secrets pour ses identifiants, jamais des secrets commités.
+Le backend contient 61 tests (`cd server && npm test`, runner `node:test`) : calcul des droits, jeton de vérification, limiteur, conversion en lettres, grilles indiciaires, et tests d'intégration du solde et des documents de congé. Ces derniers s'exécutent sur la base `rh_mahajanga` avec des données jetables (matricules `9997xx`/`9998xx`, e-mails `@example.test`) supprimées en fin de test ; ils ne sont pas lancés par la CI, qui n'a pas de base PostgreSQL. Aucun déploiement n'est configuré. GitHub Pages ne peut pas héberger Express et PostgreSQL ; un futur hébergeur doit utiliser des GitHub Actions Secrets pour ses identifiants, jamais des secrets commités.

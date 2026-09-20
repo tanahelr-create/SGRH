@@ -450,11 +450,50 @@ Aucune donnée métier réelle n'a été modifiée. Les 4 comptes jetables (matr
 
 ---
 
+# 📦 Situations administratives, Établissement, Congés et documents de congé — bilan (2026-09-20)
+
+Quatre chantiers menés dans la même passe, avec les mêmes garde-fous : analyse avant modification, aucune donnée réelle supprimée, aucune réinitialisation PostgreSQL, comptes et fiches jetables supprimés après chaque test (0 résidu vérifié). Commits : `a1886da`, `4fb0cc1`, `f199114`.
+
+### 1. Situations administratives — durcissement ✅ (priorité 3 terminée)
+- **Bugs réels trouvés et corrigés** : course concurrente (3 POST simultanés → 2 situations ouvertes), chevauchement non détecté hors du cas « situation ouverte », même date de début acceptée (période de durée zéro), type inexistant qui fermait la situation en cours sans créer la suivante (pas de transaction), messages PostgreSQL bruts, `GET /:id` non numérique → 500 HTML.
+- **Correction** : transaction + `SELECT … FOR UPDATE` sur la fiche, validation avant toute écriture, contrôle sur tout l'historique, `date_fin` = veille de la nouvelle date (suppression : supprimer puis rouvrir), erreurs 400/404/409 JSON. Migration `010` : index unique partiel (une seule situation ouverte par personnel).
+- **Tests** : 57/58 puis 58/58 API (concurrence 5 POST → 1 seul succès, rollback vérifié), navigateur 17/17.
+
+### 2. Suppression de « Établissement » ✅
+Audit complet : aucune route, table, permission ni menu n'existait. Retirés : carte vide du profil, mentions de documentation et d'anciens prompts. Migration `011` : le type d'événement « Changement de service ou d'établissement » devient « Changement de service » (0 ligne concernée, garde-fou intégré). Le champ `etablissement` des **diplômes** (école/université) est conservé volontairement.
+
+### 3. Congés — droits, reliquat, transactions ✅
+- **Base juridique vérifiée dans les textes** : 2,5 jours par mois de service effectif, congé cumulable (Loi 2003-011 art. 64 ; Loi 2003-044 art. 86). Décret des fonctionnaires (art. 66) non localisé.
+- **Bug corrigé** : `DEFAULT 30` + recharge annuelle de 30 = 60 jours. Autres défauts corrigés : années non créditées perdues (un seul « +30 »), solde négatif possible (contrôle et débit non atomiques), double restitution possible au refus, recharge et demande non transactionnelles.
+- **Décisions validées** : mois complets seulement, `solde_conges` en `numeric(6,1)` avec `DEFAULT 0` (migration `012`), délai de 12 mois et prescription de 3 ans **non appliqués** (documentés), reliquat jamais supprimé, aucun recalcul rétroactif ni modification des soldes existants.
+- **Architecture** : `congeDroitsService` (acquisition, source de vérité), `congeUtilisationService` (règles de prise, inchangées), `GET /conges/solde` (le frontend n'a plus aucun calcul métier). Seul le congé annuel consomme le solde.
+- **Suivi par année** (migrations `013`–`015`) : droits annuels, imputations du plus ancien au plus récent, congés historiques, photographie du solde à la date de la demande, saisie d'ouverture RH depuis les états officiels (remplacement d'un solde non ventilé seulement sur confirmation, tracé).
+- **Corbeille** : la restauration remet aussi les imputations et la photographie du solde.
+
+### 4. Documents de congé ✅
+- Modèles : trois fiches du Service du Personnel (demande de permission, décision, état de congé) — **utilisées uniquement comme modèles de mise en page, aucune donnée réelle d'agent n'est saisie ni versionnée**.
+- **Fiche de demande** : service réel (plus de texte en dur), « Corps » = catégorie professionnelle, « Statut » = EFA/ELD/Fonctionnaire, nombre de jours, bloc « Service du Personnel » automatique, avis du chef de service en **QR code** signé (HMAC, clé `QR_SECRET`) ou motif du refus.
+- **Page publique `/verification/:token`** : données minimales, relue en base à chaque scan, **limitée à 30 requêtes / 10 min / IP** (middleware `rateLimit`, sans dépendance).
+- **Décision d'octroi** (depuis un congé approuvé ou historique) et **état de congé** (total en chiffres et en lettres = solde). Certificat : catégorie + statut ; le rôle est maintenant fourni (un PE n'était jamais libellé « Enseignant »).
+
+### 5. Tests et vérifications
+`npm test` **61/61** (7 unitaires du calcul, 3 du jeton, 3 du limiteur, conversion en lettres, 20 d'intégration du solde + 12 des documents de congé, 13 grilles indiciaires), `npm run build` ✅, vérifications navigateur (Chrome headless isolé, comptes jetables) sur chaque chantier, aucune erreur console. Base réelle : 6 fiches, 6 utilisateurs, 2 congés, 7 documents, soldes inchangés (30, 30, 30, 30, 60, 30).
+Incident maîtrisé : un script de test a cliqué le bouton « Générer la décision » d'un vrai congé approuvé et créé un document réel ; supprimé aussitôt, état vérifié.
+
+### 6. Reste à faire
+- **Soldes existants** : stratégie non tranchée (fiche 5 à 60 jours issue de l'ancien double comptage ; fiche 11 recevrait 30 jours de plus à sa première demande). Sans enjeu tant que ce sont des comptes de test ; pour de vrais agents, saisir les états de congé officiels via « Soldes d'ouverture ».
+- **Points juridiques** : règle des 15 jours non confirmée pour les fonctionnaires, délai de 12 mois, prescription de 3 ans, plafond de cumul, congé annuel cumulé (permission de 20 jours).
+- Comparer une **impression papier réelle** de la fiche, de la décision et de l'état avec les originaux (seul l'affichage écran a été testé).
+- **Situation administrative** : lien avec les documents non décidé (« Grade : Stagiaire » vient-il de la situation ou d'un grade libre ?) ; aucune situation n'est saisie pour les 6 fiches.
+- Les tests d'intégration ne tournent pas en CI (pas de PostgreSQL) : à prévoir si une base de test dédiée est créée.
+
+---
+
 ## 🎯 Les 10 prochaines tâches prioritaires
 
 Si tu veux simplement savoir **quoi attaquer maintenant**, je mettrais :
 
-1. ⬜ **Finaliser Situation administrative**
+1. ✅ **Finaliser Situation administrative** (durcissement terminé le 2026-09-20 : voir le bilan ci-dessus)
 2. ⬜ **Finaliser Gestion des indices**
 3. ⬜ **Finaliser Contrats**
 4. ⬜ **Finaliser Renouvellement / Non-renouvellement**
