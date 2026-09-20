@@ -74,5 +74,8 @@ app.use((req, res) => res.status(404).json({ message: 'Route introuvable' }));
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Serveur RH démarré sur le port ${PORT}`));
 
+if (!process.env.QR_SECRET) {
+  console.warn('[config] QR_SECRET absent : les QR codes de vérification des avis sont désactivés.');
+}
 contratEcheanceJob.start();
 avancementEcheanceJob.start();

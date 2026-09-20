@@ -18,6 +18,21 @@ function jours(n) {
 // Avis du chef de service : le QR (authentifiant, vérifiable publiquement) remplace la
 // signature quand l'avis est favorable ; en cas de refus, le motif le remplace.
 function AvisChefService({ demande }) {
+  if (demande.decision_intermediaire === 'approuvee' && !demande.avis_qr) {
+    // Avis favorable sans QR (clé de signature absente côté serveur) : avis en texte.
+    return (
+      <div>
+        <p className="font-semibold">Avis favorable</p>
+        <p className="text-xs">
+          {[demande.validateur_prenom, demande.validateur_nom].filter(Boolean).join(' ')}
+          {demande.validateur_fonction ? `, ${demande.validateur_fonction}` : ''}
+          {demande.decision_intermediaire_le ? ` — le ${fmt(demande.decision_intermediaire_le)}` : ''}
+        </p>
+        {demande.avis_chef_service && <p className="text-xs mt-1">{demande.avis_chef_service}</p>}
+        <p className="text-[10px] text-gray-500 mt-1 print:text-gray-600">Vérification par QR code momentanément indisponible.</p>
+      </div>
+    );
+  }
   if (demande.decision_intermediaire === 'approuvee' && demande.avis_qr) {
     return (
       <div>

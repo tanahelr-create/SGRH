@@ -473,11 +473,11 @@ Audit complet : aucune route, table, permission ni menu n'existait. Retirés : c
 ### 4. Documents de congé ✅
 - Modèles : trois fiches du Service du Personnel (demande de permission, décision, état de congé) — **utilisées uniquement comme modèles de mise en page, aucune donnée réelle d'agent n'est saisie ni versionnée**.
 - **Fiche de demande** : service réel (plus de texte en dur), « Corps » = catégorie professionnelle, « Statut » = EFA/ELD/Fonctionnaire, nombre de jours, bloc « Service du Personnel » automatique, avis du chef de service en **QR code** signé (HMAC, clé `QR_SECRET`) ou motif du refus.
-- **Page publique `/verification/:token`** : données minimales, relue en base à chaque scan, **limitée à 30 requêtes / 10 min / IP** (middleware `rateLimit`, sans dépendance).
+- **Page publique `/verification/:token`** : données minimales, relue en base à chaque scan, **limitée à 30 requêtes / 10 min / IP** (middleware `rateLimit`, sans dépendance). Robustesse : sans `QR_SECRET`, la fiche s'affiche avec l'avis en texte, la vérification répond 503 explicite et le serveur avertit au démarrage.
 - **Décision d'octroi** (depuis un congé approuvé ou historique) et **état de congé** (total en chiffres et en lettres = solde). Certificat : catégorie + statut ; le rôle est maintenant fourni (un PE n'était jamais libellé « Enseignant »).
 
 ### 5. Tests et vérifications
-`npm test` **61/61** (7 unitaires du calcul, 3 du jeton, 3 du limiteur, conversion en lettres, 20 d'intégration du solde + 12 des documents de congé, 13 grilles indiciaires), `npm run build` ✅, vérifications navigateur (Chrome headless isolé, comptes jetables) sur chaque chantier, aucune erreur console. Base réelle : 6 fiches, 6 utilisateurs, 2 congés, 7 documents, soldes inchangés (30, 30, 30, 30, 60, 30).
+`npm test` **63/63** (7 unitaires du calcul, 4 du jeton, 3 du limiteur, 3 de conversion en lettres, 21 d'intégration du solde + 12 des documents de congé, 13 grilles indiciaires), `npm run build` ✅, vérifications navigateur (Chrome headless isolé, comptes jetables) sur chaque chantier, aucune erreur console. Base réelle : 6 fiches, 6 utilisateurs, 2 congés, 7 documents, soldes inchangés (30, 30, 30, 30, 60, 30).
 Incident maîtrisé : un script de test a cliqué le bouton « Générer la décision » d'un vrai congé approuvé et créé un document réel ; supprimé aussitôt, état vérifié.
 
 ### 6. Reste à faire

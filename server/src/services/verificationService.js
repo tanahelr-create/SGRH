@@ -15,8 +15,14 @@ class VerificationError extends Error {
   }
 }
 
+// Clé absente : la vérification par QR est indisponible (503), mais le reste de
+// l'application, dont l'affichage des fiches, continue de fonctionner.
+function qrDisponible() {
+  return Boolean(process.env.QR_SECRET);
+}
+
 function cle() {
-  if (!process.env.QR_SECRET) throw new Error('QR_SECRET manquant dans la configuration du serveur');
+  if (!qrDisponible()) throw new VerificationError('La vérification par QR code est indisponible (configuration du serveur).', 503);
   return process.env.QR_SECRET;
 }
 
@@ -74,4 +80,4 @@ async function verifierAvis(token) {
   };
 }
 
-module.exports = { VerificationError, creerToken, lireToken, genererQrAvis, verifierAvis };
+module.exports = { VerificationError, qrDisponible, creerToken, lireToken, genererQrAvis, verifierAvis };

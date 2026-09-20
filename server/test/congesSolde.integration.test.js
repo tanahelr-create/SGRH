@@ -226,3 +226,21 @@ test('corbeille : la restauration d\'un compte remet imputations et photographie
   const c = (await pool.query(`SELECT solde_avant::float8 AS av, solde_apres::float8 AS ap FROM conges WHERE id = $1`, [d.id])).rows[0];
   assert.deepStrictEqual([c.av, c.ap], [30, 15]);
 });
+
+test('getDemandeDetails sans QR_SECRET : la fiche reste consultable, sans QR', async () => {
+  const a = await creerAgent();
+  const d = await annuel(a, 15);
+  await pool.query(`UPDATE conges SET decision_intermediaire = 'approuvee', decision_intermediaire_le = NOW() WHERE id = $1`, [d.id]);
+  const sauvegarde = process.env.QR_SECRET;
+  process.env.QR_SECRET = 'cle-de-test';
+  const avec = await congeService.getDemandeDetails(d.id, { id: a.userId, role: 'PE', personnel_id: a.personnelId });
+  assert.match(avec.avis_qr.dataUrl, /^data:image\/png/);
+  delete process.env.QR_SECRET;
+  try {
+    const sans = await congeService.getDemandeDetails(d.id, { id: a.userId, role: 'PE', personnel_id: a.personnelId });
+    assert.strictEqual(sans.avis_qr, null);
+    assert.strictEqual(sans.decision_intermediaire, 'approuvee');
+  } finally {
+    if (sauvegarde === undefined) delete process.env.QR_SECRET; else process.env.QR_SECRET = sauvegarde;
+  }
+});

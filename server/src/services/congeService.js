@@ -234,6 +234,18 @@ async function getCalendarDemandes(year, month) {
   return congeRepository.findForMonth(year, month);
 }
 
+// Le QR est un plus : sans clé de signature (ou en cas d'erreur), la fiche s'affiche
+// quand même, avec l'avis favorable en texte.
+async function qrAvisOuNull(congeId) {
+  if (!verificationService.qrDisponible()) return null;
+  try {
+    return await verificationService.genererQrAvis(congeId);
+  } catch (err) {
+    console.error('[conges] QR d\'avis non généré :', err.message);
+    return null;
+  }
+}
+
 async function getDemandeDetails(id, requestingUser) {
   const demande = await congeRepository.findByIdWithDetails(id);
   if (!demande) throw new Error('Demande introuvable');
@@ -250,7 +262,7 @@ async function getDemandeDetails(id, requestingUser) {
     ...demande,
     solde_avant: nombre(demande.solde_avant),
     solde_apres: nombre(demande.solde_apres),
-    avis_qr: demande.decision_intermediaire === 'approuvee' ? await verificationService.genererQrAvis(demande.id) : null,
+    avis_qr: demande.decision_intermediaire === 'approuvee' ? await qrAvisOuNull(demande.id) : null,
   };
 }
 

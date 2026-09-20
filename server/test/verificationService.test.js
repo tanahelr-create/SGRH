@@ -28,3 +28,17 @@ test('le QR ne contient que l\'adresse signée (aucune donnée personnelle)', as
   assert.match(dataUrl, /^data:image\/png;base64,/);
   assert.strictEqual(lireToken(url.split('/verification/')[1]), 7);
 });
+
+test('sans QR_SECRET : indisponible proprement (503), sans planter', async () => {
+  const sauvegarde = process.env.QR_SECRET;
+  delete process.env.QR_SECRET;
+  try {
+    const { qrDisponible, verifierAvis } = require('../src/services/verificationService');
+    assert.strictEqual(qrDisponible(), false);
+    assert.throws(() => creerToken(1), (e) => e.status === 503);
+    await assert.rejects(verifierAvis('abc.def'), (e) => e.status === 503); // jeton bien formé : la clé est requise
+    await assert.rejects(verifierAvis('n-importe-quoi'), (e) => e.status === 404); // mal formé : rejeté avant même la clé
+  } finally {
+    process.env.QR_SECRET = sauvegarde;
+  }
+});
