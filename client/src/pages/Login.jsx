@@ -83,7 +83,7 @@ export default function Login() {
             <img
               src="/logo-univ-mahajanga.png"
               alt="Université de Mahajanga"
-              className="h-14 mb-6"
+              className="h-14 w-14 mb-6 rounded-lg bg-white object-contain p-0.5"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
             <h1 className="text-3xl font-bold mb-4 leading-tight">{titreBienvenue}</h1>
