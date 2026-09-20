@@ -115,14 +115,6 @@ La structure globale doit être :
 * Fonctionnalités
 * Maintenance
 
-### IMPORTANT
-
-**NE PAS créer de section « Établissements ».**
-
-La gestion des établissements ne doit apparaître nulle part dans cette nouvelle interface Paramètres.
-
----
-
 # 4. AFFICHAGE SELON LE RÔLE
 
 Le frontend doit utiliser le système de rôle/permission déjà présent dans le projet.
@@ -839,7 +831,5 @@ Ne touche pas à PostgreSQL.
 Ne change aucune fonctionnalité métier existante.
 
 Ne supprime aucune fonctionnalité existante.
-
-Ne crée aucune section « Établissements ».
 
 L'objectif est uniquement de transformer l'onglet **Paramètres** actuel en un centre de paramètres complet, professionnel, ergonomique, responsive et cohérent avec le SGRH existant.

@@ -20,7 +20,7 @@ Prévoir notamment les événements suivants lorsque ceux-ci sont applicables au
 * reclassement ;
 * changement de fonction ;
 * changement d'affectation ;
-* changement de service ou d'établissement ;
+* changement de service ;
 * mise à disposition ;
 * détachement ;
 * disponibilité ou autre position administrative applicable ;

@@ -95,7 +95,7 @@ La page `/parametres` regroupe cinq catégories filtrées par rôle et permissio
 
 ### Dossier personnel
 
-La route `/profil` (« Mon dossier » dans la navigation) présente le dossier de la personne connectée : une bannière d'identité (photo, statut, matricule/fonction/catégorie), puis deux grilles d'informations personnelles et administratives, puis une carte « Établissements d'affectation » (toujours vide : aucune donnée d'établissement n'existe dans le modèle actuel) et enfin le parcours professionnel. Les données proviennent de `GET /api/personnel/me` et `GET /api/carriere/me` ; toute donnée absente est affichée comme « Non renseigné ».
+La route `/profil` (« Mon dossier » dans la navigation) présente le dossier de la personne connectée : une bannière d'identité (photo, statut, matricule/fonction/catégorie), puis deux grilles d'informations personnelles et administratives, puis le parcours professionnel. Les données proviennent de `GET /api/personnel/me` et `GET /api/carriere/me` ; toute donnée absente est affichée comme « Non renseigné ».
 
 La personne peut remplacer sa photo depuis ce dossier. L'image est prévisualisée avant confirmation, puis envoyée à `PATCH /api/personnel/me/photo`. Le serveur n'accepte que les signatures binaires JPEG, PNG ou WebP, dans une limite de 3 Mo ; il génère un nom non prédictible et ne persiste en base que le chemin relatif du fichier. Les fichiers sont stockés localement dans `server/uploads/profile-photos/` (ignoré par Git) et servis sous `/uploads`.
 

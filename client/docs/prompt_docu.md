@@ -153,38 +153,6 @@ Présente uniquement les informations réellement disponibles.
 
 ---
 
-# 🚨 6. AUCUNE INFORMATION SUR LES ÉTABLISSEMENTS
-
-C'est une contrainte importante.
-
-Dans le **dossier personnel**, je ne veux **ABSOLUMENT AUCUNE section concernant les établissements**.
-
-Supprime/masque du dossier :
-
-* établissement ;
-* établissement principal ;
-* autres établissements ;
-* affectation à un établissement ;
-* liste des établissements ;
-* informations liées à l'établissement ;
-* toute autre information directement liée aux établissements.
-
-Le dossier personnel doit être centré uniquement sur **le personnel lui-même**.
-
-IMPORTANT :
-
-Cela concerne uniquement la page/dossier du profil.
-
-Ne supprime PAS la gestion des établissements du reste de l'application.
-
-Ne supprime PAS les tables ou relations PostgreSQL concernant les établissements.
-
-Ne supprime PAS les fonctionnalités RH qui utilisent les établissements.
-
-**On retire uniquement leur affichage du dossier personnel.**
-
----
-
 # 7. PHOTO DE PROFIL — UPLOAD
 
 Je veux également que le personnel puisse **téléverser une photo de profil**.
@@ -413,8 +381,6 @@ Structure générale :
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Il ne doit y avoir aucune section "Établissement" dans ce document.**
-
 ---
 
 # 15. IDENTITÉ VISUELLE
@@ -477,7 +443,6 @@ Lorsqu'une donnée manque :
 Cette tâche n'a pas pour objectif de créer :
 
 * un nouveau système RH ;
-* une nouvelle gestion des établissements ;
 * un nouveau système d'authentification ;
 * un nouveau système de permissions ;
 * une nouvelle base de données ;
@@ -547,7 +512,6 @@ Vérifie :
 
 * affichage des informations ;
 * sections ;
-* absence totale des informations d'établissement ;
 * affichage "Non renseigné" ;
 * photo par défaut ;
 * upload ;
@@ -599,14 +563,6 @@ Confirme que :
 
 ont été conservés.
 
-## Établissements
-
-Confirme explicitement :
-
-**Aucune information concernant les établissements n'est affichée dans le dossier personnel.**
-
-Mais confirme également que la gestion des établissements dans le reste du projet n'a pas été supprimée.
-
 ## Tests
 
 Indique :
@@ -655,8 +611,6 @@ mais avec :
 +
 **une TopBar fixe**
 +
-**une zone centrale indépendante et scrollable**
-+
-**aucune information d'établissement dans le dossier personnel.**
+**une zone centrale indépendante et scrollable.**
 
 Avant de considérer la tâche terminée, vérifie réellement que le projet compile et que les fonctionnalités existantes fonctionnent toujours.

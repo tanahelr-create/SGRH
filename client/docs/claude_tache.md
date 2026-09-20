@@ -277,8 +277,6 @@ Aucune donnée métier réelle n'a été modifiée. Les 4 comptes jetables (matr
 * ✅ Paramètres rôles/permissions — désormais aussi journalisé dans l'audit (corrigé cette passe)
 * ✅ Journal/audit
 
-**Établissements reste volontairement absent des paramètres.**
-
 ---
 
 # 🟡 13. 📊 Dashboard — finalisation

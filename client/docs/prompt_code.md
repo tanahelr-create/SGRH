@@ -304,7 +304,6 @@ Ne modifie pas inutilement :
 * API ;
 * routes ;
 * gestion des employés ;
-* gestion des établissements ;
 * dashboards ;
 * invitations ;
 * rôles.

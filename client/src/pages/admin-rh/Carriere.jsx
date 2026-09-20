@@ -19,7 +19,7 @@ import { SkeletonPage } from '../../components/ui';
 const TYPES_EVENEMENT = [
   'Recrutement', 'Stage', 'Titularisation', 'Prolongation de stage', "Avancement d'échelon",
   'Avancement de grade', 'Reclassement', 'Changement de fonction', "Changement d'affectation",
-  "Changement de service ou d'établissement", 'Mise à disposition', 'Détachement', 'Disponibilité',
+  'Changement de service', 'Mise à disposition', 'Détachement', 'Disponibilité',
   'Formation ou diplôme', 'Changement de qualification', 'Avenant au contrat', 'Renouvellement de contrat',
   'Suspension ou événement disciplinaire', 'Retraite', 'Fin de contrat', 'Cessation définitive de fonctions',
   'Réintégration', 'Autre',

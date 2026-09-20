@@ -130,7 +130,6 @@ Par exemple, si le code le confirme :
 - création de compte ;
 - validation de compte ;
 - gestion des comptes ;
-- gestion des établissements ;
 - gestion des fonctions ;
 - carrière ;
 - congés ;
@@ -212,5 +211,3 @@ Exemple de structure :
 erDiagram
     USERS ||--o| EMPLOYEES : "correspond à"
     ROLES ||--o{ USERS : "attribue"
-    EMPLOYEES ||--o{ EMPLOYEE_ESTABLISHMENTS : "affecté à"
-    ESTABLISHMENTS ||--o{ EMPLOYEE_ESTABLISHMENTS : "contient"

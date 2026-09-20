@@ -428,12 +428,6 @@ export default function Profil() {
         </div>
       )}
 
-      <Card icon={Building2} title="Établissements d'affectation">
-        <p className="rounded-lg bg-navy/5 px-4 py-3 text-sm text-slate-600 dark:bg-gold/10 dark:text-gray-300">
-          Aucune affectation d'établissement renseignée.
-        </p>
-      </Card>
-
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <h2 className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold tracking-wide text-navy dark:border-gray-700 dark:bg-gray-800 dark:text-gold sm:px-6">
           <FileText size={18} aria-hidden="true" /> Parcours professionnel
