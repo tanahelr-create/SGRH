@@ -480,12 +480,33 @@ Audit complet : aucune route, table, permission ni menu n'existait. Retirés : c
 `npm test` **63/63** (7 unitaires du calcul, 4 du jeton, 3 du limiteur, 3 de conversion en lettres, 21 d'intégration du solde + 12 des documents de congé, 13 grilles indiciaires), `npm run build` ✅, vérifications navigateur (Chrome headless isolé, comptes jetables) sur chaque chantier, aucune erreur console. Base réelle : 6 fiches, 6 utilisateurs, 2 congés, 7 documents, soldes inchangés (30, 30, 30, 30, 60, 30).
 Incident maîtrisé : un script de test a cliqué le bouton « Générer la décision » d'un vrai congé approuvé et créé un document réel ; supprimé aussitôt, état vérifié.
 
+### 5 bis. Sidebar en accordéon ✅ (2026-09-21)
+- `Sidebar.jsx` : les catégories de plusieurs entrées (Carrière, Documents, Utilisateurs & comptes, Super Administration, Mon espace, Aide) deviennent des accordéons avec chevron ; **une seule ouverte à la fois**, par défaut celle de la page active ; les entrées seules restent des liens directs. `menuConfig.js`, permissions et routes **non modifiés**.
+- Accessibilité et mobile : bouton `aria-expanded`/`aria-controls`, clavier (Entrée/Espace), contenu replié `inert`, cible tactile ≥ 40 px, tiroir mobile inchangé (se referme au clic sur un lien).
+- Vérifié sur 4 rôles (Chrome headless, comptes jetables supprimés) : **mêmes liens, même ordre, mêmes libellés qu'avant** (17/13/11/9), hauteur du menu réduite (SUPERADMIN 939 → 394 px, ADMIN_RH 746 → 358, PE chef 501 → 405, PAT 421 → 325), 31/31 vérifications (accordéon, clavier, navigation, mobile 390, tablette 820, console sans erreur), build et lint OK.
+
 ### 6. Reste à faire
+- **QR de la décision du RH** sur la fiche de demande (celui du chef de service existe déjà).
 - **Soldes existants** : stratégie non tranchée (fiche 5 à 60 jours issue de l'ancien double comptage ; fiche 11 recevrait 30 jours de plus à sa première demande). Sans enjeu tant que ce sont des comptes de test ; pour de vrais agents, saisir les états de congé officiels via « Soldes d'ouverture ».
 - **Points juridiques** : règle des 15 jours non confirmée pour les fonctionnaires, délai de 12 mois, prescription de 3 ans, plafond de cumul, congé annuel cumulé (permission de 20 jours).
 - Comparer une **impression papier réelle** de la fiche, de la décision et de l'état avec les originaux (seul l'affichage écran a été testé).
 - **Situation administrative** : lien avec les documents non décidé (« Grade : Stagiaire » vient-il de la situation ou d'un grade libre ?) ; aucune situation n'est saisie pour les 6 fiches.
 - Les tests d'intégration ne tournent pas en CI (pas de PostgreSQL) : à prévoir si une base de test dédiée est créée.
+
+---
+
+# 📦 Modélisation de la base, identité visuelle — bilan (2026-09-21)
+
+### Modélisation complète de la base (MCD, schema.sql, seeds)
+- **Analyse réelle** : `pg_dump --schema-only` de `rh_mahajanga` (32 tables + vue `user_details`), code (24 routes, 24 repositories), migrations 001–015. MCD à 33 entités livré et validé (option B **restreinte** aux corrections compatibles avec le code actuel).
+- **Corrections retenues** : B1 table `roles` + clés étrangères (supprime le rôle inutilisé `MESUPRES`), B3 `CHECK` sur les types de document, B6 index. **Abandonnées car elles auraient cassé le frontend/backend** : clé étrangère sur `personnel.service/direction` (import Excel en saisie libre), `CHECK` sur `carriere_evenements.fonction` (champ texte libre), colonnes de liens documents→congés (jamais alimentées), suppression des champs de contrat de `personnel` et rattachement des congés à `personnel` (refonte du backend) : documentés dans `server/database/MCD.md`.
+- **Livrables** : `server/database/schema.sql`, `seed_reference.sql` (référence sans donnée personnelle), `seed_dev.sql` (9 fiches fictives, 9 comptes, congés avec droits/imputations/photographies de solde, états et décisions, contrats avec renouvellement, situations, notifications, corbeille, invitations…), `MCD.md`, `README.md`.
+- **Tests (transaction annulée, aucune trace)** : comparaison structurelle avec la base réelle (colonnes, contraintes, index, vue : seuls les écarts voulus), chargement sans violation, invariants métier (solde = somme des restants par année sur les 3 fiches, photographies de solde, une situation ouverte et un contrat actif par personnel, validateur = chef du même service, liens JSON valides, numéros de document uniques), **14 insertions interdites bien refusées** (matricule invalide ou « 950-FOP », rôle inconnu, deuxième situation ouverte, deuxième contrat actif, dates inversées, type inconnu, doublons, clé étrangère…).
+- **Reste à faire** : test de compatibilité runtime (backend `npm test` et navigation du frontend sur une base réellement créée) : `rh_admin` n'a pas le droit `CREATEDB`, il faut créer une base de test (`sudo -u postgres createdb -O rh_admin rh_mahajanga_test`) ; corrections structurelles B2/B4/B5/B8/B9 à traiter séparément avec adaptation du code et migration des données (fiches 2, 3, 4 : service « SI »/« DSI » ne correspond à aucun service).
+
+### Identité visuelle
+- Logo de l'université ajouté dans la **sidebar** (pastille blanche) et sur la **page de connexion** (le fichier `/logo-univ-mahajanga.png` était référencé mais absent : image manquante corrigée), **favicon** remplacée (l'icône Vite/React `favicon.svg` supprimée au profit de `favicon.png` + `apple-touch-icon.png`), **titre de l'onglet « client » → « SGRH »**.
+- Vérifié (14/14) : fichiers servis, titre, lien favicon, logo chargé sur login et sidebar, pas de débordement (bureau et tiroir mobile), bouton fermer visible, aucune erreur console ; contrôle visuel des captures. Le sous-titre « Gestion des Ressources Humaines » passe sur deux lignes dans la sidebar (largeur inchangée de 256 px).
 
 ---
 
