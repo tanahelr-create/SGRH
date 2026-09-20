@@ -42,7 +42,7 @@ export default function Login() {
     try {
       const user = await login(email, password);
       if (user.role === 'ADMIN_RH') navigate('/admin/dashboard');
-      else if (user.role === 'SUPERADMIN') navigate('/superadmin/comptes');
+      else if (user.role === 'SUPERADMIN') navigate('/superadmin/dashboard');
       else navigate('/dashboard');
     } catch (err) {
       setError(err.message);

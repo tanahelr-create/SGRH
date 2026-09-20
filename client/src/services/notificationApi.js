@@ -5,11 +5,11 @@ function authHeaders() {
   return { Authorization: `Bearer ${token}` };
 }
 
-export async function sendNotification(target, title, message, type) {
+export async function sendNotification(target, title, message, type, lien) {
   const res = await fetch(`${API_URL}/notifications`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ target, title, message, type }),
+    body: JSON.stringify({ target, title, message, type, lien: lien || null }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Échec de l'envoi");

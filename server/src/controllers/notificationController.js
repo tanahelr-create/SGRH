@@ -1,13 +1,22 @@
 const notificationService = require('../services/notificationService');
 
+// Destinations autorisées pour une notification envoyée manuellement : uniquement
+// des routes internes du SGRH réellement existantes (self-service PE/PAT), jamais
+// une URL arbitraire fournie par le frontend. Même format que les liens déjà
+// utilisés par les notifications automatiques (contratService, situationAdministrativeService).
+const ALLOWED_LIENS = ['/profil', '/carriere', '/mes-contrats', '/conges', '/mes-documents', '/notifications'];
+
 async function send(req, res) {
-  const { target, title, message, type } = req.body;
+  const { target, title, message, type, lien } = req.body;
   if (!target || !title || !message) {
     return res.status(400).json({ message: 'target, title et message sont requis' });
   }
+  if (lien && !ALLOWED_LIENS.includes(lien)) {
+    return res.status(400).json({ message: 'Destination invalide' });
+  }
   try {
     const notifications = await notificationService.sendNotification(
-      req.user.id, target, title, message, type
+      req.user.id, target, title, message, type, lien || null
     );
     return res.status(201).json({ message: 'Notification(s) envoyée(s)', count: notifications.length });
   } catch (err) {

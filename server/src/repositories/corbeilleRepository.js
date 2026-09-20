@@ -110,10 +110,10 @@ async function restoreCompte(donnees) {
 
     for (const n of donnees.notifications || []) {
       await client.query(
-        `INSERT INTO notifications (id, sender_id, recipient_id, title, message, type, is_read, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        `INSERT INTO notifications (id, sender_id, recipient_id, title, message, type, is_read, created_at, lien)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          ON CONFLICT (id) DO NOTHING`,
-        [n.id, n.sender_id, n.recipient_id, n.title, n.message, n.type, n.is_read, n.created_at]
+        [n.id, n.sender_id, n.recipient_id, n.title, n.message, n.type, n.is_read, n.created_at, n.lien || null]
       );
     }
 

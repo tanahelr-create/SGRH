@@ -143,18 +143,19 @@ Oui. En me basant sur **l’état actuel du SGRH tel qu’on l’a suivi ensembl
 
 # 🟠 9. ⏳ Skeleton / chargement
 
-*Fait le 2026-09-19 pour les pages prioritaires ; le reste du projet garde volontairement le texte "Chargement..." existant plutôt que d'être réécrit sans raison.*
+*Fait le 2026-09-19 pour les pages prioritaires, puis étendu le 2026-09-20 à toutes les pages ayant un vrai chargement de données asynchrone (27 pages au total, testées en navigateur réel — voir bilan détaillé plus bas). Les pages sans fetch asynchrone (formulaires purs, contenu statique) n'ont volontairement pas de skeleton, il n'y a rien à y remplacer.*
 
-* 🟡 Skeleton Dashboard — non touché cette passe (dashboards explicitement exclus de la mission)
+* ✅ Skeleton Dashboard — `admin-rh/Dashboard.jsx` et `personnel/Dashboard.jsx` (2026-09-20)
 * ✅ Skeleton liste personnel — `Personnel.jsx`, `SkeletonTable`, vérifié en navigateur (apparaît pendant le chargement, disparaît une fois les données arrivées)
 * ✅ Skeleton fiche personnel — `Profil.jsx`, skeleton composé (avatar + bandeau + 2 cartes) reproduisant la structure réelle de la page
-* ✅ Skeleton carrière — `Carriere.jsx` (admin) et `MaCarriere.jsx` (personnel), `SkeletonPage`
+* ✅ Skeleton carrière — `Carriere.jsx` (admin) et `MaCarriere.jsx` (personnel), `SkeletonPage` ; `ParametresCarriere.jsx` (onglets Paramètres + Grilles indiciaires) ajouté le 2026-09-20
 * ✅ Skeleton contrats — `Contrats.jsx` (admin) et `MesContrats.jsx` (personnel), `SkeletonCard`
 * ✅ Skeleton congés — `CongesAdmin.jsx`, `Conges.jsx`, `ValidationEquipe.jsx`
-* ⬜ Skeleton notifications — non touché cette passe
-* ⬜ Skeleton utilisateurs — non touché cette passe (pages superadmin hors périmètre prioritaire)
-* ✅ Skeleton documents — `MesDocuments.jsx`
-* 🟡 Vérifier qu'aucune page importante reste blanche pendant le chargement — corrigé pour les pages ci-dessus ; les autres gardent le texte "Chargement..." pré-existant (pas blanc, mais pas un skeleton) — non régressé, juste non amélioré
+* ✅ Skeleton notifications — `NotificationsPage.jsx` (2026-09-20)
+* ✅ Skeleton utilisateurs — pages superadmin `Comptes.jsx`, `Corbeille.jsx`, `Permissions.jsx` (`SkeletonTable`), `ApparenceSite.jsx` (2026-09-20)
+* ✅ Skeleton documents — `MesDocuments.jsx` ; `DocumentsAdmin.jsx`, `DemandesDocuments.jsx` ajoutés le 2026-09-20
+* ✅ Autres pages ajoutées le 2026-09-20 : `ComptesEnAttente.jsx`, `Invitations.jsx`, `Historique.jsx`, `GestionFonctions.jsx`, `EnvoyerNotification.jsx`, `MonEquipe.jsx`, `DocumentImprimable.jsx`, `FicheDemande.jsx`
+* ✅ Vérifier qu'aucune page importante reste blanche pendant le chargement — plus aucun texte "Chargement..." dans `client/src/pages` (vérifié par recherche exhaustive) ; les pages restées sans skeleton (`Login.jsx`, `Register.jsx`, `Parametres.jsx` et ses onglets, `aide/*`...) n'ont aucun fetch asynchrone au chargement, donc rien à skeletoniser
 
 ---
 
@@ -220,8 +221,43 @@ Chaque liste échantillonnée pendant l'audit associe déjà `length === 0` à u
 - Migration des ~60 pages restantes vers les composants UI partagés (bibliothèque prête, adoption progressive recommandée).
 - Bouton "Réessayer" générique sur les erreurs.
 - Sections responsive/tablette non corrigées (`Conges.jsx`, `FicheDemande.jsx`, `Personnel.jsx`, `DocumentsAdmin.jsx` gardent leurs grilles fixes).
-- Dashboards (exclu explicitement par la consigne).
+- Dashboards (exclu explicitement par la consigne pour la mission du 2026-09-19 ; skeletons ajoutés le 2026-09-20 sur demande explicite, sans autre changement fonctionnel).
 - Sessions serveur (exclu explicitement par la consigne — confirmé architecturalement absent, nécessiterait de changer l'authentification JWT, ce qui était explicitement interdit).
+
+---
+
+# 📦 Extension skeleton loaders + réparation d'accès — bilan (2026-09-20)
+
+### 1. Extension des skeleton loaders à 27 pages
+Sur demande explicite ("ajoute le skeleton à toutes les pages, vraiment toutes"), les 17 pages restantes ayant un chargement de données asynchrone réel ont été skeletonnées, en plus des 10 déjà faites le 2026-09-19 — total **27 pages** :
+`admin-rh/Dashboard.jsx`, `personnel/Dashboard.jsx`, `ComptesEnAttente.jsx`, `DemandesDocuments.jsx`, `DocumentsAdmin.jsx`, `EnvoyerNotification.jsx`, `GestionFonctions.jsx`, `Historique.jsx`, `Invitations.jsx`, `ParametresCarriere.jsx` (les 2 onglets), `NotificationsPage.jsx`, `MonEquipe.jsx`, `DocumentImprimable.jsx`, `FicheDemande.jsx`, `superadmin/Comptes.jsx`, `superadmin/Corbeille.jsx`, `superadmin/Permissions.jsx`, `superadmin/ApparenceSite.jsx`.
+Chaque skeleton est façonné sur la structure réelle de sa page (cartes, tableau, avatar, liste...), pas un rectangle générique. Les pages sans fetch asynchrone (`Login.jsx`, `Register.jsx`, `Parametres.jsx` et ses onglets, `aide/*`) n'ont volontairement aucun skeleton — il n'y a rien à y remplacer.
+
+### 2. Réparation de l'accès aux pages / sidebar
+**Cause identifiée** : la table PostgreSQL `role_permissions` s'est retrouvée entièrement vide (0 ligne), sans lien avec ce chantier — vérifié par diff nul sur `Sidebar.jsx`/`PermissionContext.jsx` (jamais modifiés cette session) et par absence de toute requête destructrice sur cette table dans les logs PostgreSQL et dans tous les scripts de test de la session. Conséquence : aucun rôle, y compris SUPERADMIN, n'avait plus aucune permission active, donc la sidebar n'affichait quasiment plus rien (un seul onglet visible selon le rôle), et SUPERADMIN ne pouvait même plus accéder à sa propre page "Rôles & permissions" pour se réparer lui-même.
+**Réparation effectuée** (après validation utilisateur) : permissions par défaut réinsérées dans `role_permissions`, basées sur les clés réellement référencées dans `menuConfig.js` (pas une invention arbitraire) — SUPERADMIN 25 permissions (toutes), ADMIN_RH 14, PE 7, PAT 7. Chaque insertion tracée dans `activity_log` (`permission_modifiee`).
+**Aucune modification de code** n'a été nécessaire pour cette réparation — uniquement des données.
+
+### 3. Vérification des permissions par rôle (comptes jetables, API directe)
+- **PE** → `GET /api/personnel` → **403** confirmé (permission non accordée à PE, comportement attendu)
+- **ADMIN_RH** → `GET /api/personnel` → **200** confirmé (permission restaurée)
+- **SUPERADMIN** → vérifié indirectement via le rendu de la sidebar complète (Admin RH + Super Administration, ≥12 entrées) et l'accès sans erreur aux 4 pages `superadmin/*` ; pas de test API direct supplémentaire au-delà de ça
+- **PAT** → non testé séparément de PE cette passe (même jeu de 7 permissions que PE, aucune raison technique de se comporter différemment) ; seul le rendu de la sidebar "Mon espace" a été vérifié via le compte PE
+
+### 4. Tests effectués
+- `npm test` (backend) → **13/13 ✅**
+- `npm run build` (client) → **✅**, aucun import cassé
+- `npx eslint src/pages` → aucune erreur nouvelle (résidu `react-hooks/set-state-in-effect` confirmé préexistant, présent aussi dans des fichiers jamais touchés comme `Login.jsx`)
+- Tests navigateur réels (Chrome headless isolé, piloté en CDP, 4 comptes jetables `*_smoke_9999@example.test`) → **20/20 ✅** : sidebar ADMIN_RH/SUPERADMIN/PE, rendu sans erreur des 8 pages ADMIN_RH + 4 pages SUPERADMIN + 2 pages PE nouvellement skeletonnées, skeleton effectivement visible pendant un chargement réseau ralenti sur `Permissions.jsx` (capture d'écran), contrôle croisé des permissions API (403/200 ci-dessus)
+
+### 5. Données métier réelles
+Aucune donnée métier réelle n'a été modifiée. Les 4 comptes jetables (matricule `999941`/`999942`, emails `*_smoke_9999@example.test`) et leurs lignes `personnel`/`users` ont été créés puis intégralement supprimés après les tests — vérifié par requête de comptage (0 ligne restante). Les 6 utilisateurs réels et leurs données sont intacts (vérifié après coup). Seule modification de données réelle : le repeuplement de `role_permissions` (point 2), qui restaure un état fonctionnel plutôt que de modifier des données métier existantes.
+
+### 6. Ce qui reste réellement à faire
+- Configurer précisément les permissions ADMIN_RH/PE/PAT via la page "Rôles & permissions" selon les règles métier exactes de l'université (le jeu de permissions restauré est un défaut raisonnable basé sur `menuConfig.js`, pas une validation métier officielle) — SUPERADMIN peut le faire dès maintenant.
+- Identifier la cause racine de la vidange de `role_permissions` (non déterminée avec certitude — aucune trace dans les logs applicatifs ni PostgreSQL disponibles).
+- Vérifier séparément un compte PAT réel (non testé isolément cette passe, seul PE l'a été).
+- Le reste du périmètre non couvert (migration des ~60 pages restantes vers les composants UI, bouton "Réessayer", responsive tablette) est inchangé par rapport au bilan du 2026-09-19 ci-dessus.
 
 ---
 

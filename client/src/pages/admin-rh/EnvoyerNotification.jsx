@@ -9,6 +9,19 @@ const FONCTIONS = [
   'Agent', 'Chef de service', 'Responsable/Directeur',
 ];
 
+// Destinations réellement existantes dans l'app (self-service PE/PAT), mêmes
+// routes que celles utilisées par les notifications automatiques — jamais de
+// saisie libre d'URL. Doit rester synchronisé avec ALLOWED_LIENS côté backend
+// (notificationController.js).
+const DESTINATIONS = [
+  { value: '/profil', label: 'Mon profil' },
+  { value: '/carriere', label: 'Ma carrière' },
+  { value: '/mes-contrats', label: 'Mes contrats' },
+  { value: '/conges', label: 'Mes congés' },
+  { value: '/mes-documents', label: 'Mes documents' },
+  { value: '/notifications', label: 'Notifications' },
+];
+
 export default function EnvoyerNotification() {
   const [ciblage, setCiblage] = useState('role'); // 'role' | 'fonction' | 'individual'
   const [role, setRole] = useState('PE');
@@ -20,6 +33,7 @@ export default function EnvoyerNotification() {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [type, setType] = useState('info');
+  const [lien, setLien] = useState('');
   const [status, setStatus] = useState(null);
   const [feedback, setFeedback] = useState('');
 
@@ -40,11 +54,12 @@ export default function EnvoyerNotification() {
     e.preventDefault();
     setStatus('loading');
     try {
-      const result = await sendNotification(buildTarget(), title, message, type);
+      const result = await sendNotification(buildTarget(), title, message, type, lien || null);
       setStatus('success');
       setFeedback(`Notification envoyée à ${result.count} personne(s)`);
       setTitle('');
       setMessage('');
+      setLien('');
     } catch (err) {
       setStatus('error');
       setFeedback(err.message);
@@ -140,6 +155,19 @@ export default function EnvoyerNotification() {
               className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Destination (facultatif)</label>
+          <select
+            value={lien}
+            onChange={(e) => setLien(e.target.value)}
+            className="w-full sm:w-1/2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+          >
+            <option value="">Aucune</option>
+            {DESTINATIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+          </select>
+          <p className="text-xs text-gray-400 mt-1">Si une destination est choisie, la notification sera cliquable et renverra vers cette page.</p>
         </div>
 
         <div>

@@ -35,6 +35,7 @@ import ComptesSuperadmin from './pages/superadmin/Comptes';
 import PermissionsSuperadmin from './pages/superadmin/Permissions';
 import CorbeilleSuperadmin from './pages/superadmin/Corbeille';
 import ApparenceSite from './pages/superadmin/ApparenceSite';
+import SuperadminDashboard from './pages/superadmin/Dashboard';
 import PersonnelDashboard from './pages/personnel/Dashboard';
 import Profil from './pages/personnel/Profil';
 import MaCarriere from './pages/personnel/MaCarriere';
@@ -183,6 +184,11 @@ function App() {
                   </ProtectedRoute>
                 } />
 
+                <Route path="/superadmin/dashboard" element={
+                  <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="view_dashboard_admin">
+                    <AppShell title="Tableau de bord" subtitle="Administration système"><SuperadminDashboard /></AppShell>
+                  </ProtectedRoute>
+                } />
                 <Route path="/superadmin/comptes" element={
                   <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_accounts">
                     <AppShell title="Gestion des comptes" subtitle="Administration système"><ComptesSuperadmin /></AppShell>

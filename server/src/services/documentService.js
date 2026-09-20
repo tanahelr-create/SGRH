@@ -31,7 +31,7 @@ async function getDocument(id, requestingUser) {
   const document = await documentRepository.findById(id);
   if (!document) throw new Error('Document introuvable');
 
-  const isAdmin = requestingUser.role === 'ADMIN_RH';
+  const isAdmin = requestingUser.role === 'ADMIN_RH' || requestingUser.role === 'SUPERADMIN';
   const isOwner = requestingUser.personnel_id === document.personnel_id;
   if (!isAdmin && !isOwner) throw new Error('Accès refusé à ce document');
 

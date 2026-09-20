@@ -10,8 +10,19 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
 
   // SUPERADMIN voit le menu ADMIN_RH complet, en plus de son propre menu
   // "Administration" — cohérent avec la règle SUPERADMIN = ADMIN_RH + plus.
+  // Le lien "Tableau de bord" pointe vers le dashboard dédié SUPERADMIN
+  // (/superadmin/dashboard) plutôt que celui d'ADMIN_RH — même position dans le
+  // menu, même libellé, pas d'entrée en double.
   const groups = user?.role === 'SUPERADMIN'
-    ? [...(menuConfig.ADMIN_RH || []), ...(menuConfig.SUPERADMIN || [])]
+    ? [
+        ...(menuConfig.ADMIN_RH || []).map((group) => ({
+          ...group,
+          items: group.items.map((item) =>
+            item.path === '/admin/dashboard' ? { ...item, path: '/superadmin/dashboard' } : item
+          ),
+        })),
+        ...(menuConfig.SUPERADMIN || []),
+      ]
     : menuConfig[user?.role] || [];
 
   return (
