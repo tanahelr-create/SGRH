@@ -1,9 +1,9 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Search, UserPlus, Download, Upload } from 'lucide-react';
 import { listPersonnel, exportPersonnelExcel, importPersonnelExcel } from '../../services/personnelApi';
 import { getFonctionHistory } from '../../services/userApi';
 import AjouterEmployeModal from '../../components/AjouterEmployeModal';
-import ModifierEmployeModal from '../../components/ModifierEmployeModal';
 import PageHeader from '../../components/PageHeader';
 import { toast } from '../../utils/toast';
 import { SkeletonTable } from '../../components/ui';
@@ -25,7 +25,6 @@ export default function Personnel() {
   const [expandedId, setExpandedId] = useState(null);
   const [history, setHistory] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingPerson, setEditingPerson] = useState(null);
   const [importResult, setImportResult] = useState(null);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -295,12 +294,13 @@ export default function Personnel() {
                               <p className="text-sm text-navy dark:text-gray-100">{p.grade || '—'}</p>
                             </div>
                           </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setEditingPerson(p); }}
+                          <Link
+                            to={`/admin/personnel/${p.id}/fiche`}
+                            onClick={(e) => e.stopPropagation()}
                             className="text-xs text-navy underline shrink-0 ml-4"
                           >
-                            Modifier la fiche
-                          </button>
+                            Voir la fiche
+                          </Link>
                         </div>
 
                         {history.length > 0 && (
@@ -334,14 +334,6 @@ export default function Personnel() {
         <AjouterEmployeModal
           onClose={() => setShowAddModal(false)}
           onSuccess={() => { setShowAddModal(false); load(); }}
-        />
-      )}
-
-      {editingPerson && (
-        <ModifierEmployeModal
-          personnel={editingPerson}
-          onClose={() => setEditingPerson(null)}
-          onSuccess={() => { setEditingPerson(null); load(); }}
         />
       )}
     </div>

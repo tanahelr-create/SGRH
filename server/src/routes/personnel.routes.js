@@ -26,6 +26,8 @@ router.get('/export', requireAuth, requirePermission('view_personnel'), personne
 router.post('/import', requireAuth, requirePermission('create_personnel'), upload.single('file'), personnelController.importExcel);
 router.get('/', requireAuth, requirePermission('view_personnel'), personnelController.list);
 router.get('/sans-compte', requireAuth, requirePermission('send_registration_link'), personnelController.listWithoutAccount);
+// Déclarée après les routes GET fixes (/me, /mon-equipe, /export, /sans-compte) : sinon ":id" les capterait.
+router.get('/:id', requireAuth, requirePermission('view_personnel'), personnelController.getOne);
 router.post('/:id/envoyer-lien', requireAuth, requirePermission('send_registration_link'), personnelController.sendRegistrationLink);
 router.patch('/me', requireAuth, requirePermission('modifier_mes_infos'), personnelController.updateMesInfos);
 router.patch('/:id', requireAuth, requirePermission('create_personnel'), personnelController.update);

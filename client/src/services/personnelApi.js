@@ -28,6 +28,14 @@ export async function updatePersonnel(id, data) {
   return result;
 }
 
+// Fiche d'un personnel (vue RH « Voir la fiche »).
+export async function getPersonnel(id) {
+  const res = await fetch(`${API_URL}/personnel/${id}`, { headers: authHeaders() });
+  const data = await res.json();
+  if (!res.ok) throw makeApiError(res, data, 'Erreur de chargement');
+  return data.personnel;
+}
+
 export async function listPersonnel() {
   const res = await fetch(`${API_URL}/personnel`, { headers: authHeaders() });
   const data = await res.json();

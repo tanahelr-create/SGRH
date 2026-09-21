@@ -510,6 +510,25 @@ Incident maîtrisé : un script de test a cliqué le bouton « Générer la déc
 
 ---
 
+# 📦 « Mon dossier » enrichi — bilan (2026-09-21)
+
+- **Analyse** : la page affichait identité, informations personnelles/administratives et parcours, mais ni l'état de carrière, ni le congé restant, ni la durée de contrat restante, ni la direction. Les données existaient déjà (`/situations-administratives/me`, `/contrats/me`, `/conges/solde`, `/personnel/me`, `/carriere/me`) : **aucune route, table ni migration ajoutée**.
+- **Ajouts** (`Profil.jsx`, `utils/dossier.js`) : cartes **État de carrière**, **Congés** (solde calculé par le backend), **Contrat** (durée restante en mois/jours, progression, alerte < 6 mois au seuil backend de 183 jours, repli sur les champs historiques de la fiche) ; champ **Direction** ; libellé « Statut » de l'ancienne carte renommé « Type de contrat » pour ne plus être ambigu avec le statut EFA/ELD/Fonctionnaire. Le tableau de bord réutilise désormais les mêmes règles (`contratActuel`, `joursRestants`, libellés).
+- **Bug réel corrigé** : les dates de la page étaient coupées au 10ᵉ caractère de l'ISO UTC, donc affichées avec **un jour de retard** (05/03/1990 → 04/03/1990) et le formulaire « Modifier mes informations » préremplissait la veille : **chaque enregistrement décalait la date d'un jour**. Corrigé (lecture avec les getters locaux) ; vérifié qu'un enregistrement sans modification ne dérive plus. Le même motif de découpe peut exister dans d'autres écrans (non audités).
+- **Tests** (Chrome headless, 4 profils jetables supprimés ensuite) : **26/26** — carte carrière complète, situation et dernière évolution, solde 30 jours avec détail, contrat actif (durée restante 3 mois et 9 jours pour 100 jours, badge, barre à 50 %), contrat permanent historique, contrat expiré, agent sans aucune donnée, message sans date de recrutement, pas de dérive de date, mobile 390 et tablette 820 sans débordement, aucune erreur console. Build et lint OK.
+
+---
+
+# 📦 « Voir la fiche » côté RH / Super admin — bilan (2026-09-21)
+
+- **Demande** : dans `/admin/personnel`, « Modifier la fiche » devient « Voir la fiche » (page dédiée) ; la page de la fiche reçoit un bouton « Modifier la fiche » aux mêmes fonctionnalités, avec état de carrière, congé restant et durée de contrat restante de la personne.
+- **Backend** : `GET /api/personnel/:id` (lecture, `view_personnel`, 400/404 JSON, déclarée après les routes fixes) ; `GET /conges/suivi/:personnelId` enrichi du solde disponible (même `getSoldeDetails` que le dossier de l'agent). Aucune migration.
+- **Frontend** : blocs du dossier extraits en composants partagés (`components/dossier/DossierBlocs.jsx`, règles dans `utils/dossier.js`) utilisés par « Mon dossier » et la nouvelle page `PersonnelFiche.jsx` (route `/admin/personnel/:id/fiche`, lecture seule, statut du compte, liens vers les pages RH). Le modal de modification a été déplacé de la liste vers la fiche.
+- **Bug réel corrigé** : `ModifierEmployeModal` préremplissait la date de recrutement et l'échéance du contrat avec la veille (même coupe de chaîne ISO que côté personnel) : **chaque enregistrement décalait la date de recrutement d'un jour**, alors qu'elle pilote les droits à congé. Le même motif existe dans `Carriere.jsx` (modification d'un événement de carrière, lignes ~155-156), **non corrigé** car hors périmètre : à traiter.
+- **Tests** : backend **65/65** (2 tests ajoutés : le suivi RH égale le dossier de l'agent, personnel sans compte consultable) ; navigateur **33/33** — API (200/403/401/404/400, routes fixes non capturées, chiffres RH = chiffres agent), liste (« Voir la fiche » présent, « Modifier la fiche » retiré), page (mêmes trois cartes au caractère près que côté agent, lecture seule, liens), modification (téléphone enregistré, date de recrutement inchangée), sans compte, SUPERADMIN, PE redirigé, fiche inexistante, mobile 390 et tablette 820, aucune erreur console. Base réelle inchangée (6 fiches, 6 utilisateurs).
+
+---
+
 ## 🎯 Les 10 prochaines tâches prioritaires
 
 Si tu veux simplement savoir **quoi attaquer maintenant**, je mettrais :

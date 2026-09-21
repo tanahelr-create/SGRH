@@ -21,6 +21,7 @@ import VosDroits from './pages/aide/VosDroits';
 import Procedures from './pages/aide/Procedures';
 import Dashboard from './pages/admin-rh/Dashboard';
 import Personnel from './pages/admin-rh/Personnel';
+import PersonnelFiche from './pages/admin-rh/PersonnelFiche';
 import Invitations from './pages/admin-rh/Invitations';
 import ComptesEnAttente from './pages/admin-rh/ComptesEnAttente';
 import EnvoyerNotification from './pages/admin-rh/EnvoyerNotification';
@@ -123,6 +124,11 @@ function App() {
                 <Route path="/admin/dashboard" element={
                   <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_dashboard_admin">
                     <AppShell title="Tableau de bord" subtitle="Gestion des Ressources Humaines"><Dashboard /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/personnel/:id/fiche" element={
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="view_personnel">
+                    <AppShell title="Personnel" subtitle="Gestion des Ressources Humaines"><PersonnelFiche /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/personnel" element={

@@ -8,6 +8,7 @@ const pool = require('../config/db');
 const personnelRepository = require('../repositories/personnelRepository');
 const congeSuiviRepository = require('../repositories/congeSuiviRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
+const congeDroitsService = require('./congeDroitsService');
 
 class OuvertureError extends Error {
   constructor(message, status = 400) {
@@ -77,7 +78,11 @@ async function getSuivi(personnelIdRaw) {
     [personnelId]
   );
   const decidees = new Set(decisions.rows.map((r) => r.id));
+  // Solde disponible et détail de l'année, calculés comme dans le dossier de la personne
+  // (GET /conges/solde) : la RH et l'agent voient exactement les mêmes chiffres.
+  const disponible = await congeDroitsService.getSoldeDetails(userId, personnelId);
   return {
+    ...disponible,
     soldeEnregistre: solde,
     derniereRechargeAnnee: personnel.derniere_recharge_annee,
     historiques: historiques.map((h) => ({ ...h, decisionEtablie: decidees.has(String(h.id)) })),

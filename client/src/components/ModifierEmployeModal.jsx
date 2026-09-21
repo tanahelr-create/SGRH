@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { updatePersonnel } from '../services/personnelApi';
+import { toInputDate } from '../utils/dossier';
 import { fetchDirections, fetchServices } from '../services/organisationApi';
 import { fetchCategories } from '../services/categorieApi';
 import GrilleIndiciaireSelector from './GrilleIndiciaireSelector';
@@ -15,8 +16,8 @@ export default function ModifierEmployeModal({ personnel, onClose, onSuccess }) 
     categorieId: personnel.categorie_id || '',
     service: personnel.service || '', direction: personnel.direction || '',
     telephone: personnel.telephone || '', typeContrat: personnel.type_contrat || '',
-    dateRecrutement: personnel.date_recrutement ? String(personnel.date_recrutement).slice(0, 10) : '',
-    dateEcheanceContrat: personnel.date_echeance_contrat ? String(personnel.date_echeance_contrat).slice(0, 10) : '',
+    dateRecrutement: toInputDate(personnel.date_recrutement),
+    dateEcheanceContrat: toInputDate(personnel.date_echeance_contrat),
     contratPermanent: !!personnel.contrat_permanent,
     classe: personnel.classe || '', echelon: personnel.echelon || '', indice: personnel.indice || '',
     categorie: '', cadre: '', echelle: '',

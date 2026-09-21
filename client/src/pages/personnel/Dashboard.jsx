@@ -14,6 +14,7 @@ import { getMesDocuments } from '../../services/documentApi';
 import { getMyNotifications } from '../../services/notificationApi';
 import { Card, Badge, Skeleton, SkeletonText, EmptyState } from '../../components/ui';
 import { RH_ASSISTANT_QUESTIONS, answerRhQuestion } from '../../utils/rhAssistant';
+import { STATUT_CONTRAT_BADGE, STATUT_CONTRAT_LABELS, contratActuel, joursRestants } from '../../utils/dossier';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 function photoUrl(photo) {
@@ -21,12 +22,6 @@ function photoUrl(photo) {
   return `${API_URL.replace(/\/api\/?$/, '')}${photo}`;
 }
 
-const STATUT_CONTRAT_LABELS = {
-  actif: 'Actif', expire: 'Expiré', renouvele: 'Renouvelé', non_renouvele: 'Non renouvelé', resilie: 'Résilié',
-};
-const STATUT_CONTRAT_BADGE = {
-  actif: 'approved', renouvele: 'approved', expire: 'rejected', resilie: 'rejected', non_renouvele: 'neutral',
-};
 const CONGE_STATUS_LABELS = { en_attente: 'En attente', approuvee: 'Approuvée', refusee: 'Refusée' };
 const DOCUMENT_TYPE_LABELS = { certificat_administratif: 'Certificat administratif', lettre_confirmation: 'Lettre de confirmation', etat_conge: 'État de congé', decision_conge: "Décision d'octroi de congé" };
 
@@ -39,16 +34,6 @@ const QUICK_LINKS = [
 ];
 
 const ASSISTANT_CATEGORIES = [...new Set(RH_ASSISTANT_QUESTIONS.map((q) => q.category))];
-
-function contratActuel(contrats) {
-  if (!contrats?.length) return null;
-  return contrats.find((c) => c.statut === 'actif') || contrats[0];
-}
-
-function joursRestants(dateFin) {
-  const diffMs = new Date(dateFin).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
-  return Math.round(diffMs / 86400000);
-}
 
 function DashboardSkeleton() {
   return (

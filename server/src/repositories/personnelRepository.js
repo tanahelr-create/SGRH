@@ -39,6 +39,25 @@ async function findByUserId(userId) {
   return result.rows[0] || null;
 }
 
+// Fiche complète d'un personnel (vue RH « Voir la fiche ») : mêmes champs que /me
+// (catégorie, responsable hiérarchique) plus l'existence et le statut du compte.
+async function findDetailleById(id) {
+  const result = await pool.query(
+    `SELECT p.*, cp.code AS categorie_code, cp.appellation AS categorie_appellation,
+       (u.id IS NOT NULL) AS a_un_compte, u.status AS statut_compte,
+       COALESCE(
+         (SELECT resp.nom || ' ' || resp.prenom FROM services s JOIN personnel resp ON resp.id = s.responsable_personnel_id WHERE s.nom = p.service AND resp.id != p.id),
+         (SELECT resp.nom || ' ' || resp.prenom FROM directions d JOIN personnel resp ON resp.id = d.responsable_personnel_id WHERE d.nom = p.direction AND resp.id != p.id)
+       ) AS responsable_hierarchique
+     FROM personnel p
+     LEFT JOIN categories_professionnelles cp ON cp.id = p.categorie_id
+     LEFT JOIN users u ON u.personnel_id = p.id
+     WHERE p.id = $1`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
 async function updatePhoto(id, photoPath) {
   const result = await pool.query(
     `UPDATE personnel SET photo_profil = $2 WHERE id = $1 RETURNING *`,
@@ -245,7 +264,7 @@ async function syncSituationCourante(id, { cadre, echelle, classe, echelon, indi
 
 module.exports = {
   create, findByUserId, updatePhoto, findByMatricule, findByEmailRaw, isLinkedToUser, findLinkedUserId,
-  listAll, findByIdRaw, listWithoutAccount,
+  listAll, findByIdRaw, findDetailleById, listWithoutAccount,
   lockPourRecharge, appliquerRecharge, getSolde, debiterSoldeSiSuffisant, crediterSolde,
   findChefDeServiceUser, findResponsableDirectionUser,
   findEquipeParService, findEquipeParDirection,

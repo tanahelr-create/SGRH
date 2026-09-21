@@ -1,86 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Briefcase, Building2, Calendar, CalendarClock, Camera, Check, FileText,
-  Globe2, Hash, Heart, Home, LoaderCircle, Mail, MapPin, Pencil, Phone, ShieldCheck,
-  UserCog, UserRound, Users, X,
+  Camera, Check, LoaderCircle, Pencil, UserRound, X,
 } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
+import { InfosDossier, ParcoursCard, SyntheseDossier } from '../../components/dossier/DossierBlocs';
 import { useAuth } from '../../context/AuthContext';
 import { getMaCarriere } from '../../services/carriereApi';
 import { getMyPersonnel, updateMyProfilePhoto, updateMesInfos } from '../../services/personnelApi';
+import { getMesSituations } from '../../services/situationAdministrativeApi';
+import { getMesContrats } from '../../services/contratApi';
+import { getSoldeConges } from '../../services/congeApi';
+import { present, toInputDate } from '../../utils/dossier';
 import { Skeleton, SkeletonAvatar, SkeletonText } from '../../components/ui';
 
-const roleLabels = { PE: 'Personnel Enseignant', PAT: 'Personnel Administratif et Technique' };
 const SITUATIONS_FAMILIALES = ['Célibataire', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
 const SEXES = ['Masculin', 'Féminin'];
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
-function present(value) {
-  return value === null || value === undefined || value === '' ? 'Non renseigné' : value;
-}
-
-function formatDate(value) {
-  if (!value) return 'Non renseigné';
-  const [year, month, day] = String(value).slice(0, 10).split('-');
-  return year && month && day ? `${day}/${month}/${year}` : 'Non renseigné';
-}
-
-function toDateInputValue(value) {
-  return value ? String(value).slice(0, 10) : '';
-}
-
-function seniority(date) {
-  if (!date) return 'Non renseigné';
-  const start = new Date(`${String(date).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || start > new Date()) return 'Non renseigné';
-  const today = new Date();
-  let years = today.getFullYear() - start.getFullYear();
-  let months = today.getMonth() - start.getMonth();
-  if (today.getDate() < start.getDate()) months -= 1;
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
-  return `${years} an${years !== 1 ? 's' : ''}${months ? ` et ${months} mois` : ''}`;
-}
+const toDateInputValue = (value) => toInputDate(value);
 
 function photoUrl(photo) {
   if (!photo) return null;
   return `${API_URL.replace(/\/api\/?$/, '')}${photo}`;
 }
 
-function Field({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-navy/5 text-navy dark:bg-gold/10 dark:text-gold">
-        <Icon size={16} aria-hidden="true" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs text-slate-500 dark:text-gray-400">{label}</p>
-        <p className="mt-0.5 break-words text-sm font-semibold text-slate-800 dark:text-gray-100">{present(value)}</p>
-      </div>
-    </div>
-  );
-}
-
-function Card({ icon: Icon, title, action, children }) {
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-navy dark:text-gold">
-          <Icon size={18} aria-hidden="true" /> {title}
-        </h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 export default function Profil() {
   const { user } = useAuth();
   const [personnel, setPersonnel] = useState(null);
   const [timeline, setTimeline] = useState([]);
+  // Synthèse carrière / congés / contrat : sources /me existantes ; une source indisponible
+  // n'empêche pas l'affichage du dossier (sa carte indique « non disponible »).
+  const [synthese, setSynthese] = useState({ situations: null, contrats: null, solde: null });
   const [error, setError] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -103,11 +53,18 @@ export default function Profil() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getMyPersonnel(), getMaCarriere()])
-      .then(([fiche, career]) => {
+    Promise.all([
+      getMyPersonnel(),
+      getMaCarriere(),
+      getMesSituations().catch(() => null),
+      getMesContrats().catch(() => null),
+      getSoldeConges().catch(() => null),
+    ])
+      .then(([fiche, career, situations, contratsRes, solde]) => {
         if (!active) return;
         setPersonnel(fiche);
         setTimeline(career.timeline || []);
+        setSynthese({ situations, contrats: contratsRes?.contrats || null, solde });
       })
       .catch((err) => active && setError(err.message));
     return () => { active = false; };
@@ -215,8 +172,8 @@ export default function Profil() {
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {[0, 1].map((i) => (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
             <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <Skeleton className="h-4 w-1/3 rounded mb-4" />
               <SkeletonText lines={4} />
@@ -230,7 +187,6 @@ export default function Profil() {
 
   const fullName = [personnel.prenom, personnel.nom].filter(Boolean).join(' ') || user?.email;
   const currentPhoto = photoUrl(personnel.photo_profil);
-  const contractStatus = personnel.contrat_permanent ? 'Permanent' : personnel.type_contrat;
   const estActif = (user?.status || 'active') === 'active';
 
   return (
@@ -395,63 +351,15 @@ export default function Profil() {
           </form>
         </section>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card icon={Users} title="Informations personnelles">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-              <Field icon={UserRound} label="Nom" value={personnel.nom} />
-              <Field icon={UserRound} label="Prénom" value={personnel.prenom} />
-              <Field icon={Mail} label="E-mail" value={personnel.email} />
-              <Field icon={Users} label="Sexe" value={personnel.sexe} />
-              <Field icon={Calendar} label="Date de naissance" value={formatDate(personnel.date_naissance)} />
-              <Field icon={MapPin} label="Lieu de naissance" value={personnel.lieu_naissance} />
-              <Field icon={Globe2} label="Nationalité" value={personnel.nationalite} />
-              <Field icon={Heart} label="Situation familiale" value={personnel.situation_familiale} />
-              <Field icon={Phone} label="Téléphone" value={personnel.telephone} />
-              <Field icon={Home} label="Adresse" value={personnel.adresse} />
-            </div>
-          </Card>
-
-          <Card icon={Briefcase} title="Informations administratives">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-              <Field icon={Hash} label="Matricule" value={personnel.matricule} />
-              <Field icon={UserCog} label="Catégorie du personnel" value={roleLabels[personnel.role] || personnel.role} />
-              <Field icon={Users} label="Type de personnel" value={personnel.role} />
-              <Field icon={ShieldCheck} label="Statut" value={contractStatus} />
-              <Field icon={Briefcase} label="Fonction" value={personnel.fonction} />
-              <Field icon={Briefcase} label="Poste" value={personnel.poste} />
-              <Field icon={Building2} label="Service" value={personnel.service} />
-              <Field icon={UserRound} label="Supérieur hiérarchique" value={personnel.responsable_hierarchique} />
-              <Field icon={CalendarClock} label="Date de prise de fonction" value={formatDate(personnel.date_prise_fonction)} />
-              <Field icon={CalendarClock} label="Ancienneté" value={seniority(personnel.date_recrutement)} />
-            </div>
-          </Card>
-        </div>
+        <InfosDossier personnel={personnel} />
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold tracking-wide text-navy dark:border-gray-700 dark:bg-gray-800 dark:text-gold sm:px-6">
-          <FileText size={18} aria-hidden="true" /> Parcours professionnel
-        </h2>
-        <div className="p-5 sm:p-6">
-          {timeline.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-gray-400">Aucune information de carrière n'est actuellement enregistrée.</p>
-          ) : (
-            <ol className="space-y-4 border-l-2 border-slate-200 pl-5 dark:border-gray-700">
-              {timeline.map((item, index) => (
-                <li key={`${item.source}-${item.date}-${index}`} className="relative">
-                  <span className="absolute -left-[30px] top-1 h-3 w-3 rounded-full bg-gold ring-4 ring-white dark:ring-gray-800" />
-                  <p className="text-xs text-slate-500 dark:text-gray-400">{formatDate(item.date)}</p>
-                  <p className="mt-0.5 text-sm font-semibold text-navy dark:text-gray-100">{item.type}</p>
-                  {item.description && <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{item.description}</p>}
-                </li>
-              ))}
-            </ol>
-          )}
-          <div className="mt-5 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm text-slate-600 dark:border-gray-700 dark:text-gray-300">
-            <FileText size={17} className="text-gold" aria-hidden="true" /> Date de recrutement : <span className="font-medium">{formatDate(personnel.date_recrutement)}</span>
-          </div>
-        </div>
-      </section>
+      <SyntheseDossier
+        personnel={personnel} situations={synthese.situations} contrats={synthese.contrats}
+        timeline={timeline} solde={synthese.solde}
+      />
+
+      <ParcoursCard timeline={timeline} dateRecrutement={personnel.date_recrutement} />
     </div>
   );
 }

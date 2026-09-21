@@ -8,6 +8,7 @@ const congeService = require('../src/services/congeService');
 const congeDroitsService = require('../src/services/congeDroitsService');
 const congeSuiviRepository = require('../src/repositories/congeSuiviRepository');
 const corbeilleRepository = require('../src/repositories/corbeilleRepository');
+const congeOuvertureService = require('../src/services/congeOuvertureService');
 
 const ANNEE = new Date().getFullYear();
 let compteur = 0;
@@ -243,4 +244,27 @@ test('getDemandeDetails sans QR_SECRET : la fiche reste consultable, sans QR', a
   } finally {
     if (sauvegarde === undefined) delete process.env.QR_SECRET; else process.env.QR_SECRET = sauvegarde;
   }
+});
+
+test('vue RH (getSuivi) : solde disponible et détail identiques à ceux du dossier de l\'agent', async () => {
+  const a = await creerAgent({ solde: 15, derniere: ANNEE - 1 });
+  const suivi = await congeOuvertureService.getSuivi(a.personnelId);
+  const agent = await congeDroitsService.getSoldeDetails(a.userId, a.personnelId);
+  for (const champ of ['annee', 'soldeDisponible', 'droitsAnnee', 'reliquat', 'joursPrisAnnee', 'dateRecrutementConnue']) {
+    assert.strictEqual(suivi[champ], agent[champ], champ);
+  }
+  assert.strictEqual(suivi.soldeDisponible, 45); // 15 enregistrés + 30 de l'année non encore créditée
+  assert.strictEqual(suivi.soldeEnregistre, 15); // le solde stocké reste indiqué séparément
+});
+
+test('vue RH (getSuivi) : un personnel sans compte utilisateur reste consultable', async () => {
+  compteur += 1;
+  const p = await pool.query(
+    `INSERT INTO personnel (matricule, email, nom, prenom, date_recrutement) VALUES ($1, $2, 'Test', 'SansCompte', '2020-01-01') RETURNING id`,
+    [`9998${String(compteur).padStart(2, '0')}`, `conge${compteur}_${process.pid}@example.test`]
+  );
+  const suivi = await congeOuvertureService.getSuivi(p.rows[0].id);
+  assert.strictEqual(suivi.joursPrisAnnee, 0);
+  assert.strictEqual(suivi.dateRecrutementConnue, true);
+  assert.strictEqual(suivi.soldeDisponible, 30);
 });
