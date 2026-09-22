@@ -1,10 +1,11 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Search, UserPlus, Download, Upload } from 'lucide-react';
+import { Building2, ChevronDown, ChevronUp, GraduationCap, Search, UserPlus, Users, Wrench, Download, Upload } from 'lucide-react';
 import { listPersonnel, exportPersonnelExcel, importPersonnelExcel } from '../../services/personnelApi';
 import { getFonctionHistory } from '../../services/userApi';
 import AjouterEmployeModal from '../../components/AjouterEmployeModal';
 import PageHeader from '../../components/PageHeader';
+import { usePermissions } from '../../context/PermissionContext';
 import { toast } from '../../utils/toast';
 import { SkeletonTable } from '../../components/ui';
 
@@ -20,6 +21,7 @@ const COLUMNS = [
 ];
 
 export default function Personnel() {
+  const { can } = usePermissions();
   const [personnel, setPersonnel] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
@@ -88,6 +90,14 @@ export default function Personnel() {
 
   const uniqueValues = (key) => [...new Set(personnel.map((p) => p[key]).filter(Boolean))].sort();
 
+  // Résumé du personnel total (toujours sur la liste complète, indépendant des filtres
+  // ci-dessous : c'est un effectif, pas un résultat de recherche).
+  const effectifs = useMemo(() => ({
+    total: personnel.length,
+    pe: personnel.filter((p) => p.role === 'PE').length,
+    pat: personnel.filter((p) => p.role === 'PAT').length,
+  }), [personnel]);
+
   const filtered = useMemo(() => {
     let list = personnel.filter((p) => {
       const fullName = `${p.prenom || ''} ${p.nom || ''} ${p.matricule || ''}`.toLowerCase();
@@ -138,7 +148,48 @@ export default function Personnel() {
   return (
     <div>
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Personnel' }]} title="Personnel" subtitle="Recherchez, filtrez et gérez les fiches du personnel" />
-      <div className="flex justify-end gap-2 mb-2">
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-navy/5 text-navy dark:bg-gold/10 dark:text-gold">
+            <Users size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-xs text-gray-400">Personnel total</p>
+            <p className="text-2xl font-bold text-navy dark:text-gray-100">{effectifs.total}</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-navy/5 text-navy dark:bg-gold/10 dark:text-gold">
+            <GraduationCap size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-xs text-gray-400">Enseignants (PE)</p>
+            <p className="text-2xl font-bold text-navy dark:text-gray-100">{effectifs.pe}</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center gap-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-navy/5 text-navy dark:bg-gold/10 dark:text-gold">
+            <Wrench size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-xs text-gray-400">Administratif et technique (PAT)</p>
+            <p className="text-2xl font-bold text-navy dark:text-gray-100">{effectifs.pat}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+        {can('manage_organisation') ? (
+          <Link
+            to="/admin/organisation"
+            className="flex items-center gap-2 text-sm font-medium text-navy dark:text-gold underline underline-offset-2"
+          >
+            <Building2 size={16} aria-hidden="true" />
+            Gérer les directions & services
+          </Link>
+        ) : <span />}
+        <div className="flex gap-2">
         <button
           onClick={handleExport}
           disabled={exporting}
@@ -171,6 +222,7 @@ export default function Personnel() {
           <UserPlus size={16} />
           Ajouter un employé
         </button>
+        </div>
       </div>
 
       {importResult && (

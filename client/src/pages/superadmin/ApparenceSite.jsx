@@ -1,44 +1,198 @@
 import { useEffect, useState } from 'react';
 import { getAllTexts, updateText } from '../../services/siteTextsApi';
-import { getSiteSettings, updateSiteSetting } from '../../services/siteSettingsAdminApi';
+import { updateSiteSetting, uploadLogo, uploadFavicon, uploadLogoConnexion } from '../../services/siteSettingsAdminApi';
 import { useTextContext } from '../../context/TextContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import PageHeader from '../../components/PageHeader';
 import { toast } from '../../utils/toast';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { Moon } from 'lucide-react';
 
 const COLOR_LABELS = {
-  color_navy: 'Bleu marine (accent principal)',
-  color_gold: 'Or (accent secondaire)',
+  color_navy: 'Couleur principale (boutons, accents, sidebar)',
+  color_gold: 'Couleur secondaire (élément actif de la sidebar, mise en valeur)',
   color_status_pending: 'Statut — en attente',
   color_status_approved: 'Statut — approuvé',
   color_status_rejected: 'Statut — refusé',
 };
 
+// Champs de contenu proposés à la personnalisation : une liste fixe, choisie dans le
+// code, jamais une création libre de clé par le Superadmin (cohérent avec les libellés
+// de menu — voir Sidebar.jsx/TopBar.jsx). Chaque entrée s'enregistre elle-même dans
+// site_texts via useText, exactement comme les pages qui les consomment réellement
+// (Login, Footer, Sidebar, TopBar, authService côté serveur).
+const CHAMPS_CONNEXION = [
+  { key: 'login.titre_bienvenue', label: 'Titre', defaut: "Bienvenue sur l'espace RH" },
+  { key: 'login.slogan', label: 'Sous-titre', defaut: 'Excellence • Intégrité • Innovation' },
+  { key: 'login.description_bienvenue', label: "Message d'accueil", defaut: "Université de Mahajanga — Plateforme de gestion des ressources humaines. Consultez votre dossier, vos congés et vos notifications en un seul endroit.", multiligne: true },
+];
+const CHAMPS_FOOTER = [
+  { key: 'footer.nom_application', label: "Nom de l'application", defaut: 'Université de Mahajanga' },
+  { key: 'footer.description', label: 'Description (optionnelle)', defaut: '' },
+  { key: 'footer.copyright', label: 'Mention de copyright', defaut: 'Tous droits réservés' },
+];
+const CHAMPS_SYSTEME = [
+  { key: 'systeme.message_compte_attente', label: 'Message — compte en attente', defaut: "Votre compte est en attente de validation par l'administration RH.", multiligne: true },
+  { key: 'systeme.message_compte_desactive', label: 'Message — compte désactivé', defaut: "Votre compte a été désactivé. Contactez l'administration RH pour plus d'informations.", multiligne: true },
+];
+const CHAMPS_MENU = [
+  { key: 'menu.libelle_tableau_de_bord', label: 'Dashboard / Tableau de bord', defaut: 'Tableau de bord' },
+  { key: 'menu.libelle_personnel', label: 'Personnel', defaut: 'Personnel' },
+  { key: 'menu.libelle_carriere', label: 'Carrière', defaut: 'Carrière' },
+  { key: 'menu.libelle_conges', label: 'Congés', defaut: 'Congés & absences' },
+  { key: 'menu.libelle_documents', label: 'Documents', defaut: 'Documents' },
+  { key: 'menu.libelle_parametres', label: 'Paramètres', defaut: 'Paramètres' },
+];
+const CHAMPS_INSTITUTION = [
+  { key: 'institution.nom', label: "Nom de l'université", defaut: 'Université de Mahajanga' },
+  { key: 'institution.nom_court', label: 'Nom court / sigle', defaut: '' },
+  { key: 'institution.adresse', label: 'Adresse', defaut: '' },
+  { key: 'institution.telephone', label: 'Téléphone', defaut: '' },
+  { key: 'institution.email', label: 'Email institutionnel', defaut: '' },
+  { key: 'institution.site_officiel', label: 'Site officiel', defaut: '' },
+];
+const TOUTES_LES_CLES_CURATED = new Set([
+  ...CHAMPS_CONNEXION, ...CHAMPS_FOOTER, ...CHAMPS_SYSTEME, ...CHAMPS_MENU, ...CHAMPS_INSTITUTION,
+].map((c) => c.key));
+
+function Section({ title, description, children }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <h3 className="text-sm font-semibold text-navy dark:text-gold mb-1">{title}</h3>
+      {description && <p className="text-xs text-gray-400 mb-4">{description}</p>}
+      {!description && <div className="mb-4" />}
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+// Un champ de texte personnalisable : lit la valeur actuelle (ou le défaut, qui s'enregistre
+// automatiquement au premier affichage) via useText, propose un brouillon local édité, et
+// enregistre via l'API existante site-texts en rechargeant TextContext pour que le
+// changement soit immédiatement visible partout ailleurs dans l'app (Sidebar, Footer...).
+function ChampTexte({ champ }) {
+  const { texts, reload } = useTextContext();
+  const valeurActuelle = texts[champ.key] !== undefined ? texts[champ.key] : champ.defaut;
+  const [valeur, setValeur] = useState(valeurActuelle);
+  const [saving, setSaving] = useState(false);
+  const modifie = valeur !== valeurActuelle;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateText(champ.key, valeur);
+      await reload();
+      toast.success('Texte enregistré.');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const Champ = champ.multiligne ? 'textarea' : 'input';
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{champ.label}</label>
+      <div className="flex gap-2 items-start">
+        <Champ
+          type={champ.multiligne ? undefined : 'text'}
+          rows={champ.multiligne ? 2 : undefined}
+          value={valeur}
+          onChange={(e) => setValeur(e.target.value)}
+          placeholder={champ.defaut || undefined}
+          className="flex-1 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving || !modifie}
+          className="px-3 py-2 rounded-md text-xs font-medium bg-navy text-white hover:opacity-90 disabled:opacity-40 whitespace-nowrap shrink-0"
+        >
+          {saving ? '...' : 'Enregistrer'}
+        </button>
+        {modifie && (
+          <button
+            onClick={() => setValeur(valeurActuelle)}
+            disabled={saving}
+            className="px-3 py-2 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap shrink-0"
+          >
+            Annuler
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Logo principal / favicon / logo de connexion : un chemin de fichier stocké dans
+// site_settings (même table que les couleurs), pas un texte — upload dédié avec aperçu.
+function ChampImage({ label, hint, valeurActuelle, onUpload }) {
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(null);
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+    try {
+      await onUpload(file);
+      toast.success('Image mise à jour.');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api$/, '');
+  const src = preview || (valeurActuelle ? `${API_URL}${valeurActuelle}` : null);
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="h-16 w-16 shrink-0 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+        {src ? <img src={src} alt="" className="h-full w-full object-contain" /> : <span className="text-[10px] text-gray-400 text-center px-1">Aucune image</span>}
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-navy dark:text-gray-100">{label}</p>
+        {hint && <p className="text-xs text-gray-400 mb-2">{hint}</p>}
+        <label className="inline-block px-3 py-1.5 rounded-md text-xs font-medium bg-navy text-white hover:opacity-90 cursor-pointer">
+          {uploading ? 'Envoi...' : 'Choisir une image'}
+          <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={uploading} onChange={handleFile} />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function ApparenceSite() {
-  const [tab, setTab] = useState('couleurs'); // 'couleurs' | 'textes'
-  const [colors, setColors] = useState({});
-  const [textList, setTextList] = useState([]);
+  const [tab, setTab] = useState('apparence'); // 'apparence' | 'contenu' | 'institution'
+  const [colorEdits, setColorEdits] = useState({});
+  const [allTexts, setAllTexts] = useState([]);
   const [search, setSearch] = useState('');
   const [savingKey, setSavingKey] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { reload: reloadTexts } = useTextContext();
+  const [autresOuvert, setAutresOuvert] = useState(false);
+  const [autresEdits, setAutresEdits] = useState({});
+  const { reload: reloadSettings, settings } = useSiteSettings();
+  const { loaded: textsLoaded } = useTextContext();
 
   useEffect(() => {
     Promise.all([
-      getSiteSettings().then(setColors),
-      getAllTexts().then((data) => setTextList(data.list || [])),
+      reloadSettings().then(() => {}),
+      getAllTexts().then((data) => setAllTexts(data.list || [])),
     ]).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleColorChange(key, value) {
-    setColors((prev) => ({ ...prev, [key]: value })); // aperçu immédiat local
-  }
-
-  async function handleColorSave(key) {
+  async function handleColorSave(key, value) {
     setSavingKey(key);
     try {
-      await updateSiteSetting(key, colors[key]);
-      document.documentElement.style.setProperty(`--${key.replace('color_', 'color-').replace(/_/g, '-')}`, colors[key]);
+      await updateSiteSetting(key, value);
+      await reloadSettings();
+      setColorEdits((prev) => { const next = { ...prev }; delete next[key]; return next; });
       toast.success('Couleur enregistrée.');
     } catch (err) {
       toast.error(err.message);
@@ -47,15 +201,22 @@ export default function ApparenceSite() {
     }
   }
 
-  async function handleTextChange(key, value) {
-    setTextList((prev) => prev.map((t) => (t.key === key ? { ...t, value } : t)));
-  }
+  const autresTextes = allTexts.filter((t) => !TOUTES_LES_CLES_CURATED.has(t.key));
+  const autresFiltres = autresTextes.filter(
+    (t) => !search || t.key.toLowerCase().includes(search.toLowerCase()) || t.value.toLowerCase().includes(search.toLowerCase())
+  );
+  const groupedAutres = {};
+  autresFiltres.forEach((t) => {
+    if (!groupedAutres[t.category]) groupedAutres[t.category] = [];
+    groupedAutres[t.category].push(t);
+  });
 
-  async function handleTextSave(key, value) {
+  async function handleAutreTextSave(key, value) {
     setSavingKey(key);
     try {
       await updateText(key, value);
-      await reloadTexts();
+      setAllTexts((prev) => prev.map((t) => (t.key === key ? { ...t, value } : t)));
+      setAutresEdits((prev) => { const next = { ...prev }; delete next[key]; return next; });
       toast.success('Texte enregistré.');
     } catch (err) {
       toast.error(err.message);
@@ -64,133 +225,163 @@ export default function ApparenceSite() {
     }
   }
 
-  const groupedTexts = {};
-  textList
-    .filter((t) => !search || t.key.toLowerCase().includes(search.toLowerCase()) || t.value.toLowerCase().includes(search.toLowerCase()))
-    .forEach((t) => {
-      if (!groupedTexts[t.category]) groupedTexts[t.category] = [];
-      groupedTexts[t.category].push(t);
-    });
+  const enChargement = loading || !textsLoaded;
 
   return (
     <div className="max-w-5xl">
-      <PageHeader crumbs={[{ label: 'Administration' }, { label: 'Apparence' }]} title="Apparence" subtitle="Couleurs et textes personnalisables du site" />
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setTab('couleurs')}
-          className={`px-4 py-2 rounded-md text-sm font-medium ${tab === 'couleurs' ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
-        >
-          Couleurs
-        </button>
-        <button
-          onClick={() => setTab('textes')}
-          className={`px-4 py-2 rounded-md text-sm font-medium ${tab === 'textes' ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
-        >
-          Textes ({textList.length})
-        </button>
+      <PageHeader crumbs={[{ label: 'Administration' }, { label: 'Personnalisation' }]} title="Personnalisation" subtitle="Apparence, contenu et informations institutionnelles du site" />
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[
+          ['apparence', 'Apparence'],
+          ['contenu', 'Contenu'],
+          ['institution', 'Informations institutionnelles'],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${tab === id ? 'bg-navy text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {tab === 'couleurs' && loading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-2 gap-4" role="status" aria-label="Chargement de l'apparence">
+      {enChargement && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-2 gap-4" role="status" aria-label="Chargement">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="w-10 h-10 rounded shrink-0" />
-                <div className="space-y-2">
-                  <Skeleton className="h-3 w-32 rounded" />
-                  <Skeleton className="h-2.5 w-16 rounded" />
-                </div>
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="w-10 h-10 rounded shrink-0" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-3 w-32 rounded" />
+                <Skeleton className="h-2.5 w-16 rounded" />
               </div>
-              <Skeleton className="h-8 w-20 rounded-md" />
             </div>
           ))}
         </div>
       )}
 
-      {tab === 'couleurs' && !loading && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {Object.entries(colors).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={value}
-                  onChange={(e) => handleColorChange(key, e.target.value)}
-                  className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 cursor-pointer"
-                />
-                <div>
-                  <p className="text-sm font-medium text-navy dark:text-gray-100">{COLOR_LABELS[key] || key}</p>
-                  <p className="text-xs text-gray-400">{value}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleColorSave(key)}
-                disabled={savingKey === key}
-                className="px-3 py-1.5 rounded-md text-xs font-medium bg-navy text-white hover:opacity-90 disabled:opacity-50"
-              >
-                {savingKey === key ? '...' : 'Enregistrer'}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {!enChargement && tab === 'apparence' && (
+        <>
+          <Section title="Logo et favicon">
+            <ChampImage label="Logo principal" hint="Utilisé dans la sidebar et par défaut sur la page de connexion." valeurActuelle={settings.logo_principal_url} onUpload={async (f) => { await uploadLogo(f); await reloadSettings(); }} />
+            <ChampImage label="Favicon" hint="Icône affichée dans l'onglet du navigateur." valeurActuelle={settings.favicon_url} onUpload={async (f) => { await uploadFavicon(f); await reloadSettings(); }} />
+            <ChampImage label="Logo — page de connexion (optionnel)" hint="Si vide, le logo principal est utilisé." valeurActuelle={settings.logo_connexion_url} onUpload={async (f) => { await uploadLogoConnexion(f); await reloadSettings(); }} />
+          </Section>
 
-      {tab === 'textes' && loading && (
-        <div className="space-y-3" role="status" aria-label="Chargement des textes">
-          <Skeleton className="h-9 w-full rounded-md" />
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
-            <Skeleton className="h-3 w-2/3 rounded" />
-            <Skeleton className="h-8 w-full rounded-md" />
-            <Skeleton className="h-3 w-1/2 rounded" />
-            <Skeleton className="h-8 w-full rounded-md" />
-          </div>
-        </div>
-      )}
-
-      {tab === 'textes' && !loading && (
-        <div>
-          <input
-            type="text"
-            placeholder="Rechercher un texte..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-navy"
-          />
-
-          {Object.entries(groupedTexts).map(([category, items]) => (
-            <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4 overflow-hidden">
-              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 font-semibold text-navy dark:text-gold text-sm">
-                {category}
-              </div>
-              <div className="divide-y dark:divide-gray-700">
-                {items.map((t) => (
-                  <div key={t.key} className="p-4">
-                    <p className="text-xs text-gray-400 mb-1 font-mono">{t.key}</p>
-                    <div className="flex gap-2">
+          <Section title="Couleurs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Object.entries(settings).filter(([key]) => key.startsWith('color_')).map(([key, storedValue]) => {
+                const value = colorEdits[key] ?? storedValue;
+                return (
+                  <div key={key} className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
                       <input
-                        type="text"
-                        value={t.value}
-                        onChange={(e) => handleTextChange(t.key, e.target.value)}
-                        className="flex-1 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                        type="color"
+                        value={value}
+                        onChange={(e) => setColorEdits((prev) => ({ ...prev, [key]: e.target.value }))}
+                        className="w-10 h-10 rounded border border-gray-200 dark:border-gray-700 cursor-pointer shrink-0"
                       />
-                      <button
-                        onClick={() => handleTextSave(t.key, t.value)}
-                        disabled={savingKey === t.key}
-                        className="px-3 py-2 rounded-md text-xs font-medium bg-navy text-white hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {savingKey === t.key ? '...' : 'Enregistrer'}
-                      </button>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-navy dark:text-gray-100">{COLOR_LABELS[key] || key}</p>
+                        <p className="text-xs text-gray-400">{value}</p>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => handleColorSave(key, value)}
+                      disabled={savingKey === key}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-navy text-white hover:opacity-90 disabled:opacity-50 shrink-0"
+                    >
+                      {savingKey === key ? '...' : 'Enregistrer'}
+                    </button>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          ))}
+          </Section>
 
-          {textList.length === 0 && (
-            <p className="text-sm text-gray-400">Aucun texte enregistré pour l'instant — visite les pages de l'application pour qu'elles s'enregistrent automatiquement ici.</p>
+          <Section title="Mode clair / sombre">
+            <div className="flex items-start gap-3 text-sm text-gray-500 dark:text-gray-400">
+              <Moon size={18} className="shrink-0 mt-0.5" />
+              <p>
+                Le mode sombre est déjà disponible pour chaque utilisateur individuellement, via l'icône
+                lune/soleil dans la barre supérieure. C'est une préférence personnelle (mémorisée sur
+                l'appareil de chacun), il n'y a pas de bascule globale à configurer ici.
+              </p>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {!enChargement && tab === 'contenu' && (
+        <>
+          <Section title="Page de connexion">
+            {CHAMPS_CONNEXION.map((c) => <ChampTexte key={c.key} champ={c} />)}
+          </Section>
+          <Section title="Pied de page">
+            {CHAMPS_FOOTER.map((c) => <ChampTexte key={c.key} champ={c} />)}
+          </Section>
+          <Section title="Messages système" description="Affichés à la connexion selon l'état du compte. Le mode maintenance n'existe pas dans l'application actuelle — rien à personnaliser pour cet élément.">
+            {CHAMPS_SYSTEME.map((c) => <ChampTexte key={c.key} champ={c} />)}
+          </Section>
+          <Section title="Libellés de navigation" description="Ces libellés remplacent le texte affiché pour ces éléments dans le menu ; la structure du menu elle-même n'est pas modifiable ici.">
+            {CHAMPS_MENU.map((c) => <ChampTexte key={c.key} champ={c} />)}
+          </Section>
+
+          <div className="mb-4">
+            <button
+              onClick={() => setAutresOuvert((v) => !v)}
+              className="text-xs font-medium text-navy dark:text-gold hover:underline"
+            >
+              {autresOuvert ? 'Masquer' : 'Afficher'} les autres textes de l'application ({autresTextes.length})
+            </button>
+          </div>
+
+          {autresOuvert && (
+            <div>
+              <input
+                type="text"
+                placeholder="Rechercher un texte..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-navy"
+              />
+              {Object.entries(groupedAutres).map(([category, items]) => (
+                <div key={category} className="bg-white dark:bg-gray-800 rounded-lg shadow mb-4 overflow-hidden">
+                  <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 font-semibold text-navy dark:text-gold text-sm">{category}</div>
+                  <div className="divide-y dark:divide-gray-700">
+                    {items.map((t) => (
+                      <div key={t.key} className="p-4">
+                        <p className="text-xs text-gray-400 mb-1 font-mono">{t.key}</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={autresEdits[t.key] ?? t.value}
+                            onChange={(e) => setAutresEdits((prev) => ({ ...prev, [t.key]: e.target.value }))}
+                            className="flex-1 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
+                          />
+                          <button
+                            onClick={() => handleAutreTextSave(t.key, autresEdits[t.key] ?? t.value)}
+                            disabled={savingKey === t.key}
+                            className="px-3 py-2 rounded-md text-xs font-medium bg-navy text-white hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {savingKey === t.key ? '...' : 'Enregistrer'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {autresFiltres.length === 0 && <p className="text-sm text-gray-400">Aucun autre texte trouvé.</p>}
+            </div>
           )}
-        </div>
+        </>
+      )}
+
+      {!enChargement && tab === 'institution' && (
+        <Section title="Informations institutionnelles" description="Réutilisées dans les endroits prévus de l'application (ex. pied de page). Laisser vide si l'information n'est pas confirmée.">
+          {CHAMPS_INSTITUTION.map((c) => <ChampTexte key={c.key} champ={c} />)}
+        </Section>
       )}
     </div>
   );

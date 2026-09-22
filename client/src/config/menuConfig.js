@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, UserPlus, UserCheck, Bell, Briefcase, GitBranch, FileSignature, SlidersHorizontal,
-  CalendarClock, FileText, FileStack, History, ShieldCheck, Trash2, KeyRound, Palette,
+  CalendarClock, FileText, FileStack, History, ShieldCheck, Trash2, KeyRound, Palette, Building2,
   UserRound, Award, Users2, ClipboardCheck, FolderOpen, HelpCircle, Info, BookOpen,
 } from 'lucide-react';
 
@@ -21,6 +21,7 @@ const ADMIN_RH_MENU = [
     title: 'Personnel',
     items: [
       { label: 'Personnel', path: '/admin/personnel', icon: Users, permission: 'view_personnel' },
+      { label: 'Directions & services', path: '/admin/organisation', icon: Building2, permission: 'manage_organisation' },
     ],
   },
   {
@@ -113,7 +114,7 @@ export const menuConfig = {
         { label: 'Gestion des comptes', path: '/superadmin/comptes', icon: ShieldCheck, permission: 'manage_accounts' },
         { label: 'Corbeille', path: '/superadmin/corbeille', icon: Trash2, permission: 'manage_corbeille' },
         { label: 'Rôles & permissions', path: '/superadmin/permissions', icon: KeyRound, permission: 'manage_permissions' },
-        { label: 'Apparence', path: '/superadmin/apparence', icon: Palette, permission: 'manage_site_texts' },
+        { label: 'Personnalisation', path: '/superadmin/apparence', icon: Palette, permission: 'manage_site_texts' },
       ],
     },
   ],

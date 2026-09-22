@@ -556,7 +556,7 @@ CREATE INDEX idx_corbeille_supprime_le ON corbeille (supprime_le DESC);
 
 CREATE TABLE site_settings (
   key   VARCHAR(50) PRIMARY KEY,
-  value VARCHAR(20) NOT NULL
+  value VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE site_texts (

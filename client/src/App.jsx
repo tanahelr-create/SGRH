@@ -4,6 +4,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { PermissionProvider } from './context/PermissionContext';
 import { TextProvider } from './context/TextContext';
+import { SiteSettingsProvider } from './context/SiteSettingsContext';
 import { SettingsPreferencesProvider } from './context/SettingsPreferencesContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/layout/AppShell';
@@ -22,6 +23,7 @@ import Procedures from './pages/aide/Procedures';
 import Dashboard from './pages/admin-rh/Dashboard';
 import Personnel from './pages/admin-rh/Personnel';
 import PersonnelFiche from './pages/admin-rh/PersonnelFiche';
+import OrganisationRH from './pages/admin-rh/OrganisationRH';
 import Invitations from './pages/admin-rh/Invitations';
 import ComptesEnAttente from './pages/admin-rh/ComptesEnAttente';
 import EnvoyerNotification from './pages/admin-rh/EnvoyerNotification';
@@ -55,6 +57,7 @@ function App() {
   return (
     <ToastProvider>
     <ThemeProvider>
+      <SiteSettingsProvider>
       <TextProvider>
         <SettingsPreferencesProvider>
         <BrowserRouter>
@@ -136,6 +139,11 @@ function App() {
                     <AppShell title="Personnel" subtitle="Gestion des Ressources Humaines"><Personnel /></AppShell>
                   </ProtectedRoute>
                 } />
+                <Route path="/admin/organisation" element={
+                  <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="manage_organisation">
+                    <AppShell title="Directions & services" subtitle="Gestion des Ressources Humaines"><OrganisationRH /></AppShell>
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin/invitations" element={
                   <ProtectedRoute allowedRoles={ADMIN_OR_SUPERADMIN} permission="send_registration_link">
                     <AppShell title="Inviter un personnel" subtitle="Gestion des Ressources Humaines"><Invitations /></AppShell>
@@ -214,7 +222,7 @@ function App() {
                 } />
                 <Route path="/superadmin/apparence" element={
                   <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_site_texts">
-                    <AppShell title="Apparence du site" subtitle="Administration système"><ApparenceSite /></AppShell>
+                    <AppShell title="Personnalisation" subtitle="Administration système"><ApparenceSite /></AppShell>
                   </ProtectedRoute>
                 } />
 
@@ -251,6 +259,7 @@ function App() {
         </BrowserRouter>
         </SettingsPreferencesProvider>
       </TextProvider>
+      </SiteSettingsProvider>
     </ThemeProvider>
     </ToastProvider>
   );

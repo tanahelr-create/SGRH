@@ -4,6 +4,8 @@ import { X, ChevronDown } from 'lucide-react';
 import { menuConfig } from '../../config/menuConfig';
 import { useAuth } from '../../context/AuthContext';
 import { usePermissions } from '../../context/PermissionContext';
+import { useText } from '../../context/TextContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 
 const estActif = (pathname, path) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -16,9 +18,21 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
   const { user } = useAuth();
   const { can, loading } = usePermissions();
   const { pathname } = useLocation();
+  const { settings } = useSiteSettings();
   // Choix explicite de l'utilisateur, valable pour la page courante seulement : dès
   // qu'on navigue, la catégorie de la page active se rouvre (les autres se replient).
   const [choix, setChoix] = useState({ chemin: null, cle: null });
+
+  // Libellés personnalisables par le Superadmin (Paramètres → Personnalisation → Contenu) :
+  // un nombre fixe de clés, jamais de libellé arbitraire créé à la volée — la structure
+  // de navigation (menuConfig ci-dessus) reste, elle, entièrement définie par le code.
+  const libellesMenu = {
+    'Tableau de bord': useText('menu.libelle_tableau_de_bord', 'Tableau de bord', 'Menu'),
+    'Personnel': useText('menu.libelle_personnel', 'Personnel', 'Menu'),
+    'Carrière': useText('menu.libelle_carriere', 'Carrière', 'Menu'),
+    'Congés & absences': useText('menu.libelle_conges', 'Congés & absences', 'Menu'),
+    'Documents': useText('menu.libelle_documents', 'Documents', 'Menu'),
+  };
 
   // SUPERADMIN voit le menu ADMIN_RH complet, en plus de son propre menu
   // "Administration" — cohérent avec la règle SUPERADMIN = ADMIN_RH + plus.
@@ -54,7 +68,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
             {/* Logo sur pastille blanche : le fichier a un fond blanc et le bleu du logo
                 se lirait mal directement sur le fond navy. Décoratif (le nom est juste à côté). */}
             <img
-              src="/logo-univ-mahajanga.png"
+              src={settings.logo_principal_url || '/logo-univ-mahajanga.png'}
               alt=""
               aria-hidden="true"
               width="44"
@@ -105,7 +119,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                 return (
                   <NavLink key={`${groupIndex}-${path}`} to={path} onClick={onClose} className={classeLien}>
                     <Icon size={18} />
-                    {label}
+                    {libellesMenu[label] || label}
                   </NavLink>
                 );
               }
@@ -124,7 +138,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                       contientActif ? 'text-gold' : 'text-white/60'
                     }`}
                   >
-                    <span>{group.title}</span>
+                    <span>{libellesMenu[group.title] || group.title}</span>
                     <ChevronDown size={16} aria-hidden="true" className={`shrink-0 transition-transform duration-200 ${estOuvert ? 'rotate-180' : ''}`} />
                   </button>
                   {/* Panneau animé (hauteur 0 -> auto) ; `inert` retire les liens repliés
@@ -139,7 +153,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
                         {group.items.map(({ label, path, icon: Icon }) => (
                           <NavLink key={path} to={path} onClick={onClose} className={classeLien}>
                             <Icon size={18} />
-                            {label}
+                            {libellesMenu[label] || label}
                           </NavLink>
                         ))}
                       </div>

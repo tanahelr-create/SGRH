@@ -29,7 +29,7 @@ Les rôles confirmés dans le code sont `SUPERADMIN`, `ADMIN_RH`, `PE` et `PAT`.
 | Rôle | Capacités confirmées |
 | --- | --- |
 | `SUPERADMIN` | Reçoit exactement le menu Admin RH, plus un bloc exclusif : gestion des comptes, désactivation/réactivation, corbeille, rôles & permissions, apparence du site. |
-| `ADMIN_RH` | Tableau de bord, personnel, import/export Excel, invitations, comptes en attente, envoi de notifications, fonctions, carrière, situation administrative, **contrats**, congés, documents administratifs, demandes de documents et audit/journal. |
+| `ADMIN_RH` | Tableau de bord, personnel (avec résumé des effectifs PE/PAT), **directions & services** (`manage_organisation`), import/export Excel, invitations, comptes en attente, envoi de notifications, fonctions, carrière, situation administrative, **contrats**, congés, documents administratifs, demandes de documents et audit/journal. |
 | `PE` / `PAT` | Tableau de bord, mon dossier (profil), carrière, **mes contrats**, congés & absences, mes documents, notifications, aide et paramètres. Le profil/les paramètres restent accessibles uniquement via le menu utilisateur de la TopBar, pas dans la sidebar. |
 
 Fonctionnalités effectivement implémentées : connexion JWT, changement/réinitialisation de mot de passe, OTP e-mail, inscription par matricule avec validation, fiches personnel, recherche/filtres/tri, import/export Excel, liens d'inscription, invitations, **congés (droits à 2,5 jours par mois de service, reliquat cumulé, suivi par année, soldes d'ouverture)**, **documents de congé (fiche de demande avec QR de vérification, décision d'octroi, état de congé)**, carrière, **situation administrative (avec motif, une seule situation ouverte à la fois — garantie par la base —, contrôle de chevauchement sur tout l'historique, modification, et suppression limitée à la situation en cours)**, **gestion complète des contrats** (import PDF, historique, renouvellement avec renégociation, non-renouvellement motivé, avenants, alerte d'échéance à 183 jours puis notification d'expiration), notifications ciblées **avec lien de navigation direct et « tout marquer comme lu »**, comptes, permissions, **suppression de compte réversible via une corbeille transactionnelle**, historique et personnalisation de textes/couleurs/préférences d'affichage.
@@ -97,6 +97,10 @@ La page `/parametres` regroupe cinq catégories filtrées par rôle et permissio
 
 La route `/profil` (« Mon dossier » dans la navigation) présente le dossier de la personne connectée : une bannière d'identité (photo, statut, matricule/fonction/catégorie), puis deux grilles d'informations personnelles et administratives, puis le parcours professionnel. Les données proviennent de `GET /api/personnel/me` et `GET /api/carriere/me` ; toute donnée absente est affichée comme « Non renseigné ».
 
+**Liste du personnel** (`/admin/personnel`) : trois cartes de résumé (personnel total, enseignants PE, personnel administratif et technique PAT), calculées côté client sur la liste complète — indépendantes des filtres de recherche du tableau. Un lien « Gérer les directions & services » (visible avec `manage_organisation`) mène à la gestion de l'organisation.
+
+**Sélection du personnel par recherche** (`client/src/components/PersonnelSearchSelect.jsx`) : sur Carrière, Fonctions, Contrats et Documents administratifs, le `<select>` qui obligeait à faire défiler tout l'effectif pour trouver quelqu'un est remplacé par un champ de recherche (nom, prénom ou matricule) avec liste déroulante filtrée, navigable au clavier (flèches, Entrée, Échap) et accessible (`role="combobox"`/`listbox`, `aria-activedescendant`). `GET /api/users` renvoie désormais aussi `matricule`, `nom`, `prenom` (additif, nécessaire pour que Fonctions — qui liste des comptes, pas des fiches personnel — soit cherchable de la même façon). Demandes de documents garde une liste de cartes (pas une sélection) mais gagne le même filtre par nom/matricule au-dessus de la grille. Ces cinq pages ne sont plus limitées en largeur (`max-w-*` retiré) : elles utilisent l'espace jusqu'au plafond de `AppShell` (1600px) ; les autres pages admin gardent leur largeur actuelle, volontairement inchangée (dossier/formulaire de type « lecture » ou action ponctuelle, où une colonne plus étroite reste plus lisible).
+
 **Vue RH « Voir la fiche »** (`/admin/personnel/:id/fiche`, ADMIN_RH et SUPERADMIN, permission `view_personnel`) : dans la liste du personnel, la ligne dépliée propose « Voir la fiche » (à la place de « Modifier la fiche », qui est désormais un bouton de la page de la fiche, avec les mêmes fonctionnalités : `ModifierEmployeModal`, permission `create_personnel`). La page est en lecture seule et affiche les **mêmes blocs que « Mon dossier »** (composants partagés `client/src/components/dossier/DossierBlocs.jsx`) : informations, état de carrière, congé restant, durée de contrat restante, parcours, plus le statut du compte (actif, en attente, inactif, sans compte). Elle s'appuie sur `GET /api/personnel/:id` (nouvelle route de lecture, `view_personnel`, 400/404 JSON) et sur les routes RH existantes ; `GET /api/conges/suivi/:personnelId` renvoie désormais aussi le solde disponible, les droits de l'année, le reliquat et les jours posés, calculés par le même code que `GET /api/conges/solde` : la RH et la personne voient exactement les mêmes chiffres.
 
 **Synthèse du dossier** : sous les informations personnelles et administratives (direction et service inclus), trois cartes reprennent, sans nouvelle route, les endpoints `/me` existants — **État de carrière** (statut EFA/ELD/Fonctionnaire, catégorie professionnelle, grade, classe et échelon, indice tel que « 950-FOP », situation administrative actuelle, dernière évolution), **Congés** (congé annuel restant, droits de l'année, reliquat et jours posés, calculés par le backend via `GET /api/conges/solde`) et **Contrat** (contrat actif avec renouvellements, **durée restante** en mois et jours, barre de progression, badge « échéance dans moins de 6 mois » au seuil de 183 jours utilisé par le backend ; à défaut de contrat enregistré, les champs historiques de la fiche sont utilisés). Chaque carte dégrade proprement (« non disponible », « aucun contrat enregistré »). Les règles partagées avec le tableau de bord sont dans `client/src/utils/dossier.js`. Les dates renvoyées par l'API (ISO UTC d'un jour local, par exemple `1990-03-04T21:00:00.000Z` pour le 05/03/1990) y sont lues avec les getters locaux : la page les affichait avec un jour de retard et le formulaire de modification préremplissait la veille, ce qui décalait la date à chaque enregistrement.
@@ -110,6 +114,18 @@ Deux pages distinctes, séparées de la carrière : `/mes-contrats` (personnel, 
 ### Identité visuelle
 
 Le logo de l'Université de Mahajanga (`client/public/logo-univ-mahajanga.png`) apparaît dans l'en-tête de la sidebar et sur la page de connexion, sur une pastille blanche (le fichier a un fond blanc, le bleu se lirait mal sur le fond navy). L'icône de l'onglet est `favicon.png` (et `apple-touch-icon.png`), le titre de l'onglet est « SGRH ».
+
+La page de connexion (`Login.jsx`) a son propre habillage : une carte flottante avec un panneau dégradé violet/bleu à gauche (couleurs propres à cette page, pas les variables `--color-navy`/`--color-gold` globales) et un formulaire blanc épuré à droite ; purement visuel, aucune logique d'authentification modifiée.
+
+### Personnalisation (Superadmin)
+
+`/superadmin/apparence` (« Personnalisation » dans la navigation, `manage_site_texts`/`manage_site_settings`, réservé au SUPERADMIN) réorganise l'ancienne page Couleurs/Textes en trois onglets, sans nouvelle table :
+
+- **Apparence** : logo principal, favicon et logo de connexion optionnel (upload image, `POST /api/site-settings/{logo,favicon,logo-connexion}`, chemin stocké dans `site_settings`) ; couleurs existantes (le projet n'a que 2 variables CSS d'accent — `--color-navy` et `--color-gold`, utilisées respectivement comme couleur principale/boutons et couleur secondaire/élément actif de la sidebar, pas 4 couleurs indépendantes) ; mode clair/sombre signalé comme déjà disponible **par utilisateur** (pas une bascule globale). `client/src/context/SiteSettingsContext.jsx` applique couleurs et favicon à chaque démarrage de l'application (avant cette page, un changement de couleur n'était appliqué qu'en mémoire, sur l'onglet où il avait été fait, et se perdait au rechargement).
+- **Contenu** : formulaires dédiés pour la page de connexion (titre, sous-titre, message d'accueil), le pied de page (`Footer.jsx`, auparavant codé en dur), les messages système à la connexion (compte en attente / compte désactivé — un message serveur distinct pour chaque cas, `authService.js`) et six libellés de menu fixes (Tableau de bord, Personnel, Carrière, Congés, Documents, Paramètres), appliqués au rendu dans `Sidebar.jsx`/`TopBar.jsx` sans toucher à `menuConfig.js` : le Superadmin ne peut ni créer ni déplacer une entrée de menu. La liste générique de tous les textes personnalisables reste disponible, repliée, pour les textes hors de cette liste. Mode maintenance non implémenté dans l'application, signalé comme tel plutôt qu'ajouté.
+- **Informations institutionnelles** : nom, nom court, adresse, téléphone, email, site officiel — vides par défaut (sauf le nom de l'université, déjà utilisé ailleurs), pour ne rien présenter comme confirmé sans l'être.
+
+Tous ces champs utilisent `site_texts` via `useText` (même mécanisme d'auto-enregistrement que le reste de l'application) ; seul changement de schéma : `site_settings.value` élargi de `VARCHAR(20)` à `VARCHAR(255)` (migration `016`) pour accueillir un chemin de fichier, pas seulement une couleur hexadécimale.
 
 ### Grilles indiciaires (frontend)
 
@@ -317,6 +333,7 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 | GET / PATCH | `/api/permissions`, `/api/permissions/me` | `manage_permissions` / authentifié | Gère ou lit les permissions. |
 | GET / POST / DELETE | `/api/corbeille`, `/:id/restaurer`, `/:id` | `manage_corbeille` | Corbeille et restauration de comptes. |
 | GET / PATCH | `/api/site-settings` | Public / `manage_site_settings` | Couleurs du site. |
+| POST | `/api/site-settings/{logo,favicon,logo-connexion}` | `manage_site_settings` | Upload d'image (JPG/PNG/WebP, 2 Mo max), remplace le fichier précédent. |
 | GET / POST / PATCH | `/api/site-texts`, `/ensure-default`, `/` | Public / `manage_site_texts` | Textes personnalisables. |
 
 ### Contrats
@@ -362,6 +379,10 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 | --- | --- | --- | --- |
 | GET | `/api/organisation/directions` | Authentifié | Catalogue des directions (nom, responsable). |
 | GET | `/api/organisation/services?directionId=` | Authentifié | Catalogue des services, filtrable par direction. |
+| POST | `/api/organisation/directions` | `manage_organisation` | Crée une direction (`nom`, unique, ≤150 caractères). |
+| DELETE | `/api/organisation/directions/:id` | `manage_organisation` | Supprime une direction ; refusée (409) si des services ou des fiches personnel la référencent encore. |
+| POST | `/api/organisation/services` | `manage_organisation` | Crée un service (`nom`, `directionId`). |
+| DELETE | `/api/organisation/services/:id` | `manage_organisation` | Supprime un service ; refusée (409) si des fiches personnel le référencent encore. |
 | GET | `/api/categories` | Authentifié | Catalogue des catégories professionnelles (numéro 1 à 8, sans 7 ; code, appellation, niveau de diplôme requis). |
 | GET | `/api/parametres-carriere` | `manage_parametres_carriere` | Liste les paramètres de progression de carrière. |
 | PATCH | `/api/parametres-carriere/:cle` | `manage_parametres_carriere` | Modifie un paramètre ; consigné dans `activity_log`. |
@@ -382,6 +403,8 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 `POST /api/carriere/:personnelId` et `PATCH /api/carriere/evenements/:id` (voir tableau *Congés, carrière et administration*) acceptent un champ optionnel `resolveFromGrille` (JSON stringifié, car envoyé en `multipart/form-data` avec le justificatif) — s'il est fourni, `classe`/`echelon`/`indice` sont recalculés depuis la grille plutôt que pris tels quels. `PATCH /api/personnel/:id` accepte le même champ, en JSON natif cette fois (pas de fichier sur cette route).
 
 Le responsable d'une direction ou d'un service n'est jamais modifié par une route dédiée : `organisationRepository.syncResponsable` est appelée en interne lors d'un changement de fonction/service/direction d'une fiche personnel, et retire automatiquement la personne de tout ancien poste de responsable avant, le cas échéant, de l'assigner au nouveau.
+
+**Gestion des directions et services** (page `/admin/organisation`, lien « Gérer les directions & services » depuis `/admin/personnel`, permission `manage_organisation`) : la RH crée et supprime des directions et des services (pas de renommage). `personnel.direction`/`personnel.service` étant du texte libre relié par le nom (sans clé étrangère), une suppression est refusée avec un message explicite tant que des services (pour une direction) ou des fiches personnel (pour une direction ou un service) la référencent encore — chaque création et suppression est tracée dans `activity_log`.
 
 ## Structure de la base de données
 
@@ -434,7 +457,7 @@ erDiagram
 | `otp_codes` | E-mail, code, expiration, utilisation ; validité de dix minutes. |
 | `password_reset_tokens` | Utilisateur, jeton, expiration, utilisation ; validité de trente minutes. |
 | `corbeille` | Type, données JSON (compte + congés/historique de fonction/notifications capturés), auteur et date de suppression. |
-| `site_settings` / `site_texts` | Paires clé/valeur pour couleurs et textes ; textes catégorisés. |
+| `site_settings` / `site_texts` | Paires clé/valeur pour couleurs, logo/favicon/logo de connexion (chemins de fichier, `value VARCHAR(255)` depuis la migration `016`) et textes personnalisables ; textes catégorisés. |
 | `contrats` | `personnel_id`, `type_contrat` (`CDI`/`CDD`/`Vacataire`/`Stagiaire`), `date_debut`, `date_fin`, `numero_renouvellement`, `contrat_precedent_id` (auto-référence), `statut` (`actif`/`expire`/`renouvele`/`non_renouvele`/`resilie`), `decision`, `motif_non_renouvellement`, `reference_decision`, `observations`, `notifie_echeance_le`, `notifie_expiration_le` (migration `005`), auteur/date. Contraintes `CHECK` sur type, statut, décision, cohérence des dates et obligation du motif si non-renouvellement. |
 | `documents_contrat` | `contrat_id` (`ON DELETE CASCADE`), `type_document` (`contrat_original`/`avenant`/`autre`), `filename` (nom d'origine affiché), `path` (nom UUID sur disque), mime type, taille, importateur, date. |
 | `situations_administratives` | `personnel_id`, `type_situation_id`, `date_debut`, `date_fin` (une seule ligne par personnel avec `date_fin` nulle à la fois), `reference_decision`, justificatif (nom + chemin), `observations`, `motif` (migration `004`), auteur, date. |
@@ -472,6 +495,7 @@ Toutes les clés étrangères vers `users.id` ont un comportement `ON DELETE` ex
 | `013_conges_suivi_annuel_et_snapshots.sql` | Crée `conges_droits_annuels`, `conges_imputations` ; ajoute `conges.solde_avant` / `solde_apres`. | Non |
 | `014_conges_historiques.sql` | Crée `conges_historiques`. | Non |
 | `015_conges_historiques_lieu.sql` | Ajoute `conges_historiques.lieu_jouissance`. | Non |
+| `016_widen_site_settings_value.sql` | `site_settings.value` passe de `VARCHAR(20)` à `VARCHAR(255)` (les couleurs `#RRGGBB` tenaient dans 20 caractères, pas un chemin de fichier logo/favicon). | Non |
 
 Elles sont réexécutables sans risque (`IF NOT EXISTS` / `DROP CONSTRAINT IF EXISTS` avant chaque `ADD`) et n'altèrent jamais de données existantes. Les migrations `012` (type de colonne et `DEFAULT`) et `011` (contrainte) modifient la définition d'une colonne ou d'une contrainte, sans toucher aux lignes.
 
@@ -481,4 +505,4 @@ Elles sont réexécutables sans risque (`IF NOT EXISTS` / `DROP CONSTRAINT IF EX
 
 GitHub Actions s'exécute sur chaque push et pull request vers `main` : `npm ci` dans les deux applications, build du frontend et vérification syntaxique de tous les fichiers backend avec `node --check`.
 
-Le backend contient 63 tests (`cd server && npm test`, runner `node:test`) : calcul des droits, jeton de vérification, limiteur, conversion en lettres, grilles indiciaires, et tests d'intégration du solde et des documents de congé. Ces derniers s'exécutent sur la base `rh_mahajanga` avec des données jetables (matricules `9997xx`/`9998xx`, e-mails `@example.test`) supprimées en fin de test ; ils ne sont pas lancés par la CI, qui n'a pas de base PostgreSQL. Aucun déploiement n'est configuré. GitHub Pages ne peut pas héberger Express et PostgreSQL ; un futur hébergeur doit utiliser des GitHub Actions Secrets pour ses identifiants, jamais des secrets commités.
+Le backend contient 72 tests (`cd server && npm test`, runner `node:test`) : calcul des droits, jeton de vérification, limiteur, conversion en lettres, grilles indiciaires, et tests d'intégration du solde et des documents de congé, ainsi que de la gestion des directions/services. Ces derniers s'exécutent sur la base `rh_mahajanga` avec des données jetables (matricules `999xxx`, noms/e-mails `@example.test`) supprimées en fin de test ; ils ne sont pas lancés par la CI, qui n'a pas de base PostgreSQL. Aucun déploiement n'est configuré. GitHub Pages ne peut pas héberger Express et PostgreSQL ; un futur hébergeur doit utiliser des GitHub Actions Secrets pour ses identifiants, jamais des secrets commités.

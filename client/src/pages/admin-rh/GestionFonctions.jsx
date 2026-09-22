@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { listUsers, changeFonction, getFonctionHistory } from '../../services/userApi';
 import { FONCTIONS_PAR_ROLE } from '../../constants/fonctions';
 import PageHeader from '../../components/PageHeader';
+import PersonnelSearchSelect from '../../components/PersonnelSearchSelect';
 import { Skeleton } from '../../components/ui/Skeleton';
 
 export default function GestionFonctions() {
@@ -44,7 +45,7 @@ export default function GestionFonctions() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div>
       <PageHeader
         crumbs={[{ label: 'Admin RH' }, { label: 'Carrière' }, { label: 'Fonctions' }]}
         title="Fonctions"
@@ -55,21 +56,19 @@ export default function GestionFonctions() {
 
         <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Membre du personnel</label>
+            <label htmlFor="fonctions-personnel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Membre du personnel</label>
             {listLoading ? (
               <Skeleton className="h-9 w-full rounded-md" />
             ) : (
-            <select
+            <PersonnelSearchSelect
+              id="fonctions-personnel"
               required
+              items={users}
               value={selectedUserId}
-              onChange={(e) => { setSelectedUserId(e.target.value); setNewFonction(''); }}
-              className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
-            >
-              <option value="">-- Choisir --</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.email} — {u.fonction || 'aucune fonction'}</option>
-              ))}
-            </select>
+              onChange={(id) => { setSelectedUserId(id); setNewFonction(''); }}
+              formatOption={(u) => `${u.matricule ? `${u.matricule} — ` : ''}${[u.prenom, u.nom].filter(Boolean).join(' ') || u.email} (${u.fonction || 'aucune fonction'})`}
+              formatLabel={(u) => `${u.matricule ? `${u.matricule} — ` : ''}${[u.prenom, u.nom].filter(Boolean).join(' ') || u.email}`}
+            />
             )}
           </div>
 

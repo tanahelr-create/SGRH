@@ -42,6 +42,9 @@ app.use(express.json());
 // (voir server/src/utils/secureFileServing.js) — un répertoire /uploads entier servi sans
 // authentification était une fuite potentielle de documents personnels.
 app.use('/uploads/profile-photos', express.static(path.join(__dirname, '../uploads/profile-photos')));
+// Logo, favicon, logo de connexion : mêmes raisons (utilisés publiquement, y compris sur
+// la page de connexion avant authentification ; noms de fichiers UUID).
+app.use('/uploads/site', express.static(path.join(__dirname, '../uploads/site')));
 
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/auth', authRoutes);

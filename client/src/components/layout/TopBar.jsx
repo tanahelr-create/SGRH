@@ -3,6 +3,7 @@ import { ChevronDown, LogOut, Menu, Settings, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePermissions } from '../../context/PermissionContext';
+import { useText } from '../../context/TextContext';
 import NotificationBell from './NotificationBell';
 import ThemeToggle from './ThemeToggle';
 
@@ -16,6 +17,7 @@ const roleLabels = {
 export default function TopBar({ title, subtitle, onMenuClick }) {
   const { user, logout } = useAuth();
   const { can, loading } = usePermissions();
+  const libelleParametres = useText('menu.libelle_parametres', 'Paramètres', 'Menu');
   const [profileOpen, setProfileOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const isPersonnel = user?.role === 'PE' || user?.role === 'PAT';
@@ -113,7 +115,7 @@ export default function TopBar({ title, subtitle, onMenuClick }) {
                 )}
                 <Link to="/parametres" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none dark:text-gray-200 dark:hover:bg-gray-700 dark:focus:bg-gray-700">
                   <Settings size={17} />
-                  Paramètres
+                  {libelleParametres}
                 </Link>
               </div>
 

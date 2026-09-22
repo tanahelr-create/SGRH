@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Sparkle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useText } from '../context/TextContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import Footer from '../components/layout/Footer';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { settings } = useSiteSettings();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -52,112 +54,111 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 flex flex-col md:flex-row">
-        <div className="md:w-1/2 bg-navy relative overflow-hidden flex items-center p-10 md:p-16">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 600 800">
-            <defs>
-              <linearGradient id="loginGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#02295D" />
-                <stop offset="100%" stopColor="#04357A" />
-              </linearGradient>
-            </defs>
-            <rect width="600" height="800" fill="url(#loginGrad)" />
-            {[...Array(6)].map((_, i) => (
-              <rect
-                key={i}
-                x={-80 + i * 90}
-                y={620 - i * 15}
-                width="140"
-                height="26"
-                rx="13"
-                fill="#F2B705"
-                opacity={0.12 + i * 0.04}
-                transform={`rotate(-20 ${-80 + i * 90} ${620 - i * 15})`}
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-4xl grid md:grid-cols-2 rounded-3xl shadow-2xl overflow-hidden bg-white dark:bg-gray-800">
+          <div
+            className="relative overflow-hidden flex flex-col justify-between p-8 sm:p-10 min-h-[220px] md:min-h-[520px]"
+            style={{ background: 'radial-gradient(circle at 25% 15%, #a78bfa 0%, #7c6ee6 30%, #5b6ee8 60%, #3b82f6 100%)' }}
+          >
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+            <div className="absolute -left-10 bottom-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+
+            <div className="relative z-10 flex items-center gap-2">
+              <Sparkle size={20} className="text-white fill-white" aria-hidden="true" />
+              <img
+                src={settings.logo_connexion_url || settings.logo_principal_url || '/logo-univ-mahajanga.png'}
+                alt="Université de Mahajanga"
+                className="h-8 w-8 rounded-md bg-white object-contain p-0.5"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
-            ))}
-            <circle cx="520" cy="90" r="140" fill="#F2B705" opacity="0.08" />
-          </svg>
+            </div>
 
-          <div className="relative z-10 text-white">
-            <img
-              src="/logo-univ-mahajanga.png"
-              alt="Université de Mahajanga"
-              className="h-14 w-14 mb-6 rounded-lg bg-white object-contain p-0.5"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-            <h1 className="text-3xl font-bold mb-4 leading-tight">{titreBienvenue}</h1>
-            <p className="text-white/70 text-sm max-w-sm">{descriptionBienvenue}</p>
+            <div className="relative z-10 text-white">
+              {slogan && <p className="text-white/70 text-xs font-semibold uppercase tracking-wide mb-2">{slogan}</p>}
+              <h1 className="text-2xl sm:text-3xl font-bold leading-snug mb-3">{titreBienvenue}</h1>
+              <p className="text-white/80 text-sm max-w-sm">{descriptionBienvenue}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="md:w-1/2 bg-white flex items-center justify-center p-8">
-          <div className="w-full max-w-sm">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{labelConnexion}</p>
-            <h2 className="text-xl font-bold text-navy mb-6">{titreFormulaire}</h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="relative">
-                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  placeholder={placeholderEmail}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-200 bg-gray-50 rounded-full pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:bg-white"
-                />
+          <div className="flex items-center justify-center p-8 sm:p-10">
+            <div className="w-full max-w-sm">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-500/10">
+                  <Sparkle size={16} className="text-indigo-500" aria-hidden="true" />
+                </span>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{labelConnexion}</p>
               </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">{titreFormulaire}</h2>
 
-              <div className="relative">
-                <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  placeholder={placeholderMdp}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full border border-gray-200 bg-gray-50 rounded-full pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-navy focus:bg-white"
-                />
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{placeholderEmail}</label>
+                  <div className="relative">
+                    <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{placeholderMdp}</label>
+                  <div className="relative">
+                    <Lock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-500"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="w-4 h-4 accent-indigo-500"
+                    />
+                    {labelRemember}
+                  </label>
+                  <Link to="/mot-de-passe-oublie" className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+                    {labelMdpOublie}
+                  </Link>
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy"
-                  tabIndex={-1}
+                  type="submit"
+                  disabled={loading}
+                  className="w-full text-white rounded-xl py-3 font-medium hover:opacity-90 disabled:opacity-50 transition"
+                  style={{ background: 'linear-gradient(90deg, #7c6ee6, #3b82f6)' }}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {loading ? boutonConnexionChargement : boutonConnexion}
                 </button>
-              </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-gray-500 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                    className="w-4 h-4 accent-navy"
-                  />
-                  {labelRemember}
-                </label>
-                <Link to="/mot-de-passe-oublie" className="text-navy font-medium hover:underline">
-                  {labelMdpOublie}
-                </Link>
-              </div>
+                {error && <p className="text-sm text-status-rejected text-center">{error}</p>}
+              </form>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-navy text-white rounded-full py-3 font-medium hover:opacity-90 disabled:opacity-50 transition"
-              >
-                {loading ? boutonConnexionChargement : boutonConnexion}
-              </button>
-
-              {error && <p className="text-sm text-status-rejected text-center">{error}</p>}
-            </form>
-
-            <p className="text-xs text-gray-400 text-center mt-6">
-              {texteInscription} <Link to="/register" className="text-navy font-medium">{lienInscription}</Link>
-            </p>
+              <p className="text-xs text-gray-400 text-center mt-6">
+                {texteInscription} <Link to="/register" className="text-indigo-600 dark:text-indigo-400 font-medium">{lienInscription}</Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { listPersonnel } from '../../services/personnelApi';
 import { generateDocument, getHistoriquePersonnel } from '../../services/documentApi';
 import PageHeader from '../../components/PageHeader';
+import PersonnelSearchSelect from '../../components/PersonnelSearchSelect';
 import { Skeleton } from '../../components/ui/Skeleton';
 
 const TYPES_DOCUMENT = [
@@ -55,7 +56,7 @@ export default function DocumentsAdmin() {
   }
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="space-y-6">
       <PageHeader crumbs={[{ label: 'Admin RH' }, { label: 'Documents' }, { label: 'Documents administratifs' }]} title="Documents administratifs" subtitle="Générer des certificats et lettres pour le personnel" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${!selectedId ? 'lg:col-span-2' : ''}`}>
@@ -64,16 +65,13 @@ export default function DocumentsAdmin() {
           {listLoading ? (
             <Skeleton className="col-span-2 h-9 rounded-md" />
           ) : (
-          <select
-            required value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="col-span-2 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy"
-          >
-            <option value="">-- Choisir un employé --</option>
-            {personnelList.map((p) => (
-              <option key={p.id} value={p.id}>{p.matricule} — {p.prenom} {p.nom}</option>
-            ))}
-          </select>
+          <PersonnelSearchSelect
+            required
+            items={personnelList}
+            value={selectedId}
+            onChange={setSelectedId}
+            className="col-span-2"
+          />
           )}
 
           <select

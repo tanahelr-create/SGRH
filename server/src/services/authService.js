@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
 const activityLogRepository = require('../repositories/activityLogRepository');
 const passwordResetRepository = require('../repositories/passwordResetRepository');
+const siteTextsRepository = require('../repositories/siteTextsRepository');
 const { sendPasswordResetEmail } = require('../config/mailer');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -15,12 +16,33 @@ class AuthError extends Error {
   }
 }
 
+// Équivalent serveur de useText() (qui n'existe que côté React) : renvoie le texte
+// personnalisé par le Superadmin s'il existe, sinon l'enregistre comme valeur par défaut
+// (visible ensuite dans Paramètres → Personnalisation → Contenu) et renvoie ce défaut.
+async function textOrDefault(key, defaultValue, category) {
+  const value = await siteTextsRepository.getOne(key);
+  if (value !== null) return value;
+  await siteTextsRepository.ensureDefault(key, defaultValue, category);
+  return defaultValue;
+}
+
 async function login(email, password) {
   const user = await userRepository.findByEmail(email);
   if (!user) throw new AuthError('Identifiants invalides');
 
+  if (user.status === 'pending') {
+    throw new AuthError(await textOrDefault(
+      'systeme.message_compte_attente',
+      "Votre compte est en attente de validation par l'administration RH.",
+      'Système',
+    ));
+  }
   if (user.status !== 'active') {
-    throw new AuthError('Compte non activé ou désactivé');
+    throw new AuthError(await textOrDefault(
+      'systeme.message_compte_desactive',
+      "Votre compte a été désactivé. Contactez l'administration RH pour plus d'informations.",
+      'Système',
+    ));
   }
 
   const passwordMatches = await bcrypt.compare(password, user.password_hash);

@@ -53,7 +53,7 @@ async function listActive({ role, fonction } = {}) {
   if (role) { values.push(role); conditions.push(`role = $${values.length}`); }
   if (fonction) { values.push(fonction); conditions.push(`fonction = $${values.length}`); }
   const result = await pool.query(
-    `SELECT id, email, role, fonction FROM user_details WHERE ${conditions.join(' AND ')} ORDER BY email`,
+    `SELECT id, email, role, fonction, matricule, nom, prenom FROM user_details WHERE ${conditions.join(' AND ')} ORDER BY email`,
     values
   );
   return result.rows;

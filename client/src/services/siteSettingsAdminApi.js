@@ -17,3 +17,22 @@ export async function updateSiteSetting(key, value) {
   if (!res.ok) throw new Error(data.message || 'Échec de la mise à jour');
   return data;
 }
+
+// 'logo' | 'favicon' | 'logo-connexion' — voir server/src/routes/siteSettings.routes.js
+async function uploadSiteImage(slot, file) {
+  const token = localStorage.getItem('rh_token');
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch(`${API_URL}/site-settings/${slot}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Échec de l'envoi de l'image");
+  return data;
+}
+
+export const uploadLogo = (file) => uploadSiteImage('logo', file);
+export const uploadFavicon = (file) => uploadSiteImage('favicon', file);
+export const uploadLogoConnexion = (file) => uploadSiteImage('logo-connexion', file);
