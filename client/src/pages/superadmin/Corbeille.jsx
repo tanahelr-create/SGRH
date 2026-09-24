@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listCorbeille, restoreFromCorbeille, deletePermanently } from '../../services/corbeilleApi';
+import { Trash2 } from 'lucide-react';
+import { listCorbeille, restoreFromCorbeille, deletePermanently, emptyCorbeille } from '../../services/corbeilleApi';
 import PageHeader from '../../components/PageHeader';
 import { SkeletonCard } from '../../components/ui/Skeleton';
 
@@ -10,6 +11,8 @@ export default function Corbeille() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmEmptyAll, setConfirmEmptyAll] = useState(false);
+  const [emptying, setEmptying] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -45,6 +48,20 @@ export default function Corbeille() {
     }
   }
 
+  async function handleEmptyAll() {
+    setError('');
+    setEmptying(true);
+    try {
+      await emptyCorbeille();
+      setConfirmEmptyAll(false);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEmptying(false);
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <PageHeader
@@ -52,6 +69,37 @@ export default function Corbeille() {
         title="Corbeille"
         subtitle="Les éléments supprimés restent ici jusqu'à restauration ou suppression définitive"
       />
+
+      {!loading && items.length > 0 && (
+        <div className="flex justify-end mb-4">
+          {confirmEmptyAll ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Supprimer définitivement les {items.length} éléments ?</span>
+              <button
+                onClick={handleEmptyAll}
+                disabled={emptying}
+                className="px-3 py-1.5 rounded-md text-xs font-medium bg-status-rejected text-white disabled:opacity-50"
+              >
+                {emptying ? '...' : 'Confirmer'}
+              </button>
+              <button
+                onClick={() => setConfirmEmptyAll(false)}
+                disabled={emptying}
+                className="px-3 py-1.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+              >
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmEmptyAll(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-status-rejected text-status-rejected hover:bg-red-50"
+            >
+              <Trash2 size={14} /> Vider la corbeille
+            </button>
+          )}
+        </div>
+      )}
 
       {error && <p className="text-sm text-status-rejected mb-4">{error}</p>}
       {!loading && items.length === 0 && <p className="text-gray-500">La corbeille est vide.</p>}

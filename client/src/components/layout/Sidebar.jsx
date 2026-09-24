@@ -39,7 +39,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
   // Le lien "Tableau de bord" pointe vers le dashboard dédié SUPERADMIN
   // (/superadmin/dashboard) plutôt que celui d'ADMIN_RH — même position dans le
   // menu, même libellé, pas d'entrée en double.
-  const groups = user?.role === 'SUPERADMIN'
+  const intrinseque = user?.role === 'SUPERADMIN'
     ? [
         ...(menuConfig.ADMIN_RH || []).map((group) => ({
           ...group,
@@ -51,6 +51,32 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
       ]
     : menuConfig[user?.role] || [];
 
+  // Rôles & permissions (page Superadmin) permet d'accorder n'importe quelle permission
+  // à n'importe quel rôle — ex. "supprimer un compte" donné à un PAT. Sans ce bloc, la
+  // permission serait bien active côté API mais resterait invisible : ce rôle n'aurait
+  // jamais eu l'entrée de menu correspondante, puisque chaque rôle n'affichait que son
+  // propre menu figé. Ce complément ne joue que dans un sens : PE/PAT peuvent se voir
+  // ajouter des pages ADMIN_RH/SUPERADMIN auxquelles une permission leur donne accès.
+  // L'inverse n'a pas de sens et n'est pas ajouté : les pages personnelles en libre-service
+  // (Mon dossier, Mes congés...) lisent le dossier du COMPTE CONNECTÉ lui-même — un compte
+  // ADMIN_RH/SUPERADMIN n'a pas de fiche personnel associée, quelle que soit la permission
+  // qu'on lui accorderait, les afficher pour lui n'aurait jamais rien de cohérent à montrer.
+  const estPersonnel = user?.role === 'PE' || user?.role === 'PAT';
+  const cheminsIntrinseques = new Set(intrinseque.flatMap((g) => g.items.map((i) => i.path)));
+  const itemsSupplementaires = !estPersonnel || loading ? [] : Object.entries(menuConfig)
+    .filter(([role]) => role !== 'PE' && role !== 'PAT')
+    .flatMap(([, groupes]) => groupes.flatMap((g) => g.items))
+    .filter((item, index, tous) => (
+      item.permission
+      && !cheminsIntrinseques.has(item.path)
+      && can(item.permission)
+      && tous.findIndex((i) => i.path === item.path) === index // dédoublonne ADMIN_RH/SUPERADMIN (chevauchement du tableau de bord)
+    ));
+
+  const groups = itemsSupplementaires.length > 0
+    ? [...intrinseque, { title: 'Accès supplémentaires', items: itemsSupplementaires }]
+    : intrinseque;
+
   return (
     <>
       {/* Sous lg : la sidebar est un tiroir superposé, fermé par défaut. À partir de
@@ -59,7 +85,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
         <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={onClose} aria-hidden="true" />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-full w-64 shrink-0 flex-col overflow-hidden bg-navy text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex h-full w-64 shrink-0 flex-col overflow-hidden bg-navy dark:bg-gray-950 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

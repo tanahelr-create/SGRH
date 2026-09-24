@@ -4,8 +4,12 @@ import { useTheme } from '../../context/ThemeContext';
 export default function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
   return (
-    <button onClick={toggleTheme} className="text-gray-400 hover:text-navy dark:hover:text-gold transition"
-      title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}>
+    <button
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      className="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-slate-100 dark:text-gray-300 dark:hover:bg-gray-700 transition"
+    >
       {isDark ? <Sun size={20} /> : <Moon size={20} />}
     </button>
   );

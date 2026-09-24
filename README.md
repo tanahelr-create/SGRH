@@ -85,7 +85,7 @@ Chaque page affiche un en-tête cohérent via le composant réutilisable `PageHe
 | Superadmin | Gestion des comptes, corbeille, rôles & permissions, apparence. |
 | Personnel | Tableau de bord, mon dossier, ma carrière, **mes contrats**, mes congés & absences, mes documents, mon équipe / validation équipe (chefs de service), aide. |
 
-`AuthContext` enregistre le JWT sous `rh_token` dans `localStorage`, restaure la session via `GET /api/auth/me` et déconnecte l'utilisateur. `ThemeContext` mémorise le thème sous `rh_theme`. `SettingsPreferencesContext` mémorise sous `rh_settings_prefs` les préférences d'affichage (densité, taille du texte, mode sidebar, animations, accessibilité, notifications app/e-mail, langue, préférences de tableaux et de documents) — entièrement côté client, aucune API dédiée. `TextContext` charge les textes personnalisables et enregistre leur valeur initiale si absente. `ProtectedRoute` bloque les visiteurs non authentifiés, les rôles non autorisés et les permissions manquantes.
+`AuthContext` enregistre le JWT sous `rh_token` dans `localStorage`, restaure la session via `GET /api/auth/me` et déconnecte l'utilisateur. `ThemeContext` mémorise le thème sous `rh_theme` (clair/sombre/système) et bascule la classe `dark` sur `<html>` ; `index.css` donne à `html`/`body` un fond et un texte de base adaptés à cette classe, pour qu'aucune zone ne reste claire par défaut en mode sombre avant qu'un composant ne prenne le relais avec ses propres classes `dark:`. `SettingsPreferencesContext` mémorise sous `rh_settings_prefs` les préférences d'affichage (densité, taille du texte, mode sidebar, animations, accessibilité, notifications app/e-mail, langue, préférences de tableaux et de documents) — entièrement côté client, aucune API dédiée. `TextContext` charge les textes personnalisables et enregistre leur valeur initiale si absente. `ProtectedRoute` bloque les visiteurs non authentifiés ; quand une route précise une permission, celle-ci est la seule autorité (le `allowedRoles` de la route est ignoré) — une permission accordée à un rôle inhabituel depuis Rôles & permissions rend donc réellement la page accessible à ce rôle, pas seulement l'API. `allowedRoles` ne reste un verrou dur que pour les routes sans permission associée (espace personnel en libre-service). `Sidebar.jsx` ajoute de même, uniquement pour PE/PAT, les entrées ADMIN_RH/SUPERADMIN rendues accessibles par une permission accordée hors de leur rôle (regroupées sous « Accès supplémentaires » si présentes, affichées seulement une fois les permissions chargées, jamais de façon optimiste). Dans l'autre sens, ADMIN_RH/SUPERADMIN ne gagnent jamais les pages personnelles en libre-service de PE/PAT (Mon dossier, Mes congés...) : ces pages lisent le dossier du compte connecté lui-même, qu'un compte ADMIN_RH/SUPERADMIN n'a pas, quelle que soit la permission accordée.
 
 La page Personnel permet la recherche nom/prénom/matricule, les filtres par rôle, fonction, corps, service, direction, contrat et statut, ainsi que le tri, l'import et l'export Excel.
 
@@ -124,8 +124,15 @@ La page de connexion (`Login.jsx`) a son propre habillage : une carte flottante 
 - **Apparence** : logo principal, favicon et logo de connexion optionnel (upload image, `POST /api/site-settings/{logo,favicon,logo-connexion}`, chemin stocké dans `site_settings`) ; couleurs existantes (le projet n'a que 2 variables CSS d'accent — `--color-navy` et `--color-gold`, utilisées respectivement comme couleur principale/boutons et couleur secondaire/élément actif de la sidebar, pas 4 couleurs indépendantes) ; mode clair/sombre signalé comme déjà disponible **par utilisateur** (pas une bascule globale). `client/src/context/SiteSettingsContext.jsx` applique couleurs et favicon à chaque démarrage de l'application (avant cette page, un changement de couleur n'était appliqué qu'en mémoire, sur l'onglet où il avait été fait, et se perdait au rechargement).
 - **Contenu** : formulaires dédiés pour la page de connexion (titre, sous-titre, message d'accueil), le pied de page (`Footer.jsx`, auparavant codé en dur), les messages système à la connexion (compte en attente / compte désactivé — un message serveur distinct pour chaque cas, `authService.js`) et six libellés de menu fixes (Tableau de bord, Personnel, Carrière, Congés, Documents, Paramètres), appliqués au rendu dans `Sidebar.jsx`/`TopBar.jsx` sans toucher à `menuConfig.js` : le Superadmin ne peut ni créer ni déplacer une entrée de menu. La liste générique de tous les textes personnalisables reste disponible, repliée, pour les textes hors de cette liste. Mode maintenance non implémenté dans l'application, signalé comme tel plutôt qu'ajouté.
 - **Informations institutionnelles** : nom, nom court, adresse, téléphone, email, site officiel — vides par défaut (sauf le nom de l'université, déjà utilisé ailleurs), pour ne rien présenter comme confirmé sans l'être.
+- **Aide (personnel)** : contenu des 3 pages d'aide du personnel (« Par où commencer », « Vos droits », « Les procédures » — voir ci-dessous), en `textarea`, texte affiché tel quel (`whitespace-pre-line`).
 
 Tous ces champs utilisent `site_texts` via `useText` (même mécanisme d'auto-enregistrement que le reste de l'application) ; seul changement de schéma : `site_settings.value` élargi de `VARCHAR(20)` à `VARCHAR(255)` (migration `016`) pour accueillir un chemin de fichier, pas seulement une couleur hexadécimale.
+
+### Aide et réclamations (personnel)
+
+Le groupe « Aide » du menu personnel (PE/PAT) a 4 pages : les 3 pages de documentation (`/aide/commencer`, `/aide/droits`, `/aide/procedures`, contenu personnalisable ci-dessus) et `/aide/signaler` (permission `signaler_probleme`), où l'agent décrit un problème (sujet + description) adressé au Superadmin. `POST /api/reclamations` enregistre la réclamation (table `reclamations`, migration `017` — distincte de `notifications` : ici l'auteur décrit un problème et attend une réponse, avec un statut `ouverte`/`traitee`, ce que `notifications` ne modélise pas) et notifie tous les comptes SUPERADMIN via le mécanisme de notification existant (`target: {type: 'role', role: 'SUPERADMIN'}`). Le Superadmin gère les réclamations sur `/superadmin/reclamations` (permission `manage_reclamations`, **non héritée par ADMIN_RH** contrairement à la plupart des permissions Superadmin) : réponse obligatoire pour marquer une réclamation traitée.
+
+`Footer.jsx` (partagé par toutes les pages via `AppShell`) affiche un pied de page enrichi uniquement pour PE/PAT (détecté via `useAuth()`, rien à passer en prop) : informations institutionnelles déjà saisies par le Superadmin (n'affiche que les champs réellement renseignés) et raccourcis vers les 4 pages Aide ci-dessus. Pour ADMIN_RH/SUPERADMIN et les pages publiques, le pied de page reste le copyright seul, inchangé.
 
 ### Grilles indiciaires (frontend)
 
@@ -325,16 +332,18 @@ Les réponses sont JSON, sauf l'export Excel et le téléchargement de documents
 | GET / POST | `/api/carriere/:personnelId` | `manage_fonctions` | Carrière et événement. |
 | GET | `/api/carriere/echeances` | `manage_fonctions` | Personnel dont `date_echeance_contrat` (champ historique, distinct des contrats ci-dessous) tombe sous 30 jours. |
 | PATCH / GET | `/api/users/:id/fonction`, `/:id/fonction-history` | `manage_fonctions` | Fonction et son historique. |
-| GET | `/api/activity-log?limit=` | `view_historique` | Journal des actions. |
+| GET | `/api/activity-log?limit=&exclude=` | `view_historique` | Journal des actions ; `exclude` (optionnel) écarte certains `action_type`. Pour un appelant non SUPERADMIN, le serveur écarte en plus systématiquement les types réservés à une permission exclusive au Superadmin (comptes, corbeille, permissions, personnalisation, réclamations) — non contournable via `exclude`. |
 | GET | `/api/stats/admin-dashboard` | `view_dashboard_admin` | Indicateurs RH. |
 | POST / GET | `/api/notifications`, `/api/notifications/me` | `send_notification` / `view_notifications` | Envoi ciblé et réception. |
 | POST | `/api/notifications/read-all` | `view_notifications` | Marque toutes ses notifications comme lues. |
 | POST | `/api/notifications/:id/read` | `view_notifications` | Marque une notification comme lue. |
 | GET / PATCH | `/api/permissions`, `/api/permissions/me` | `manage_permissions` / authentifié | Gère ou lit les permissions. |
-| GET / POST / DELETE | `/api/corbeille`, `/:id/restaurer`, `/:id` | `manage_corbeille` | Corbeille et restauration de comptes. |
+| GET / POST / DELETE | `/api/corbeille`, `/:id/restaurer`, `/:id`, `/vider` | `manage_corbeille` | Corbeille, restauration, suppression définitive d'un élément ou de la corbeille entière (`DELETE /vider`, déclarée avant `/:id` pour ne pas être capturée par ce paramètre). |
 | GET / PATCH | `/api/site-settings` | Public / `manage_site_settings` | Couleurs du site. |
 | POST | `/api/site-settings/{logo,favicon,logo-connexion}` | `manage_site_settings` | Upload d'image (JPG/PNG/WebP, 2 Mo max), remplace le fichier précédent. |
 | GET / POST / PATCH | `/api/site-texts`, `/ensure-default`, `/` | Public / `manage_site_texts` | Textes personnalisables. |
+| POST / GET | `/api/reclamations`, `/api/reclamations/me` | `signaler_probleme` | Le personnel signale un problème au Superadmin (notifie le rôle SUPERADMIN) et suit ses propres réclamations. |
+| GET / PATCH | `/api/reclamations`, `/:id/traiter` | `manage_reclamations` | Liste (Superadmin uniquement) et traitement d'une réclamation (réponse obligatoire). |
 
 ### Contrats
 
@@ -451,6 +460,7 @@ erDiagram
 | `conges_historiques` | Congés pris avant le SGRH (année de droit, dates, jours, `lieu_jouissance`), rattachés à `personnel` : un agent sans compte peut en avoir. |
 | `invitations` | E-mail, rôle, fonction, jeton, émetteur, expiration, statut, données soumises, utilisateur créé. Statuts : `envoyee`, `soumise`, `confirmee`, `refusee`. |
 | `notifications` | Expéditeur, destinataire, titre, message, type, `lien` (chemin frontend optionnel pour la redirection au clic), lecture et date. |
+| `reclamations` | Réclamation du personnel (PE/PAT) au Superadmin : `auteur_id` (`SET NULL`), `sujet`, `description`, `statut` (`ouverte`/`traitee`), `reponse`, `traite_par`, `traite_le`. Distincte de `notifications` (aucune notion de statut/réponse côté annonces). |
 | `fonction_history` / `carriere_evenements` | Historique de fonction et événements de carrière. |
 | `activity_log` | Utilisateur, type d'action, description, date ; l'utilisateur peut être nul (migration `002`). |
 | `permissions` / `role_permissions` | Catalogue et association rôle/permission avec indicateur `enabled`. L'upsert repose sur l'unicité fonctionnelle `(role, permission_id)`. |
@@ -496,6 +506,7 @@ Toutes les clés étrangères vers `users.id` ont un comportement `ON DELETE` ex
 | `014_conges_historiques.sql` | Crée `conges_historiques`. | Non |
 | `015_conges_historiques_lieu.sql` | Ajoute `conges_historiques.lieu_jouissance`. | Non |
 | `016_widen_site_settings_value.sql` | `site_settings.value` passe de `VARCHAR(20)` à `VARCHAR(255)` (les couleurs `#RRGGBB` tenaient dans 20 caractères, pas un chemin de fichier logo/favicon). | Non |
+| `017_create_reclamations.sql` | Crée `reclamations`. | Non |
 
 Elles sont réexécutables sans risque (`IF NOT EXISTS` / `DROP CONSTRAINT IF EXISTS` avant chaque `ADD`) et n'altèrent jamais de données existantes. Les migrations `012` (type de colonne et `DEFAULT`) et `011` (contrainte) modifient la définition d'une colonne ou d'une contrainte, sans toucher aux lignes.
 

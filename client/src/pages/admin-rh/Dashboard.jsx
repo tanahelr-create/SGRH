@@ -16,13 +16,13 @@ const STATUS_LABELS = {
 
 function StatCard({ label, value, icon: Icon }) {
   return (
-    <div className="bg-white rounded-lg shadow p-5 flex items-center gap-4">
-      <div className="w-12 h-12 rounded-full bg-navy/10 flex items-center justify-center text-navy">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center gap-4">
+      <div className="w-12 h-12 rounded-full bg-navy/10 dark:bg-gold/10 flex items-center justify-center text-navy dark:text-gold">
         <Icon size={22} />
       </div>
       <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-navy">{value}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="text-2xl font-bold text-navy dark:text-gray-100">{value}</p>
       </div>
     </div>
   );
@@ -60,7 +60,7 @@ export default function Dashboard() {
         <PageHeader crumbs={[{ label: 'Admin RH' }]} title="Tableau de bord" subtitle="Vue d'ensemble des ressources humaines" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-5 flex items-center gap-4">
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center gap-4">
               <Skeleton className="w-12 h-12 rounded-full shrink-0" />
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-3 w-2/3 rounded" />
@@ -71,7 +71,7 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Skeleton className="rounded-lg h-64" />
-          <div className="bg-white rounded-lg shadow p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
             <Skeleton className="h-4 w-1/3 rounded mb-4" />
             <SkeletonText lines={4} />
           </div>
@@ -93,19 +93,19 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MiniCalendar demandes={calendarDemandes} />
 
-        <div className="bg-white rounded-lg shadow p-5">
-          <h3 className="font-semibold text-navy mb-3">Dernières demandes</h3>
-          {recent.length === 0 && <p className="text-sm text-gray-400">Aucune demande récente.</p>}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <h3 className="font-semibold text-navy dark:text-gold mb-3">Dernières demandes</h3>
+          {recent.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">Aucune demande récente.</p>}
           <div className="space-y-3">
             {recent.map((d) => (
-              <div key={d.id} className="border-b last:border-0 pb-2">
+              <div key={d.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 pb-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-navy">{d.prenom} {d.nom}</p>
+                  <p className="text-sm font-medium text-navy dark:text-gray-100">{d.prenom} {d.nom}</p>
                   <span className={`text-xs font-medium ${STATUS_LABELS[d.status].color}`}>
                     {STATUS_LABELS[d.status].label}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   {d.type_conge} — du {new Date(d.date_debut).toLocaleDateString('fr-FR')} au {new Date(d.date_fin).toLocaleDateString('fr-FR')}
                 </p>
               </div>
@@ -122,7 +122,7 @@ export default function Dashboard() {
               <div key={e.id} className="flex items-center justify-between border-b last:border-0 dark:border-gray-700 pb-2">
                 <div>
                   <p className="text-sm font-medium text-navy dark:text-gray-100">{e.prenom} {e.nom}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     {e.type_contrat} — échéance le {new Date(e.date_echeance_contrat).toLocaleDateString('fr-FR')}
                   </p>
                 </div>

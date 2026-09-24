@@ -10,6 +10,7 @@ import { getActivityLog } from '../../services/activityLogApi';
 import { listCorbeille } from '../../services/corbeilleApi';
 import { Card, Badge, Skeleton, SkeletonText } from '../../components/ui';
 import PageHeader from '../../components/PageHeader';
+import { ACTION_LABELS } from '../../constants/activityLabels';
 
 const ROLES = ['SUPERADMIN', 'ADMIN_RH', 'PE', 'PAT'];
 const ROLE_LABELS = { SUPERADMIN: 'Superadmin', ADMIN_RH: 'Admin RH', PE: 'PE', PAT: 'PAT' };
@@ -61,6 +62,7 @@ export default function SuperadminDashboard() {
   const [accounts, setAccounts] = useState(null);
   const [permissionRows, setPermissionRows] = useState(null);
   const [activity, setActivity] = useState(null);
+  const [activityLimit, setActivityLimit] = useState(5);
   const [corbeille, setCorbeille] = useState(null);
   const [error, setError] = useState('');
 
@@ -68,17 +70,23 @@ export default function SuperadminDashboard() {
     Promise.all([
       listAccounts(),
       listAllPermissions(),
-      getActivityLog(8),
       listCorbeille(),
     ])
-      .then(([acc, perms, act, corb]) => {
+      .then(([acc, perms, corb]) => {
         setAccounts(acc);
         setPermissionRows(perms);
-        setActivity(act);
         setCorbeille(corb);
       })
       .catch((err) => setError(err.message));
   }, []);
+
+  // Séparé du chargement initial : changer le nombre d'entrées affichées (dropdown)
+  // ne recharge que l'activité, pas tout le tableau de bord.
+  useEffect(() => {
+    getActivityLog(activityLimit, ['connexion'])
+      .then(setActivity)
+      .catch((err) => setError(err.message));
+  }, [activityLimit]);
 
   if (error) {
     return (
@@ -145,7 +153,7 @@ export default function SuperadminDashboard() {
     return acc;
   }, {});
 
-  const derniereActivite = activity[0];
+  const derniereActivite = activity?.[0];
 
   return (
     <div className="space-y-6">
@@ -162,24 +170,41 @@ export default function SuperadminDashboard() {
       {/* Ligne 2 — Activité récente + Rôles & permissions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <Card className="lg:col-span-2">
-          <SectionTitle icon={History}>Activité récente</SectionTitle>
-          {activity.length === 0 ? (
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <SectionTitle icon={History}>Activité récente</SectionTitle>
+            <select
+              value={activityLimit}
+              onChange={(e) => setActivityLimit(Number(e.target.value))}
+              className="border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md pl-2 pr-6 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-navy shrink-0"
+            >
+              <option value={5}>5 dernières</option>
+              <option value={10}>10 dernières</option>
+              <option value={20}>20 dernières</option>
+            </select>
+          </div>
+          <p className="text-xs text-gray-400 mb-3">Activité du personnel (congés, documents, carrière...), hors connexions.</p>
+          {activity === null ? (
+            <p className="text-sm text-gray-400">Chargement...</p>
+          ) : activity.length === 0 ? (
             <p className="text-sm text-gray-400">Aucune activité enregistrée.</p>
           ) : (
-            <div className="space-y-2">
-              {activity.map((log) => (
-                <div key={log.id} className="flex items-start justify-between gap-3 border-b last:border-0 border-gray-100 dark:border-gray-700 pb-2">
-                  <div className="min-w-0">
-                    <p className="text-sm text-navy dark:text-gray-100 truncate">{log.description}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {log.email ? `${log.prenom || ''} ${log.nom || log.email}`.trim() : 'Système'}
-                      {' — '}
-                      {new Date(log.created_at).toLocaleString('fr-FR')}
-                    </p>
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {activity.map((log) => {
+                const meta = ACTION_LABELS[log.action_type] || { label: log.action_type, color: 'bg-gray-100 text-gray-600' };
+                return (
+                  <div key={log.id} className="flex items-start justify-between gap-3 border-b last:border-0 border-gray-100 dark:border-gray-700 pb-2">
+                    <div className="min-w-0">
+                      <p className="text-sm text-navy dark:text-gray-100 truncate">{log.description}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {log.email ? `${log.prenom || ''} ${log.nom || log.email}`.trim() : 'Système'}
+                        {' — '}
+                        {new Date(log.created_at).toLocaleString('fr-FR')}
+                      </p>
+                    </div>
+                    <span className={`shrink-0 text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap ${meta.color}`}>{meta.label}</span>
                   </div>
-                  <Badge variant="info" className="shrink-0">{log.action_type}</Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <ShortcutLink to="/admin/historique">Voir le journal complet</ShortcutLink>

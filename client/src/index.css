@@ -12,6 +12,7 @@
 
 @layer base {
   html { background: #f8fafc; }
+  html.dark { background: #030712; }
 
   body {
     min-width: 320px;
@@ -19,6 +20,7 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  html.dark body { color: #f3f4f6; }
 
   button, input, select, textarea { font: inherit; }
 

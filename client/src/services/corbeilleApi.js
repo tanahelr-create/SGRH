@@ -31,3 +31,13 @@ export async function deletePermanently(id) {
   if (!res.ok) throw new Error(data.message || 'Échec de la suppression');
   return data;
 }
+
+export async function emptyCorbeille() {
+  const res = await fetch(`${API_URL}/corbeille/vider`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Échec du vidage de la corbeille');
+  return data;
+}

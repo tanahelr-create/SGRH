@@ -17,7 +17,7 @@ INSERT INTO roles (code, libelle) VALUES
   ('PAT', 'Personnel administratif et technique')
 ON CONFLICT DO NOTHING;
 
--- permissions (25 lignes)
+-- permissions (28 lignes)
 INSERT INTO permissions (id, key, label, category) VALUES (1, 'view_dashboard_admin', 'Voir le tableau de bord Admin RH', 'Admin RH') ON CONFLICT DO NOTHING;
 INSERT INTO permissions (id, key, label, category) VALUES (2, 'view_personnel', 'Voir la liste du personnel', 'Admin RH') ON CONFLICT DO NOTHING;
 INSERT INTO permissions (id, key, label, category) VALUES (3, 'create_personnel', 'Ajouter un employé', 'Admin RH') ON CONFLICT DO NOTHING;
@@ -44,8 +44,10 @@ INSERT INTO permissions (id, key, label, category) VALUES (23, 'delete_carriere_
 INSERT INTO permissions (id, key, label, category) VALUES (24, 'manage_situations_administratives', 'Gérer les situations administratives et contrats', 'Carrière') ON CONFLICT DO NOTHING;
 INSERT INTO permissions (id, key, label, category) VALUES (25, 'manage_parametres_carriere', 'Configurer les paramètres de carrière', 'Carrière') ON CONFLICT DO NOTHING;
 INSERT INTO permissions (id, key, label, category) VALUES (26, 'manage_organisation', 'Gérer les directions et services', 'Admin RH') ON CONFLICT DO NOTHING;
+INSERT INTO permissions (id, key, label, category) VALUES (27, 'signaler_probleme', 'Signaler un problème (réclamation)', 'Personnel') ON CONFLICT DO NOTHING;
+INSERT INTO permissions (id, key, label, category) VALUES (28, 'manage_reclamations', 'Gérer les réclamations du personnel', 'Superadmin') ON CONFLICT DO NOTHING;
 
--- role_permissions (53 lignes)
+-- role_permissions (57 lignes)
 INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (80, 'SUPERADMIN', 1, true) ON CONFLICT DO NOTHING;
 INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (81, 'SUPERADMIN', 2, true) ON CONFLICT DO NOTHING;
 INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (82, 'SUPERADMIN', 3, true) ON CONFLICT DO NOTHING;
@@ -100,6 +102,9 @@ INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (130, 'PA
 INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (131, 'PE', 22, true) ON CONFLICT DO NOTHING;
 INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (132, 'PAT', 22, true) ON CONFLICT DO NOTHING;
 INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (133, 'ADMIN_RH', 26, true) ON CONFLICT DO NOTHING;
+INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (134, 'PE', 27, true) ON CONFLICT DO NOTHING;
+INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (135, 'PAT', 27, true) ON CONFLICT DO NOTHING;
+INSERT INTO role_permissions (id, role, permission_id, enabled) VALUES (136, 'SUPERADMIN', 28, true) ON CONFLICT DO NOTHING;
 
 -- categories_professionnelles (7 lignes)
 INSERT INTO categories_professionnelles (id, numero, code, appellation, niveau_diplome) VALUES (1, 1, 'CAT1', 'Sous-opérateur', 'CEPE') ON CONFLICT DO NOTHING;

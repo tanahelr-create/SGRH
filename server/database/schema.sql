@@ -535,6 +535,21 @@ CREATE TABLE notifications (
 );
 CREATE INDEX idx_notifications_recipient ON notifications (recipient_id, is_read, created_at DESC);
 
+-- Réclamations du personnel (PE/PAT) adressées au Superadmin — distinct de
+-- `notifications` (annonces à sens unique, sans statut ni réponse).
+CREATE TABLE reclamations (
+  id           SERIAL PRIMARY KEY,
+  auteur_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  sujet        VARCHAR(150) NOT NULL,
+  description  TEXT NOT NULL,
+  statut       VARCHAR(20) NOT NULL DEFAULT 'ouverte' CHECK (statut IN ('ouverte', 'traitee')),
+  reponse      TEXT,
+  traite_par   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  traite_le    TIMESTAMP,
+  created_at   TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_reclamations_statut ON reclamations (statut, created_at DESC);
+
 CREATE TABLE activity_log (
   id          SERIAL PRIMARY KEY,
   user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,

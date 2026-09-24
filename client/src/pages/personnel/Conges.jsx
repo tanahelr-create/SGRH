@@ -14,8 +14,8 @@ function formatJours(n) {
 function ReadOnlyField({ label, value }) {
   return (
     <div>
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-navy">{value || '—'}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-navy dark:text-gray-100">{value || '—'}</p>
     </div>
   );
 }
@@ -115,11 +115,11 @@ export default function Conges() {
         subtitle="Déposez une demande et suivez son traitement"
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-navy mb-4">Nouvelle demande</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="font-semibold text-navy dark:text-gold mb-4">Nouvelle demande</h3>
 
         {personnel && (
-          <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 rounded-md">
+          <div className="grid grid-cols-2 gap-3 mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
             <ReadOnlyField label="Matricule" value={personnel.matricule} />
             <ReadOnlyField label="Nom et prénom" value={`${personnel.prenom} ${personnel.nom}`} />
             <ReadOnlyField label="Fonction" value={personnel.fonction} />
@@ -128,17 +128,17 @@ export default function Conges() {
         )}
 
         {solde && (
-          <div className="mb-5 p-3 bg-navy/5 rounded-md">
+          <div className="mb-5 p-3 bg-navy/5 dark:bg-gold/10 rounded-md">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-navy font-medium">Solde de congé annuel disponible</span>
-              <span className="text-xl font-bold text-navy">{formatJours(solde.soldeDisponible)}</span>
+              <span className="text-sm text-navy dark:text-gray-100 font-medium">Solde de congé annuel disponible</span>
+              <span className="text-xl font-bold text-navy dark:text-gold">{formatJours(solde.soldeDisponible)}</span>
             </div>
             {solde.dateRecrutementConnue ? (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Droits acquis en {solde.annee} : {formatJours(solde.droitsAnnee)} · Reliquat des années précédentes : {formatJours(solde.reliquat)} · Déjà posés en {solde.annee} : {formatJours(solde.joursPrisAnnee)}
               </p>
             ) : (
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Date de recrutement non renseignée : les droits de l'année ne peuvent pas être calculés automatiquement. Votre solde actuel est conservé comme solde d'ouverture.
               </p>
             )}
@@ -148,11 +148,11 @@ export default function Conges() {
         {step === 'form' && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type de demande</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type de demande</label>
               <select
                 value={typeConge}
                 onChange={(e) => setTypeConge(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
               >
                 {TYPES_CONGE.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -180,57 +180,57 @@ export default function Conges() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de début</label>
                 <input
                   type="date" required value={dateDebut}
                   onChange={(e) => setDateDebut(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                  className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de fin</label>
                 <input
                   type="date" required value={dateFin}
                   onChange={(e) => setDateFin(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                  className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Lieu de jouissance</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lieu de jouissance</label>
               <input
                 type="text" value={lieuJouissance}
                 onChange={(e) => setLieuJouissance(e.target.value)}
                 placeholder="Ex : Mahajanga"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date de reprise de service</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date de reprise de service</label>
               <input
                 type="date" value={dateRepriseService}
                 onChange={(e) => setDateRepriseService(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Remplaçant(e) (optionnel)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Remplaçant(e) (optionnel)</label>
               <input
                 type="text" value={remplacant}
                 onChange={(e) => setRemplacant(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Motif</label>
               <textarea
                 rows={2} value={motif}
                 onChange={(e) => setMotif(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
 
@@ -252,18 +252,18 @@ export default function Conges() {
 
         {step === 'justificatif' && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Demande envoyée. {obligatoire
                 ? 'Un justificatif est obligatoire pour ce type de congé.'
                 : 'Vous pouvez joindre un justificatif (optionnel).'}
             </p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Justificatif (PDF, JPG ou PNG)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Justificatif (PDF, JPG ou PNG)</label>
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) => setFile(e.target.files[0] || null)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                className="w-full border border-gray-300 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2"
               />
             </div>
             <div className="flex gap-2">
@@ -277,7 +277,7 @@ export default function Conges() {
               {!obligatoire && (
                 <button
                   onClick={() => finishFlow('Demande envoyée sans justificatif.')}
-                  className="px-4 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+                  className="px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Passer
                 </button>
@@ -288,41 +288,41 @@ export default function Conges() {
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="font-semibold text-navy mb-4">Mes demandes</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h3 className="font-semibold text-navy dark:text-gold mb-4">Mes demandes</h3>
         {loading && <SkeletonText lines={4} />}
         {!loading && demandes.length === 0 && (
-          <p className="text-gray-400 text-sm">Aucune demande pour l'instant.</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">Aucune demande pour l'instant.</p>
         )}
         <div className="space-y-3">
           {demandes.map((d) => (
-            <div key={d.id} className="border-b last:border-0 pb-3">
+            <div key={d.id} className="border-b border-gray-100 dark:border-gray-700 last:border-0 pb-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-navy">{d.type_conge}</p>
+                <p className="text-sm font-medium text-navy dark:text-gray-100">{d.type_conge}</p>
                 <span className={`text-xs font-medium ${STATUS_LABELS[d.status].color}`}>
                   {STATUS_LABELS[d.status].label}
                 </span>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 Du {new Date(d.date_debut).toLocaleDateString('fr-FR')} au {new Date(d.date_fin).toLocaleDateString('fr-FR')}
               </p>
               {d.decision_intermediaire === 'en_attente' && (
                 <p className="text-xs text-status-pending mt-1">En attente de l'avis du responsable direct</p>
               )}
-              {d.lieu_jouissance && <p className="text-xs text-gray-500 mt-1">Lieu : {d.lieu_jouissance}</p>}
+              {d.lieu_jouissance && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Lieu : {d.lieu_jouissance}</p>}
               {d.avis_chef_service && (
-                <p className="text-xs text-gray-500 mt-1">Avis : {d.avis_chef_service}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Avis : {d.avis_chef_service}</p>
               )}
               {d.justificatif_path && (
                 <button
                   type="button"
                   onClick={() => telechargerJustificatifConge(d.id, d.justificatif_filename)}
-                  className="text-xs text-navy underline mt-1 inline-block mr-3"
+                  className="text-xs text-navy dark:text-gold underline mt-1 inline-block mr-3"
                 >
                   Voir le justificatif
                 </button>
               )}
-              <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy underline mt-1 inline-block">
+              <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy dark:text-gold underline mt-1 inline-block">
                 Voir / télécharger la fiche
               </Link>
             </div>

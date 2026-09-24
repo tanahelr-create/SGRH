@@ -80,7 +80,7 @@ export default function OuvertureSoldes() {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 mt-8">
       <h3 className="font-semibold text-navy dark:text-gold">Soldes d'ouverture (états de congé)</h3>
-      <p className="text-xs text-gray-500 mt-1 mb-4">
+      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4">
         Saisissez, année par année, les droits et les congés déjà pris d'après l'état de congé officiel. Les années déjà enregistrées ne peuvent pas être remplacées.
       </p>
 
@@ -97,7 +97,7 @@ export default function OuvertureSoldes() {
           )}
           {suivi.historiques?.length > 0 && (
             <div className="mt-3">
-              <p className="text-xs text-gray-400">Congés pris avant le SGRH</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Congés pris avant le SGRH</p>
               <ul className="divide-y divide-gray-100 dark:divide-gray-700 max-w-xl">
                 {suivi.historiques.map((h) => (
                   <li key={h.id} className="py-1.5 flex items-center justify-between gap-3 text-xs">
@@ -117,7 +117,7 @@ export default function OuvertureSoldes() {
           {suivi.lignes.length > 0 && (
             <div className="overflow-x-auto mt-2">
               <table className="text-xs w-full max-w-xl">
-                <thead><tr className="text-left text-gray-400"><th>Année</th><th>Droit</th><th>Pris</th><th>Restant</th></tr></thead>
+                <thead><tr className="text-left text-gray-400 dark:text-gray-500"><th>Année</th><th>Droit</th><th>Pris</th><th>Restant</th></tr></thead>
                 <tbody>
                   {suivi.lignes.map((l) => (
                     <tr key={l.annee}><td>{l.libelle_periode || l.annee}</td><td>{nombre(l.droit)}</td><td>{nombre(l.pris)}</td><td>{nombre(l.restant)}</td></tr>
@@ -145,12 +145,12 @@ export default function OuvertureSoldes() {
                   <input className={champ} type="date" aria-label="Fin du congé pris" required value={c.dateFin} onChange={(e) => majConge(i, j, { dateFin: e.target.value })} />
                   <input className={champ} type="number" step="0.5" min="0.5" placeholder="Jours (auto)" aria-label="Jours pris" value={c.jours} onChange={(e) => majConge(i, j, { jours: e.target.value })} />
                   <input className={champ} type="text" maxLength={150} placeholder="Lieu de jouissance" aria-label="Lieu de jouissance" value={c.lieuJouissance} onChange={(e) => majConge(i, j, { lieuJouissance: e.target.value })} />
-                  <button type="button" className="text-xs text-gray-400 hover:text-status-rejected text-left" onClick={() => majLigne(i, { conges: l.conges.filter((_, k) => k !== j) })}>Retirer ce congé</button>
+                  <button type="button" className="text-xs text-gray-400 dark:text-gray-500 hover:text-status-rejected text-left" onClick={() => majLigne(i, { conges: l.conges.filter((_, k) => k !== j) })}>Retirer ce congé</button>
                 </div>
               ))}
               <div className="flex gap-4 text-xs">
                 <button type="button" className="text-navy dark:text-gold underline" onClick={() => majLigne(i, { conges: [...l.conges, nouveauConge()] })}>+ Congé pris</button>
-                {lignes.length > 1 && <button type="button" className="text-gray-400 hover:text-status-rejected" onClick={() => setLignes((prev) => prev.filter((_, k) => k !== i))}>Supprimer l'année</button>}
+                {lignes.length > 1 && <button type="button" className="text-gray-400 dark:text-gray-500 hover:text-status-rejected" onClick={() => setLignes((prev) => prev.filter((_, k) => k !== i))}>Supprimer l'année</button>}
               </div>
             </div>
           ))}

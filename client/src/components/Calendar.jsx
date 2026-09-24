@@ -24,9 +24,9 @@ export default function MiniCalendar({ demandes }) {
   const monthLabel = firstDay.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="bg-white rounded-lg shadow p-5">
-      <h3 className="font-semibold text-navy mb-3 capitalize">{monthLabel}</h3>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-1">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+      <h3 className="font-semibold text-navy dark:text-gold mb-3 capitalize">{monthLabel}</h3>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 dark:text-gray-500 mb-1">
         {['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map((d) => <div key={d}>{d}</div>)}
       </div>
       <div className="grid grid-cols-7 gap-1">
@@ -39,9 +39,8 @@ export default function MiniCalendar({ demandes }) {
               key={i}
               title={dayDemandes.map((dm) => `${dm.prenom} ${dm.nom}`).join(', ')}
               className={`relative text-xs text-center rounded-md py-1.5 ${
-                isToday ? 'bg-navy text-white font-bold' : 'text-gray-600'
-              }`}
-            >
+                isToday ? 'bg-navy dark:bg-gold text-white dark:text-navy font-bold' : 'text-gray-600 dark:text-gray-300'
+              }`}>
               {day}
               {dayDemandes.length > 0 && (
                 <span
@@ -56,7 +55,7 @@ export default function MiniCalendar({ demandes }) {
           );
         })}
       </div>
-      <p className="text-xs text-gray-400 mt-3">
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
         🟢 congé approuvé · 🟠 demande en attente
       </p>
     </div>

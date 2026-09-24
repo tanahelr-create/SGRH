@@ -2,49 +2,7 @@ import { useEffect, useState } from 'react';
 import { getActivityLog } from '../../services/activityLogApi';
 import PageHeader from '../../components/PageHeader';
 import { Skeleton } from '../../components/ui/Skeleton';
-
-const ACTION_LABELS = {
-  invitation_envoyee: { label: 'Invitation envoyée', color: 'bg-blue-50 text-blue-600' },
-  lien_inscription_envoye: { label: "Lien d'inscription envoyé", color: 'bg-blue-50 text-blue-600' },
-  compte_confirme: { label: 'Compte confirmé', color: 'bg-green-50 text-status-approved' },
-  compte_refuse: { label: 'Compte refusé', color: 'bg-red-50 text-status-rejected' },
-  compte_desactive: { label: 'Compte désactivé', color: 'bg-red-50 text-status-rejected' },
-  compte_reactive: { label: 'Compte réactivé', color: 'bg-green-50 text-status-approved' },
-  compte_supprime: { label: 'Compte supprimé', color: 'bg-red-50 text-status-rejected' },
-  element_restaure: { label: 'Élément restauré', color: 'bg-green-50 text-status-approved' },
-  element_supprime_definitivement: { label: 'Suppression définitive', color: 'bg-red-50 text-status-rejected' },
-  notification_envoyee: { label: 'Notification', color: 'bg-purple-50 text-purple-600' },
-  conge_demande: { label: 'Demande de congé', color: 'bg-amber-50 text-status-pending' },
-  conge_traite: { label: 'Congé traité', color: 'bg-green-50 text-status-approved' },
-  conge_avis_intermediaire: { label: 'Avis intermédiaire congé', color: 'bg-amber-50 text-status-pending' },
-  conge_justificatif_ajoute: { label: 'Justificatif de congé ajouté', color: 'bg-amber-50 text-status-pending' },
-  fonction_modifiee: { label: 'Changement de grade', color: 'bg-indigo-50 text-indigo-600' },
-  carriere_evenement: { label: 'Événement de carrière', color: 'bg-indigo-50 text-indigo-600' },
-  carriere_evenement_modifie: { label: 'Événement de carrière modifié', color: 'bg-indigo-50 text-indigo-600' },
-  carriere_evenement_supprime: { label: 'Événement de carrière supprimé', color: 'bg-indigo-50 text-indigo-600' },
-  diplome_ajoute: { label: 'Diplôme ajouté', color: 'bg-indigo-50 text-indigo-600' },
-  diplome_supprime: { label: 'Diplôme supprimé', color: 'bg-indigo-50 text-indigo-600' },
-  situation_administrative: { label: 'Situation administrative', color: 'bg-indigo-50 text-indigo-600' },
-  situation_administrative_modifiee: { label: 'Situation administrative modifiée', color: 'bg-indigo-50 text-indigo-600' },
-  situation_administrative_supprimee: { label: 'Situation administrative supprimée', color: 'bg-red-50 text-status-rejected' },
-  contrat_importe: { label: 'Contrat importé', color: 'bg-teal-50 text-teal-600' },
-  contrat_document_ajoute: { label: 'Document de contrat ajouté', color: 'bg-teal-50 text-teal-600' },
-  contrat_decision: { label: 'Décision sur un contrat', color: 'bg-teal-50 text-teal-600' },
-  contrat_renouvele: { label: 'Contrat renouvelé', color: 'bg-teal-50 text-teal-600' },
-  document_demande: { label: 'Document demandé', color: 'bg-purple-50 text-purple-600' },
-  document_demande_traitee: { label: 'Demande de document traitée', color: 'bg-purple-50 text-purple-600' },
-  document_demande_refusee: { label: 'Demande de document refusée', color: 'bg-red-50 text-status-rejected' },
-  document_genere: { label: 'Document généré', color: 'bg-purple-50 text-purple-600' },
-  personnel_cree: { label: 'Fiche personnel créée', color: 'bg-blue-50 text-blue-600' },
-  personnel_importe: { label: 'Personnel importé', color: 'bg-blue-50 text-blue-600' },
-  personnel_infos_modifiees: { label: 'Informations personnelles modifiées', color: 'bg-blue-50 text-blue-600' },
-  personnel_modifie_par_rh: { label: 'Fiche modifiée par la RH', color: 'bg-blue-50 text-blue-600' },
-  mot_de_passe_modifie: { label: 'Mot de passe modifié', color: 'bg-gray-100 text-gray-600' },
-  mot_de_passe_reinitialise: { label: 'Mot de passe réinitialisé', color: 'bg-gray-100 text-gray-600' },
-  apparence_modifiee: { label: 'Apparence modifiée', color: 'bg-gray-100 text-gray-600' },
-  texte_modifie: { label: 'Texte modifié', color: 'bg-gray-100 text-gray-600' },
-  parametre_carriere_modifie: { label: 'Paramètre de carrière modifié', color: 'bg-gray-100 text-gray-600' },
-};
+import { ACTION_LABELS } from '../../constants/activityLabels';
 
 export default function Historique() {
   const [logs, setLogs] = useState([]);

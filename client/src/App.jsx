@@ -20,6 +20,7 @@ import VerificationAvis from './pages/VerificationAvis';
 import ParOuCommencer from './pages/aide/ParOuCommencer';
 import VosDroits from './pages/aide/VosDroits';
 import Procedures from './pages/aide/Procedures';
+import Reclamation from './pages/aide/Reclamation';
 import Dashboard from './pages/admin-rh/Dashboard';
 import Personnel from './pages/admin-rh/Personnel';
 import PersonnelFiche from './pages/admin-rh/PersonnelFiche';
@@ -38,6 +39,7 @@ import Historique from './pages/admin-rh/Historique';
 import ComptesSuperadmin from './pages/superadmin/Comptes';
 import PermissionsSuperadmin from './pages/superadmin/Permissions';
 import CorbeilleSuperadmin from './pages/superadmin/Corbeille';
+import ReclamationsSuperadmin from './pages/superadmin/Reclamations';
 import ApparenceSite from './pages/superadmin/ApparenceSite';
 import SuperadminDashboard from './pages/superadmin/Dashboard';
 import PersonnelDashboard from './pages/personnel/Dashboard';
@@ -105,6 +107,11 @@ function App() {
                 <Route path="/aide/procedures" element={
                   <ProtectedRoute allowedRoles={PE_PAT}>
                     <AppShell title="Les procédures" subtitle="Documentation"><Procedures /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/aide/signaler" element={
+                  <ProtectedRoute allowedRoles={PE_PAT} permission="signaler_probleme">
+                    <AppShell title="Signaler un problème" subtitle="Documentation"><Reclamation /></AppShell>
                   </ProtectedRoute>
                 } />
 
@@ -218,6 +225,11 @@ function App() {
                 <Route path="/superadmin/permissions" element={
                   <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_permissions">
                     <AppShell title="Gestion des permissions" subtitle="Administration système"><PermissionsSuperadmin /></AppShell>
+                  </ProtectedRoute>
+                } />
+                <Route path="/superadmin/reclamations" element={
+                  <ProtectedRoute allowedRoles={['SUPERADMIN']} permission="manage_reclamations">
+                    <AppShell title="Réclamations" subtitle="Administration système"><ReclamationsSuperadmin /></AppShell>
                   </ProtectedRoute>
                 } />
                 <Route path="/superadmin/apparence" element={

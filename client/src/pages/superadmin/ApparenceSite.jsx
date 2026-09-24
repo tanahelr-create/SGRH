@@ -51,8 +51,41 @@ const CHAMPS_INSTITUTION = [
   { key: 'institution.email', label: 'Email institutionnel', defaut: '' },
   { key: 'institution.site_officiel', label: 'Site officiel', defaut: '' },
 ];
+// Contenu des 3 pages "Aide" du personnel (client/src/pages/aide/*.jsx) : texte brut
+// avec retours à la ligne (affiché en `whitespace-pre-line`), pas de mise en forme HTML
+// à gérer ici — reste simple à éditer pour le Superadmin.
+const CHAMPS_AIDE = [
+  {
+    key: 'aide.par_ou_commencer', label: '« Par où commencer ? »', multiligne: true, rows: 6,
+    defaut: `1. Consultez votre profil pour vérifier que vos informations (matricule, fonction, contrat) sont correctes.
+2. Utilisez la page Congés pour soumettre une demande — vos informations personnelles se remplissent automatiquement.
+3. Surveillez la cloche de notifications : vous y recevrez les décisions sur vos demandes et les annonces de l'administration.
+4. En cas de question, contactez le service RH de l'université.`,
+  },
+  {
+    key: 'aide.vos_droits', label: '« Vos droits »', multiligne: true, rows: 8,
+    defaut: `Tout membre du personnel de l'Université de Mahajanga peut, selon sa situation :
+- Bénéficier d'un congé annuel, de permissions et d'autorisations d'absence selon la réglementation en vigueur
+- Consulter à tout moment ses informations administratives
+- Être informé de toute décision concernant ses demandes
+- Faire valoir ses droits en cas de désaccord avec une décision, en s'adressant au service RH
+
+Le détail complet des droits par statut (CDI, CDD, Vacataire, Stagiaire) sera précisé prochainement par l'administration.`,
+  },
+  {
+    key: 'aide.procedures', label: '« Les procédures »', multiligne: true, rows: 8,
+    defaut: `Demande de congé / permission
+Remplissez le formulaire dans "Congés", en précisant le type, les dates et le motif. Votre demande part directement au service RH.
+
+Suivi d'une demande
+Le statut (en attente, approuvée, refusée) s'affiche dans "Mes demandes". Une notification vous informe dès qu'une décision est prise.
+
+Fiche imprimable
+Chaque demande dispose d'un lien "Voir / télécharger la fiche", reprenant le format officiel de l'université.`,
+  },
+];
 const TOUTES_LES_CLES_CURATED = new Set([
-  ...CHAMPS_CONNEXION, ...CHAMPS_FOOTER, ...CHAMPS_SYSTEME, ...CHAMPS_MENU, ...CHAMPS_INSTITUTION,
+  ...CHAMPS_CONNEXION, ...CHAMPS_FOOTER, ...CHAMPS_SYSTEME, ...CHAMPS_MENU, ...CHAMPS_INSTITUTION, ...CHAMPS_AIDE,
 ].map((c) => c.key));
 
 function Section({ title, description, children }) {
@@ -98,7 +131,7 @@ function ChampTexte({ champ }) {
       <div className="flex gap-2 items-start">
         <Champ
           type={champ.multiligne ? undefined : 'text'}
-          rows={champ.multiligne ? 2 : undefined}
+          rows={champ.multiligne ? (champ.rows || 2) : undefined}
           value={valeur}
           onChange={(e) => setValeur(e.target.value)}
           placeholder={champ.defaut || undefined}
@@ -325,6 +358,9 @@ export default function ApparenceSite() {
           </Section>
           <Section title="Libellés de navigation" description="Ces libellés remplacent le texte affiché pour ces éléments dans le menu ; la structure du menu elle-même n'est pas modifiable ici.">
             {CHAMPS_MENU.map((c) => <ChampTexte key={c.key} champ={c} />)}
+          </Section>
+          <Section title="Aide (personnel)" description="Contenu des 3 pages d'aide affichées au personnel (PE/PAT) dans le menu Aide.">
+            {CHAMPS_AIDE.map((c) => <ChampTexte key={c.key} champ={c} />)}
           </Section>
 
           <div className="mb-4">

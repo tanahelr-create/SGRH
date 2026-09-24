@@ -80,29 +80,29 @@ export default function CongesAdmin() {
           const justificatifManquant = JUSTIFICATIF_REQUIS_VALIDATION.includes(d.type_conge) && !d.justificatif_path;
 
           return (
-            <div key={d.id} className="bg-white rounded-lg shadow p-5">
+            <div key={d.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="font-medium text-navy">{d.prenom} {d.nom} <span className="text-xs text-gray-400">({d.role})</span></p>
-                  <p className="text-sm text-gray-500">{d.type_conge} — {d.email}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="font-medium text-navy dark:text-gray-100">{d.prenom} {d.nom} <span className="text-xs text-gray-400 dark:text-gray-500">({d.role})</span></p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{d.type_conge} — {d.email}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     Du {new Date(d.date_debut).toLocaleDateString('fr-FR')} au {new Date(d.date_fin).toLocaleDateString('fr-FR')}
                   </p>
-                  {d.lieu_jouissance && <p className="text-xs text-gray-400">Lieu : {d.lieu_jouissance}</p>}
-                  {d.remplacant && <p className="text-xs text-gray-400">Remplaçant : {d.remplacant}</p>}
-                  {d.motif && <p className="text-xs text-gray-500 mt-1">Motif : {d.motif}</p>}
+                  {d.lieu_jouissance && <p className="text-xs text-gray-400 dark:text-gray-500">Lieu : {d.lieu_jouissance}</p>}
+                  {d.remplacant && <p className="text-xs text-gray-400 dark:text-gray-500">Remplaçant : {d.remplacant}</p>}
+                  {d.motif && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Motif : {d.motif}</p>}
                 </div>
               </div>
 
               <div className="flex items-center gap-3 mb-3">
-                <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy underline inline-block">
+                <Link to={`/demandes/${d.id}/fiche`} className="text-xs text-navy dark:text-gold underline inline-block">
                   Voir / télécharger la fiche
                 </Link>
                 {d.justificatif_path ? (
                   <button
                     type="button"
                     onClick={() => telechargerJustificatifConge(d.id, d.justificatif_filename)}
-                    className="text-xs text-navy underline inline-block"
+                    className="text-xs text-navy dark:text-gold underline inline-block"
                   >
                     Voir le justificatif
                   </button>
@@ -122,7 +122,7 @@ export default function CongesAdmin() {
                 rows={2}
                 value={avisMap[d.id] || ''}
                 onChange={(e) => setAvisMap((prev) => ({ ...prev, [d.id]: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-navy"
+                className="w-full border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 rounded-md px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-navy"
               />
 
               <div className="flex justify-end gap-2">
@@ -148,13 +148,13 @@ export default function CongesAdmin() {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 mt-8">
         <h3 className="font-semibold text-navy dark:text-gold">Décisions d'octroi à établir</h3>
-        <p className="text-xs text-gray-500 mt-1 mb-3">Congés annuels approuvés pour lesquels la décision (fraction de congé) n'a pas encore été générée.</p>
-        {sansDecision.length === 0 && !loading && <p className="text-sm text-gray-400">Aucune décision en attente.</p>}
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">Congés annuels approuvés pour lesquels la décision (fraction de congé) n'a pas encore été générée.</p>
+        {sansDecision.length === 0 && !loading && <p className="text-sm text-gray-400 dark:text-gray-500">Aucune décision en attente.</p>}
         <ul className="divide-y divide-gray-100 dark:divide-gray-700">
           {sansDecision.map((c) => (
             <li key={c.id} className="py-2 flex items-center justify-between gap-3 text-sm">
               <span className="text-navy dark:text-gray-100">
-                {c.prenom} {c.nom} <span className="text-xs text-gray-400">— du {new Date(c.date_debut).toLocaleDateString('fr-FR')} au {new Date(c.date_fin).toLocaleDateString('fr-FR')}</span>
+                {c.prenom} {c.nom} <span className="text-xs text-gray-400 dark:text-gray-500">— du {new Date(c.date_debut).toLocaleDateString('fr-FR')} au {new Date(c.date_fin).toLocaleDateString('fr-FR')}</span>
               </span>
               <button
                 type="button"

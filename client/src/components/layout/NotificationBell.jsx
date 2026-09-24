@@ -53,44 +53,48 @@ export default function NotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <button onClick={handleOpen} className="relative text-gray-400 hover:text-navy">
+      <button
+        onClick={handleOpen}
+        aria-label="Notifications"
+        className="relative shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-slate-100 dark:text-gray-300 dark:hover:bg-gray-700 transition"
+      >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-status-rejected text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+          <span className="absolute top-0.5 right-0.5 bg-status-rejected text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
             {unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border max-h-96 overflow-y-auto z-10">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-slate-200 dark:border-gray-700 max-h-96 overflow-y-auto z-10">
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="w-full flex items-center justify-center gap-1.5 text-xs text-navy font-medium py-2 border-b hover:bg-gray-50"
+              className="w-full flex items-center justify-center gap-1.5 text-xs text-navy dark:text-gold font-medium py-2 border-b border-slate-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <CheckCheck size={14} /> Tout marquer comme lu
             </button>
           )}
           {notifications.length === 0 && (
-            <p className="p-4 text-sm text-gray-500">Aucune notification.</p>
+            <p className="p-4 text-sm text-gray-500 dark:text-gray-400">Aucune notification.</p>
           )}
           {notifications.slice(0, 5).map((n) => (
             <button
               key={n.id}
               onClick={() => handleItemClick(n)}
-              className={`w-full text-left p-3 border-b hover:bg-gray-50 ${
+              className={`w-full text-left p-3 border-b border-slate-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 n.is_read ? 'opacity-60' : ''
               }`}
             >
-              <p className="text-sm font-medium text-navy">{n.title}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+              <p className="text-sm font-medium text-navy dark:text-gray-100">{n.title}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.message}</p>
             </button>
           ))}
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="block text-center text-sm text-navy font-medium py-2 hover:bg-gray-50"
+            className="block text-center text-sm text-navy dark:text-gold font-medium py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Voir toutes mes notifications
           </Link>

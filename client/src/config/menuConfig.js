@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, UserPlus, UserCheck, Bell, Briefcase, GitBranch, FileSignature, SlidersHorizontal,
   CalendarClock, FileText, FileStack, History, ShieldCheck, Trash2, KeyRound, Palette, Building2,
-  UserRound, Award, Users2, ClipboardCheck, FolderOpen, HelpCircle, Info, BookOpen,
+  UserRound, Award, Users2, ClipboardCheck, FolderOpen, HelpCircle, Info, BookOpen, MessageSquareWarning,
 } from 'lucide-react';
 
 const CHEF_OU_RESPONSABLE = (u) => u?.fonction === 'Chef de service' || u?.fonction === 'Responsable/Directeur';
@@ -97,6 +97,7 @@ function personnelMenu() {
         { label: 'Par où commencer', path: '/aide/commencer', icon: Info, permission: null },
         { label: 'Vos droits', path: '/aide/droits', icon: HelpCircle, permission: null },
         { label: 'Les procédures', path: '/aide/procedures', icon: BookOpen, permission: null },
+        { label: 'Signaler un problème', path: '/aide/signaler', icon: MessageSquareWarning, permission: 'signaler_probleme' },
       ],
     },
   ];
@@ -114,6 +115,7 @@ export const menuConfig = {
         { label: 'Gestion des comptes', path: '/superadmin/comptes', icon: ShieldCheck, permission: 'manage_accounts' },
         { label: 'Corbeille', path: '/superadmin/corbeille', icon: Trash2, permission: 'manage_corbeille' },
         { label: 'Rôles & permissions', path: '/superadmin/permissions', icon: KeyRound, permission: 'manage_permissions' },
+        { label: 'Réclamations', path: '/superadmin/reclamations', icon: MessageSquareWarning, permission: 'manage_reclamations' },
         { label: 'Personnalisation', path: '/superadmin/apparence', icon: Palette, permission: 'manage_site_texts' },
       ],
     },

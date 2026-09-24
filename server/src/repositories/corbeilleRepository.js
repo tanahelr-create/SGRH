@@ -27,6 +27,11 @@ async function removeFromCorbeille(id) {
   await pool.query(`DELETE FROM corbeille WHERE id = $1`, [id]);
 }
 
+async function removeAll() {
+  const result = await pool.query(`DELETE FROM corbeille`);
+  return result.rowCount;
+}
+
 // Supprime un compte de façon réversible : capture dans la corbeille le compte ET
 // toutes les lignes qui lui appartiennent substantiellement (congés, historique de
 // fonction, notifications reçues), puis le supprime — le tout dans une transaction.
@@ -133,4 +138,4 @@ async function restoreCompte(donnees) {
   });
 }
 
-module.exports = { add, listAll, findById, removeFromCorbeille, archiveAndDeleteCompte, restoreCompte };
+module.exports = { add, listAll, findById, removeFromCorbeille, removeAll, archiveAndDeleteCompte, restoreCompte };

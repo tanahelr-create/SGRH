@@ -7,13 +7,21 @@ async function create(userId, actionType, description) {
   );
 }
 
-async function findRecent(limit = 50) {
+async function findRecent(limit = 50, excludeTypes = []) {
+  const params = [];
+  let whereClause = '';
+  if (excludeTypes.length > 0) {
+    params.push(excludeTypes);
+    whereClause = `WHERE l.action_type <> ALL($${params.length})`;
+  }
+  params.push(limit);
   const result = await pool.query(
     `SELECT l.*, ud.email, ud.nom, ud.prenom, ud.role
      FROM activity_log l
      LEFT JOIN user_details ud ON ud.id = l.user_id
-     ORDER BY l.created_at DESC LIMIT $1`,
-    [limit]
+     ${whereClause}
+     ORDER BY l.created_at DESC LIMIT $${params.length}`,
+    params
   );
   return result.rows;
 }

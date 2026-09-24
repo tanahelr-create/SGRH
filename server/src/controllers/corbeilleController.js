@@ -40,4 +40,16 @@ async function remove(req, res) {
   return res.status(200).json({ message: 'Supprimé définitivement' });
 }
 
-module.exports = { list, restore, remove };
+async function empty(req, res) {
+  const count = await corbeilleRepository.removeAll();
+  if (count > 0) {
+    await activityLogRepository.create(
+      req.user.id,
+      'corbeille_videe',
+      `Corbeille vidée (${count} élément${count > 1 ? 's' : ''} supprimé${count > 1 ? 's' : ''} définitivement)`
+    );
+  }
+  return res.status(200).json({ message: 'Corbeille vidée', count });
+}
+
+module.exports = { list, restore, remove, empty };
